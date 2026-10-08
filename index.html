@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#fbf4e4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="まなびたまご">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>まなびたまご</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!--
+  まなびたまご（仮の 名前）：3〜6さいの 知育ゲーム。まなびモンスターの 部品で 作って いる。
+  画面は 400px はばの「ステージ」の 中（js/core/stage.js）。字が 読めない 子の ために ことばは 声で 読む（js/core/voice.js）。
+  読みこみ順：core → content → ui → boot。
+-->
+<div id="stage" class="stage">
+  <section id="screen-start" class="screen"></section>
+  <section id="screen-setup" class="screen"></section>
+  <section id="screen-draw" class="screen"></section>
+  <section id="screen-egg" class="screen"></section>
+  <section id="screen-home" class="screen"></section>
+  <section id="screen-care" class="screen"></section>
+  <section id="screen-shop" class="screen"></section>
+  <section id="screen-play" class="screen"></section>
+  <section id="screen-done" class="screen"></section>
+  <section id="screen-parent" class="screen"></section>
+  <div id="toast" class="toast"></div>
+</div>
+
+<script src="js/core/util.js"></script>
+<script src="js/core/stage.js"></script>
+<script src="js/core/blocks.js"></script>
+<script src="js/core/sfx.js"></script>
+<script src="js/core/save.js"></script>
+<script src="js/core/voice.js"></script>
+<script src="js/core/trace.js"></script>
+<script src="js/core/tasks.js"></script>
+<script src="js/content/monstergen.js"></script>
+<script src="js/ui/common.js"></script>
+<script src="js/ui/start.js"></script>
+<script src="js/ui/home.js"></script>
+<script src="js/ui/care.js"></script>
+<script src="js/ui/shop.js"></script>
+<script src="js/ui/play.js"></script>
+<script src="js/ui/parent.js"></script>
+<script src="js/ui/boot.js"></script>
+</body>
+</html>

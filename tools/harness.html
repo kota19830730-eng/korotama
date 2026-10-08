@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まなびたまご harness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+<style>#log { position: fixed; left: 0; bottom: 0; z-index: 999; max-width: 100px; max-height: 60px; overflow: hidden; font-size: 1px; color: transparent; background: transparent; margin: 0; pointer-events: none; }</style>
+</head>
+<body>
+<!--
+  画面の 通しテストと スクリーンショット（headless Chrome）。ハッシュで モード：
+    #start #setup #draw #canvas #preview #egg #home #care #care:l #shop #play #play:l #done #done:grow #parent
+    #flow（ごはん・おみせ・あそぶ を 自動で 答えて できた！まで）
+    #photo:<file URL>（本物の 写真 → --allow-file-access-from-files が いる）
+  にせの 声（headless に 声は ない）・にせの 絵（かいた ように 見せた 画像）で 生きものを 作ってから 画面を 出す。
+  けっかは <pre id="log">。
+-->
+<div id="stage" class="stage">
+  <section id="screen-start" class="screen"></section>
+  <section id="screen-setup" class="screen"></section>
+  <section id="screen-draw" class="screen"></section>
+  <section id="screen-egg" class="screen"></section>
+  <section id="screen-home" class="screen"></section>
+  <section id="screen-care" class="screen"></section>
+  <section id="screen-shop" class="screen"></section>
+  <section id="screen-play" class="screen"></section>
+  <section id="screen-done" class="screen"></section>
+  <section id="screen-parent" class="screen"></section>
+  <div id="toast" class="toast"></div>
+</div>
+<pre id="log"></pre>
+<script>window.__MQ_NO_AUTOBOOT = true;</script>
+<script src="../js/core/util.js"></script>
+<script src="../js/core/stage.js"></script>
+<script src="../js/core/blocks.js"></script>
+<script src="../js/core/sfx.js"></script>
+<script src="../js/core/save.js"></script>
+<script src="../js/core/voice.js"></script>
+<script src="../js/core/trace.js"></script>
+<script src="../js/core/tasks.js"></script>
+<script src="../js/content/monstergen.js"></script>
+<script src="../js/ui/common.js"></script>
+<script src="../js/ui/start.js"></script>
+<script src="../js/ui/home.js"></script>
+<script src="../js/ui/care.js"></script>
+<script src="../js/ui/shop.js"></script>
+<script src="../js/ui/play.js"></script>
+<script src="../js/ui/parent.js"></script>
+<script src="../js/ui/boot.js"></script>
+<script>
+(function () {
+  const logEl = document.getElementById('log');
+  const lines = [];
+  let errors = 0;
+  function log(s) { lines.push(String(s)); logEl.textContent = lines.join('\n'); }
+  window.addEventListener('error', function (e) { errors++; log('ERROR ' + (e.message || e) + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno); });
+  window.addEventListener('unhandledrejection', function (e) { errors++; log('REJECT ' + (e.reason && e.reason.message || e.reason)); });
+  const Q = location.hash.slice(1).split(':');
+  const mode = Q[0] || 'home';
+  const arg = Q[1] || '';
+
+  /* にせの 声：すぐ おわる（画面の 流れを 速く 通す） */
+  const said = [];
+  const fakeVoice = {
+    getVoices: function () { return [{ name: 'Kyoko', lang: 'ja-JP', default: true }]; },
+    cancel: function () {},
+    speak: function (u) { said.push(u.text); setTimeout(function () { if (u.onend) u.onend(); }, 60); },
+    addEventListener: function () {},
+    Utterance: function (t) { this.text = t; }
+  };
+  MQ.voice.setFake(fakeVoice);
+  MQ.sfx.setEnabled(false);
+  window.saidLines = said;
+
+  /* かいた ように 見せた 絵（白い 紙に 緑の 生きもの） */
+  function fakeDrawing() {
+    const cv = document.createElement('canvas'); cv.width = 640; cv.height = 640;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 640, 640);
+    g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 16; g.strokeStyle = '#3a3330';
+    g.fillStyle = '#8fd27a'; g.beginPath(); g.ellipse(320, 340, 180, 150, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#f2c94c'; g.beginPath(); g.moveTo(200, 230); g.lineTo(190, 120); g.lineTo(260, 200); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(440, 230); g.lineTo(450, 120); g.lineTo(380, 200); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(260, 300, 34, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath(); g.arc(380, 300, 34, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#222'; g.beginPath(); g.arc(266, 306, 12, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(386, 306, 12, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.moveTo(280, 400); g.quadraticCurveTo(320, 440, 360, 400); g.stroke();
+    g.beginPath(); g.moveTo(260, 480); g.lineTo(250, 540); g.moveTo(380, 480); g.lineTo(390, 540); g.stroke();
+    return cv.toDataURL('image/png');
+  }
+  function withMon(stage, cb) {
+    localStorage.removeItem(MQ.save.KEY);
+    MQ.save._set(null);
+    MQ.save.newKid({ name: 'ゆう', stage: stage || 's' });
+    const im = new Image();
+    im.onload = function () {
+      const t0 = performance.now();
+      const res = MQ.trace.fromImage(im, { x: 0, y: 0, w: 1, h: 1 }, {});
+      log('trace: drawn=' + res.drawn + ' cool=' + (res.cool || []).filter(Boolean).length + ' ms=' + Math.round(performance.now() - t0));
+      if (!res.png) { log('ERROR no png'); errors++; return; }
+      MQ.ui.makeMon(res.png, 'ぴょん', function (mon) {
+        MQ.save.setMon(mon);
+        log('mon: png2=' + !!mon.png2 + ' png3=' + !!mon.png3);
+        cb();
+      });
+    };
+    im.src = fakeDrawing();
+  }
+  function click(el) { if (!el) { log('ERROR no element to click'); errors++; return; } el.click(); }
+  function $(s) { return document.querySelector(s); }
+  function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function finish() { log('=== エラー: ' + errors + ' ==='); log('said: ' + said.length); }
+
+  MQ.stage.fit();
+  const run = {
+    start: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.start.open(); finish(); },
+    setup: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.setup.open(); finish(); },
+    draw: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.open(); finish(); },
+    canvas: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openCanvas(); finish(); },
+    preview: function () {
+      MQ.save.newKid({ name: 'ゆう', stage: 's' });
+      const im = new Image(); im.onload = function () { MQ.ui.draw.fromImage(im, false); finish(); }; im.src = fakeDrawing();
+    },
+    egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
+    home: function () { withMon(arg || 's', function () { MQ.ui.home.open(); setTimeout(finish, 400); }); },
+    care: function () { withMon(arg || 's', function () { MQ.ui.care.open(); setTimeout(function () { const st = MQ.ui.care.state(); log('care: ' + st.task.line + ' n=' + st.task.n + ' slots=' + st.task.slots); if (Q[2] === 'half') { click($('#screen-care .basket .item')); } finish(); }, 400); }); },
+    shop: function () { withMon(arg || 's', function () { MQ.ui.shop.open(); setTimeout(function () { const st = MQ.ui.shop.state(); log('shop: ' + st.task.line); if (Q[2] === 'half' && st.task.n > 1) { const want = st.task.want; const b = $$('#screen-shop .shelf .item').filter(function (x) { return x.getAttribute('aria-label').indexOf(want.say) === 0; })[0]; click(b); } finish(); }, 400); }); },
+    play: function () { withMon(arg || 's', function () { MQ.ui.play.open(); setTimeout(function () { log('play: ' + MQ.ui.play.state().task.line); finish(); }, 400); }); },
+    done: function () { withMon('s', function () { MQ.save.stamp('count'); MQ.ui.done.open({ grew: arg === 'grow' }); setTimeout(finish, 500); }); },
+    parent: function () { withMon('m', function () { MQ.save.stamp('count'); MQ.save.stamp('shape'); MQ.ui.parent.open(); finish(); }); },
+    photo: function () {
+      // 本物の 写真（file URL）。写真 → 自動わく → ブロック → えらぶ画面
+      MQ.save.newKid({ name: 'ゆう', stage: 's' });
+      const im = new Image();
+      im.onload = function () { const t0 = performance.now(); MQ.ui.draw.fromImage(im, true); log('photo ms=' + Math.round(performance.now() - t0) + ' info=' + JSON.stringify(MQ.trace.info() && MQ.trace.info().drawn)); finish(); };
+      im.onerror = function () { log('ERROR photo load'); errors++; finish(); };
+      im.src = Q.slice(1).join(':');
+    },
+    flow: function () {
+      withMon(arg || 's', async function () {
+        MQ.ui.home.open(); await wait(200);
+        // ごはん：3回 正解
+        click($('#screen-home .big--gold')); await wait(300);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.care.state();
+          const n = st.task.n;
+          for (let i = 0; i < n; i++) { click($('#screen-care .basket .item')); await wait(30); }
+          if (!st.task.slots) click($('#screen-care .mon'));
+          await wait(300);
+          log('care r' + r + ' ok=' + (MQ.ui.care.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after care: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday());
+        click($('#screen-done .btn--gold')); await wait(200);
+        // おみせ：わざと ちがう 色を 1回 → 正しい 色を n 回
+        click($('#screen-home .big--clay')); await wait(300);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.shop.state();
+          const wrong = $$('#screen-shop .shelf .item').filter(function (x) { return x.getAttribute('aria-label').indexOf(st.task.want.say) !== 0; })[0];
+          if (wrong) { click(wrong); await wait(100); }
+          for (let i = 0; i < st.task.n; i++) {
+            const ok = $$('#screen-shop .shelf .item').filter(function (x) { return x.getAttribute('aria-label').indexOf(st.task.want.say) === 0; })[0];
+            click(ok); await wait(40);
+          }
+          await wait(300);
+          log('shop r' + r + ' ok=' + (MQ.ui.shop.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after shop: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday());
+        click($('#screen-done .btn--gold')); await wait(200);
+        // あそぶ：まちがい 1回 → 正解
+        click($('#screen-home .big--green')); await wait(300);
+        for (let r = 0; r < 3; r++) {
+          const wrong = $$('#screen-play .toy').filter(function (x, i) { return !MQ.ui.play.state().task.options[i].ok; })[0];
+          if (wrong) { click(wrong); await wait(100); }
+          const ok = $$('#screen-play .toy').filter(function (x, i) { return MQ.ui.play.state().task.options[i].ok; })[0];
+          click(ok); await wait(300);
+          log('play r' + r + ' ok=' + (MQ.ui.play.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after play: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
+        // おうちの人 → もどる
+        click($('#screen-done .btn--gold')); await wait(100);
+        MQ.ui.parent.open(); await wait(100);
+        click($('#screen-parent .btn')); await wait(100);
+        log('end: ' + MQ.ui.current);
+        finish();
+      });
+    }
+  };
+  (run[mode] || run.home)();
+})();
+</script>
+</body>
+</html>
