@@ -41,6 +41,7 @@
 <script src="../js/core/trace.js"></script>
 <script src="../js/core/tasks.js"></script>
 <script src="../js/content/monstergen.js"></script>
+<script src="../js/content/presets.js"></script>
 <script src="../js/ui/common.js"></script>
 <script src="../js/ui/start.js"></script>
 <script src="../js/ui/home.js"></script>
@@ -120,6 +121,7 @@
     start: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.start.open(); finish(); },
     setup: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.setup.open(); finish(); },
     draw: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.open(); finish(); },
+    presets: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openPresets(arg || 'cute'); const n = MQ.presets.list(arg || 'cute').filter(function (p) { return p.png; }).length; log('presets ' + (arg || 'cute') + ': png=' + n); if (Q[2] === 'pick') { click($('#screen-draw .ptile')); } finish(); },
     canvas: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openCanvas(); finish(); },
     preview: function () {
       MQ.save.newKid({ name: 'ゆう', stage: 's' });

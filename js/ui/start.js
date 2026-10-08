@@ -142,6 +142,8 @@ MQ.ui = MQ.ui || {};
           h('button', { class: 'btn btn--gold btn--big btn--wide row', type: 'button', style: { justifyContent: 'center' }, onclick: function () { MQ.sfx.tap(); fileIn.click(); } }, [MQ.ui.icon('camera', 'ico--btn'), h('span', { text: '紙の 絵を 写真に とる' })]),
           h('button', { class: 'btn btn--green btn--big btn--wide row', type: 'button', style: { justifyContent: 'center' }, onclick: function () { MQ.sfx.tap(); openCanvas(); } }, [MQ.ui.icon('pencil', 'ico--btn'), h('span', { text: '画面に ゆびで かく' })]),
           h('p', { class: 'note', text: 'コツ：白い 紙に、太めの 線で、1まいに 1つ。明るい ところで とると きれいに なります。' }),
+          h('button', { class: 'btn btn--clay btn--big btn--wide row', type: 'button', style: { justifyContent: 'center' }, onclick: function () { MQ.sfx.tap(); openPresets('cute'); } }, [MQ.ui.icon('sparkle', 'ico--btn'), h('span', { text: 'キャラクターから えらぶ' })]),
+          h('p', { class: 'note', text: 'かわいい 8体・かっこいい 8体 から。絵は あとからでも 入れかえられます。' }),
           kid && kid.mon ? h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: 'いまの ままで よい（もどる）', onclick: function () { MQ.sfx.tap(); MQ.ui.parent.open(); } }) : null,
           fileIn
         ])])
@@ -194,6 +196,38 @@ MQ.ui = MQ.ui || {};
   }
   MQ.ui.draw.openCanvas = openCanvas;
 
+  /* さいしょから いる キャラクターから えらぶ（かわいい／かっこいい） */
+  function openPresets(groupId) {
+    groupId = groupId || 'cute';
+    const tabs = h('div', { class: 'seg seg--2' });
+    MQ.presets.GROUPS.forEach(function (g) {
+      const b = h('button', { class: 'seg__b' + (g.id === groupId ? ' is-on' : ''), type: 'button' }, [h('span', { text: g.name })]);
+      b.onclick = function () { MQ.sfx.tap(); openPresets(g.id); };
+      tabs.appendChild(b);
+    });
+    const grid = h('div', { class: 'pgrid' });
+    MQ.presets.list(groupId).forEach(function (pz) {
+      const b = h('button', { class: 'ptile', type: 'button', 'aria-label': pz.name }, [MQ.blocks.imgBox(pz.png, { size: 96 }), h('span', { text: pz.name })]);
+      b.onclick = function () {
+        MQ.sfx.tap();
+        lastResult = { png: pz.png, cool: [], dark: false, preset: pz };
+        openPreview(null, false, pz);
+      };
+      grid.appendChild(b);
+    });
+    const page = h('div', { class: 'page pp' }, [
+      h('div', { class: 'page__body' }, [h('div', { class: 'wrap col' }, [
+        h('h1', { class: 'pp__title', text: 'キャラクターを えらぶ' }),
+        h('p', { class: 'note', text: 'お子さんに「どれが いい？」と きいて、タップしてください。' }),
+        tabs, grid,
+        h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: 'もどる', onclick: function () { MQ.sfx.tap(); MQ.ui.draw.open(); } })
+      ])])
+    ]);
+    MQ.ui.mount('screen-draw', page);
+    MQ.ui.show('screen-draw');
+  }
+  MQ.ui.draw.openPresets = openPresets;
+
   /* 写真／ゆびの 絵 → ブロックの すがた → えらぶ */
   function fromImage(im, isPhoto) {
     const crop = isPhoto ? (MQ.trace.autoCrop(im) || MQ.trace.defaultCrop(im)) : { x: 0, y: 0, w: 1, h: 1 };
@@ -208,12 +242,12 @@ MQ.ui = MQ.ui || {};
   }
   MQ.ui.draw.fromImage = fromImage;
 
-  function openPreview(im, isPhoto) {
+  function openPreview(im, isPhoto, preset) {
     const kid = MQ.save.kid() || {};
-    const choices = [{ tag: 'trace', name: 'そのまま', png: lastResult.png }];
+    const choices = [{ tag: preset ? 'preset' : 'trace', name: preset ? preset.name : 'そのまま', png: lastResult.png }];
     if (lastResult.cool[0]) choices.push({ tag: 'cool', name: 'かっこよく', png: lastResult.cool[0] });
     let pick = 0;
-    const nameIn = h('input', { class: 'field', type: 'text', maxlength: '8', placeholder: '生きものの 名前', value: (kid.mon && kid.mon.name) || 'たまごちゃん' });
+    const nameIn = h('input', { class: 'field', type: 'text', maxlength: '8', placeholder: '生きものの 名前', value: preset ? preset.name : ((kid.mon && kid.mon.name) || 'たまごちゃん') });
     const row = h('div', { class: 'preview' });
     choices.forEach(function (c, i) {
       const b = h('button', { class: 'preview__b' + (i === 0 ? ' is-on' : ''), type: 'button' }, [MQ.blocks.imgBox(c.png, { size: 128 }), h('span', { text: c.name })]);
@@ -230,9 +264,9 @@ MQ.ui = MQ.ui || {};
           MQ.sfx.tap();
           const c = choices[pick];
           const name = (nameIn.value || '').trim() || 'たまごちゃん';
-          makeMon(c.png, name, function (mon) { MQ.save.setMon(mon); MQ.ui.egg.open(); });
+          makeMon(c.png, name, function (mon) { if (preset) { mon.trace = false; mon.preset = preset.id; } MQ.save.setMon(mon); MQ.ui.egg.open(); });
         } }),
-        h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: isPhoto ? 'とりなおす' : 'かきなおす', onclick: function () { MQ.sfx.tap(); if (isPhoto) MQ.ui.draw.open(); else openCanvas(); } })
+        h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: preset ? 'ほかの キャラクター' : isPhoto ? 'とりなおす' : 'かきなおす', onclick: function () { MQ.sfx.tap(); if (preset) openPresets(preset.group); else if (isPhoto) MQ.ui.draw.open(); else openCanvas(); } })
       ])])
     ]);
     MQ.ui.mount('screen-draw', page);

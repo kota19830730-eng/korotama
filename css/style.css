@@ -154,6 +154,11 @@ input { font-family: inherit; }
 .preview__b.is-on { border-color: var(--gold); }
 .photo__frame { width: 160px; height: 160px; border-radius: 12px; background: #fff; border: 2px solid var(--line); object-fit: contain; }
 
+.pgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ptile { border: 3px solid transparent; border-radius: 16px; background: var(--card); box-shadow: 0 2px 0 var(--line); padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; }
+.ptile:active { transform: translateY(2px); }
+.ptile .bxbox { width: 80px !important; height: 80px !important; }
+
 /* ---- ごはん（かず） ---- */
 .plate { box-sizing: border-box; min-height: 120px; background: var(--card); border-radius: 80px; box-shadow: 0 4px 0 var(--line), inset 0 -10px 0 #efe3c8; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; padding: 18px 24px; }
 .plate.is-pop { animation: platePop .4s ease-out 1; }
@@ -230,3 +235,4 @@ input { font-family: inherit; }
 .toast { position: absolute; left: 50%; bottom: 26px; transform: translate(-50%, 16px); padding: 8px 18px; border-radius: 14px; background: rgba(74,59,50,.92); font-size: 15px; color: #fff; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; white-space: nowrap; }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ico--btn svg { width: 26px; height: 26px; display: block; }

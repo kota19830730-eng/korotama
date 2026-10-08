@@ -3,12 +3,12 @@
    ファイルを 変えたら CACHE_NAME を 上げる。ファイルを ふやしたら FILES にも。
    install は cache: 'reload'（GitHub Pages の 10分 キャッシュで 古い ファイルが 入るのを ふせぐ＝まなびモンスター v12.9.1 の 教訓）
    --------------------------------------------------------- */
-const CACHE_NAME = 'manabi-tamago-v1';
+const CACHE_NAME = 'manabi-tamago-v2';
 const FONT_CACHE = 'manabi-tamago-fonts-v1';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/core/util.js', './js/core/stage.js', './js/core/blocks.js', './js/core/sfx.js', './js/core/save.js', './js/core/voice.js', './js/core/trace.js', './js/core/tasks.js',
-  './js/content/monstergen.js',
+  './js/content/monstergen.js', './js/content/presets.js',
   './js/ui/common.js', './js/ui/start.js', './js/ui/home.js', './js/ui/care.js', './js/ui/shop.js', './js/ui/play.js', './js/ui/parent.js', './js/ui/boot.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
