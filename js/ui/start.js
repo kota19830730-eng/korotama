@@ -264,7 +264,7 @@ MQ.ui = MQ.ui || {};
           MQ.sfx.tap();
           const c = choices[pick];
           const name = (nameIn.value || '').trim() || 'たまごちゃん';
-          makeMon(c.png, name, function (mon) { if (preset) { mon.trace = false; mon.preset = preset.id; } MQ.save.setMon(mon); MQ.ui.egg.open(); });
+          makeMon(c.png, name, function (mon) { MQ.save.setMon(mon); MQ.ui.egg.open(); }, preset);
         } }),
         h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: preset ? 'ほかの キャラクター' : isPhoto ? 'とりなおす' : 'かきなおす', onclick: function () { MQ.sfx.tap(); if (preset) openPresets(preset.group); else if (isPhoto) MQ.ui.draw.open(); else openCanvas(); } })
       ])])
@@ -273,9 +273,11 @@ MQ.ui = MQ.ui || {};
     MQ.ui.show('screen-draw');
   }
 
-  /* まなびモンスターと 同じ 形の「じぶんの モンスター」を 作る（2・3段階めの 絵も）。絵が 読めなくても 1.5秒で 先へ */
-  function makeMon(png, name, cb) {
+  /* まなびモンスターと 同じ 形の「じぶんの モンスター」を 作る（2・3段階めの 絵も）。絵が 読めなくても 1.5秒で 先へ。
+     preset（キャラクターから えらんだ）なら 2・3段階めは charart の リボン／かんむりの 絵（presets.js の png2／png3） */
+  function makeMon(png, name, cb, preset) {
     const mon = { id: 'my-' + MQ.util.uid(), name: name, area: 'sansu', png: png, trace: true, from: 'tamago' };
+    if (preset) { mon.trace = false; mon.preset = preset.id; if (preset.png2) mon.png2 = preset.png2; if (preset.png3) mon.png3 = preset.png3; }
     let done = false;
     function finish() { if (done) return; done = true; cb(mon); }
     const t = setTimeout(finish, 1500);

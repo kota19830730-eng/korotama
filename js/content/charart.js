@@ -2,8 +2,8 @@
    絵本ふうの キャラクター（まなびたまご）
    ブロックの モンスターでは なく、A案「あたたかい 絵本ふう」の 世界に 合う まるくて やわらかい 絵（SVG）。
    きまり：黒い ふちは 使わない（ふちは 同じ 色みの こい色）／色は クレヨンの ような やわらかい 色／目は 白目＋黒目＋光／ほっぺは ピンク。
-     MQ.charart.svg(id)  … <svg viewBox="0 0 100 100"> の 文字列
-     MQ.charart.url(id)  … data:image/svg+xml（<img src> に そのまま）
+     MQ.charart.svg(id, grade)  … <svg viewBox="0 0 100 100"> の 文字列（grade 1〜3＝成長の 姿。2＝リボン・3＝かんむり）
+     MQ.charart.url(id, grade)  … data:image/svg+xml（<img src> に そのまま）
      MQ.charart.list()   … id の ならび
    見本は Claude Design の キャンバス（https://claude.ai/artifact/UqVqkMtqAKBJ3BZHU3ZZD8 ）と 同じ 絵。
    node でも 動く（キャンバスの 絵を この ファイルから 作る ため）。
@@ -198,7 +198,45 @@
     }
   };
   const ORDER = ['rabbit', 'cat', 'chick', 'penguin', 'bear', 'pig', 'sheep', 'frog', 'dragon', 'robot', 'lion', 'shark', 'wolf', 'knight', 'ninja', 'rocket'];
-  function svg(id) { const f = ART[id]; return f ? wrap(f()) : ''; }
-  function url(id) { const s = svg(id); return s ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s) : ''; }
-  ROOT.MQ.charart = { svg: svg, url: url, list: function () { return ORDER.slice(); }, ART: ART };
+
+  /* ---- 成長の 姿（スタンプ 6こで 2段階め・15こで 3段階め） ----
+     絵は 変えず、頭の 上に かざりを 足す。2段階め＝リボン＋きらきら 2つ／3段階め＝金の かんむり＋きらきら 3つ。
+     HEAD[id] = [x, y, はば, かたむき]＝頭の てっぺん（耳・つの・ひれ を よける 場所）。 */
+  const HEAD = {
+    rabbit: [50, 34, 22, 0], cat: [50, 34, 24, 0], chick: [50, 30, 24, 0], penguin: [50, 26, 28, 0], bear: [50, 31, 28, 0], pig: [50, 34, 24, 0], sheep: [50, 30, 24, 0], frog: [50, 39, 20, 0],
+    dragon: [50, 31, 20, 0], robot: [30, 23, 24, -15], lion: [50, 34, 26, 0], shark: [30, 44, 24, -22], wolf: [50, 33, 24, 0], knight: [50, 11, 22, 0], ninja: [50, 30, 26, 0], rocket: [50, 8, 20, 0]
+  };
+  const COOL = { dragon: 1, robot: 1, lion: 1, shark: 1, wolf: 1, knight: 1, ninja: 1, rocket: 1 };
+  function sparkle(cx, cy, r, fill) {
+    return path('M' + cx + ' ' + (cy - r) + ' Q' + cx + ' ' + cy + ' ' + (cx + r) + ' ' + cy + ' Q' + cx + ' ' + cy + ' ' + cx + ' ' + (cy + r) + ' Q' + cx + ' ' + cy + ' ' + (cx - r) + ' ' + cy + ' Q' + cx + ' ' + cy + ' ' + cx + ' ' + (cy - r) + ' Z', fill);
+  }
+  function ribbon(x, y, w, rot, fill, dark) {
+    const g = 'translate(' + x + ' ' + y + ') rotate(' + rot + ') scale(' + (w / 18) + ')';
+    return el('g', { transform: g },
+      path('M0 0 Q-9 -7 -11 -1 Q-9 5 0 0 Z', fill) + path('M0 0 Q9 -7 11 -1 Q9 5 0 0 Z', fill) +
+      path('M-1 1 Q-4 7 -3 10 L0 5 Z M1 1 Q4 7 3 10 L0 5 Z', dark) + circle(0, 0, 2.6, dark));
+  }
+  function crown(x, y, w, rot) {
+    const g = 'translate(' + x + ' ' + y + ') rotate(' + rot + ') scale(' + (w / 24) + ')';
+    return el('g', { transform: g },
+      path('M-12 0 L-12 -9 L-6 -4 L0 -12 L6 -4 L12 -9 L12 0 Z', '#f8d64e') + rect(-12, -2.5, 24, 2.5, 1, '#e0ad1f') +
+      circle(-12, -9, 2.2, '#e2574a') + circle(0, -12, 2.4, '#4f7fd9') + circle(12, -9, 2.2, '#86c86a'));
+  }
+  function decor(id, grade) {
+    const hd = HEAD[id] || [50, 30, 18, 0];
+    const x = hd[0], y = hd[1], w = hd[2], rot = hd[3];
+    if (grade === 2) {
+      const cool = !!COOL[id];
+      return sparkle(12, 22, 6, '#f8d64e') + sparkle(88, 18, 5, '#f8d64e') +
+        ribbon(x + w * 0.5, y + 1, w * 1.15, rot + 22, cool ? '#4f7fd9' : '#f07a8a', cool ? '#2f55a8' : '#cf4f66');
+    }
+    if (grade >= 3) {
+      return sparkle(11, 20, 7, '#f8d64e') + sparkle(89, 15, 6, '#f8d64e') + sparkle(91, 46, 4.5, '#f8d64e') +
+        crown(x, y + 1, w, rot);
+    }
+    return '';
+  }
+  function svg(id, grade) { const f = ART[id]; return f ? wrap(f() + decor(id, grade || 1)) : ''; }
+  function url(id, grade) { const s = svg(id, grade); return s ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s) : ''; }
+  ROOT.MQ.charart = { svg: svg, url: url, list: function () { return ORDER.slice(); }, ART: ART, HEAD: HEAD };
 })();

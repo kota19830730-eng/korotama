@@ -119,5 +119,17 @@ MQ.voice.say('x'); ok(spoken.pitch === 1.0, 'ふつうの 声＝pitch 1.0');
   ok(!says.some(function (s) { return KANJI.test(s); }), f + ' の 声の 文に かん字なし（' + says.length + '本）');
 });
 
+/* ---- 絵本ふうの キャラクター（charart）と 成長の 姿 ---- */
+(function () {
+  const ids = MQ.charart.list();
+  ok(ids.length === 16, 'charart 16体');
+  ok(ids.every(function (id) { return /^<svg/.test(MQ.charart.svg(id)); }), 'charart ぜんぶ SVG');
+  ok(ids.every(function (id) { const a = MQ.charart.svg(id, 1), b = MQ.charart.svg(id, 2), c = MQ.charart.svg(id, 3); return a !== b && b !== c && a !== c && b.length > a.length && c.length > a.length; }), 'charart 2・3段階めは かざりが 足されて いる');
+  ok(ids.every(function (id) { return MQ.charart.HEAD[id] && MQ.charart.HEAD[id].length === 4; }), 'charart HEAD（かんむりの 場所）が 16体 ぶん');
+  ok(!/stroke="#000|#000000|black/.test(ids.map(function (id) { return MQ.charart.svg(id, 3); }).join('')), 'charart 黒い ふちなし');
+  const ps = MQ.presets.list();
+  ok(ps.length === 16 && ps.every(function (p) { return p.png && p.png2 && p.png3 && p.png !== p.png2; }), 'presets 16体に png・png2・png3');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);
