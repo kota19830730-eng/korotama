@@ -32,7 +32,7 @@ CORE.forEach(function (f) {
   try { vm.runInContext(code, ctx, { filename: f }); } catch (e) { fails++; console.log('FAIL 読みこみ ' + f + ': ' + e.message); }
 });
 const MQ = ctx.MQ;
-ok(MQ && MQ.util && MQ.save && MQ.voice && MQ.trace && MQ.tasks && MQ.monsterGen && MQ.blocks && MQ.sfx && MQ.stage, 'core/content が ぜんぶ 読めた');
+ok(MQ && MQ.util && MQ.save && MQ.voice && MQ.trace && MQ.tasks && MQ.cutout && MQ.blocks && MQ.sfx && MQ.stage, 'core/content が ぜんぶ 読めた');
 // harness が 同じ じゅんばんか
 const harness = fs.readFileSync(path.join(ROOT, 'tools/harness.html'), 'utf8');
 const hs = (harness.match(/<script src="\.\.\/([^"]+)"><\/script>/g) || []).map(function (s) { return s.match(/src="\.\.\/([^"]+)"/)[1]; });
@@ -124,12 +124,17 @@ MQ.voice.say('x'); ok(spoken.pitch === 1.0, 'ふつうの 声＝pitch 1.0');
   const ids = MQ.charart.list();
   ok(ids.length === 16, 'charart 16体');
   ok(ids.every(function (id) { return /^<svg/.test(MQ.charart.svg(id)); }), 'charart ぜんぶ SVG');
-  ok(ids.every(function (id) { const a = MQ.charart.svg(id, 1), b = MQ.charart.svg(id, 2), c = MQ.charart.svg(id, 3); return a !== b && b !== c && a !== c && b.length > a.length && c.length > a.length; }), 'charart 2・3段階めは かざりが 足されて いる');
-  ok(ids.every(function (id) { return MQ.charart.HEAD[id] && MQ.charart.HEAD[id].length === 4; }), 'charart HEAD（かんむりの 場所）が 16体 ぶん');
+  ok(ids.every(function (id) { const a = MQ.charart.svg(id, 1), b = MQ.charart.svg(id, 2), c = MQ.charart.svg(id, 3); return a !== b && b !== c && a !== c && b.length > a.length && c.length > a.length; }), 'charart 2・3段階めは 絵が ちがう（姿が 立派に）');
+  ok(ids.every(function (id) { return MQ.charart.ART[id].length === 1; }), 'charart ART[id](gr)＝段階で 描き分ける（v0.1.4）');
+  ok(MQ.charart.SCALE[0] < MQ.charart.SCALE[1] && MQ.charart.SCALE[1] < MQ.charart.SCALE[2], 'charart 1→2→3 で 大きく なる');
+  ok(!/ribbon|crown/.test(fs.readFileSync(path.join(ROOT, 'js/content/charart.js'), 'utf8')), 'charart リボン・かんむりの かざりは ない（ユーザー決定）');
   ok(!/stroke="#000|#000000|black/.test(ids.map(function (id) { return MQ.charart.svg(id, 3); }).join('')), 'charart 黒い ふちなし');
   const ps = MQ.presets.list();
   ok(ps.length === 16 && ps.every(function (p) { return p.png && p.png2 && p.png3 && p.png !== p.png2; }), 'presets 16体に png・png2・png3');
 })();
+
+ok(scripts.indexOf('js/core/cutout.js') > scripts.indexOf('js/core/trace.js') && scripts.indexOf('js/content/monstergen.js') < 0, 'cutout.js は trace.js の あと・monstergen.js は もう 読まない（v0.1.4）');
+ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 'trace.parts（cutout が 借りる 道具）');
 
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

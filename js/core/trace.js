@@ -2189,5 +2189,6 @@ MQ.trace = (function () {
     lastInfo = { drawn: traced.drawn, box: box, thr: thr, trace: traced.info };
     return { png: traced.png, cool: traced.cool || [], drawn: traced.drawn, dark: lastDark, box: box, info: traced.info };
   }
-  return { fromImage: fromImage, autoCrop: autoCrop, defaultCrop: defaultCrop, info: function () { return lastInfo; }, WORK: WORK };
+  return { fromImage: fromImage, autoCrop: autoCrop, defaultCrop: defaultCrop, info: function () { return lastInfo; }, WORK: WORK,
+           parts: { workCanvas: workCanvas, prepare: prepare, foregroundMask: foregroundMask, keepMain: keepMain, bbox: bbox, dilate: dilate } };   // cutout.js（そのまま／絵本ふう）が 借りる
 })();

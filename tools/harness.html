@@ -39,8 +39,8 @@
 <script src="../js/core/save.js"></script>
 <script src="../js/core/voice.js"></script>
 <script src="../js/core/trace.js"></script>
+<script src="../js/core/cutout.js"></script>
 <script src="../js/core/tasks.js"></script>
-<script src="../js/content/monstergen.js"></script>
 <script src="../js/content/charart.js"></script>
 <script src="../js/content/presets.js"></script>
 <script src="../js/ui/common.js"></script>
@@ -100,14 +100,16 @@
     const im = new Image();
     im.onload = function () {
       const t0 = performance.now();
-      const res = MQ.trace.fromImage(im, { x: 0, y: 0, w: 1, h: 1 }, {});
-      log('trace: drawn=' + res.drawn + ' cool=' + (res.cool || []).filter(Boolean).length + ' ms=' + Math.round(performance.now() - t0));
-      if (!res.png) { log('ERROR no png'); errors++; return; }
-      MQ.ui.makeMon(res.png, 'ぴょん', function (mon) {
+      const res = MQ.cutout.fromImage(im, { x: 0, y: 0, w: 1, h: 1 });
+      log('cutout: drawn=' + res.drawn + ' raw=' + !!(res.raw && res.raw.png) + ' soft=' + !!(res.soft && res.soft.png) + ' ms=' + Math.round(performance.now() - t0));
+      if (!res.raw) { log('ERROR no png'); errors++; return; }
+      const set = (Q[2] === 'raw') ? res.raw : res.soft;
+      MQ.ui.makeMon(set.png, 'ぴょん', function (mon) {
         MQ.save.setMon(mon);
-        log('mon: png2=' + !!mon.png2 + ' png3=' + !!mon.png3);
+        const g = Number(Q[3]); if (g === 2 || g === 3) { for (let i = 0; i < (g === 2 ? 6 : 15); i++) MQ.save.update(function (d) { d.kid.stamps['2026-01-' + (10 + i)] = 1; }); }
+        log('mon: png2=' + !!mon.png2 + ' png3=' + !!mon.png3 + ' growth=' + MQ.save.growth());
         cb();
-      });
+      }, null, set);
     };
     im.src = fakeDrawing();
   }
@@ -140,7 +142,7 @@
       // 本物の 写真（file URL）。写真 → 自動わく → ブロック → えらぶ画面
       MQ.save.newKid({ name: 'ゆう', stage: 's' });
       const im = new Image();
-      im.onload = function () { const t0 = performance.now(); MQ.ui.draw.fromImage(im, true); log('photo ms=' + Math.round(performance.now() - t0) + ' info=' + JSON.stringify(MQ.trace.info() && MQ.trace.info().drawn)); finish(); };
+      im.onload = function () { const t0 = performance.now(); MQ.ui.draw.fromImage(im, true); log('photo ms=' + Math.round(performance.now() - t0) + ' info=' + JSON.stringify(MQ.cutout.info() && MQ.cutout.info().drawn)); finish(); };
       im.onerror = function () { log('ERROR photo load'); errors++; finish(); };
       im.src = Q.slice(1).join(':');
     },

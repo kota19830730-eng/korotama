@@ -210,7 +210,7 @@ MQ.ui = MQ.ui || {};
       const b = h('button', { class: 'ptile', type: 'button', 'aria-label': pz.name }, [MQ.blocks.imgBox(pz.png, { size: 96 }), h('span', { text: pz.name })]);
       b.onclick = function () {
         MQ.sfx.tap();
-        lastResult = { png: pz.png, cool: [], dark: false, preset: pz };
+        lastResult = { png: pz.png, sets: [], dark: false, preset: pz };
         openPreview(null, false, pz);
       };
       grid.appendChild(b);
@@ -228,24 +228,23 @@ MQ.ui = MQ.ui || {};
   }
   MQ.ui.draw.openPresets = openPresets;
 
-  /* 写真／ゆびの 絵 → ブロックの すがた → えらぶ */
+  /* 写真／ゆびの 絵 → そのまま／絵本ふう（js/core/cutout.js）→ えらぶ。v0.1.4 から ブロックには しない（ユーザー決定） */
   function fromImage(im, isPhoto) {
     const crop = isPhoto ? (MQ.trace.autoCrop(im) || MQ.trace.defaultCrop(im)) : { x: 0, y: 0, w: 1, h: 1 };
     let res = null;
-    try { res = MQ.trace.fromImage(im, crop, {}); } catch (e) { res = null; }
-    if (!res || !res.png || res.drawn < 30) {
+    try { res = MQ.cutout.fromImage(im, crop); } catch (e) { res = null; }
+    if (!res || !res.raw || res.drawn < 30) {
       MQ.ui.toast(isPhoto ? '絵が 見つかりません。明るい ところで、絵を 大きく とってね' : 'もう すこし 大きく かいてね', 2600);
       return;
     }
-    lastResult = { png: res.png, cool: (res.cool || []).filter(Boolean), dark: res.dark };
+    lastResult = { png: res.raw.png, sets: [{ tag: 'raw', name: 'そのまま', set: res.raw }, { tag: 'soft', name: '絵本ふう', set: res.soft }], dark: res.dark };
     openPreview(im, isPhoto);
   }
   MQ.ui.draw.fromImage = fromImage;
 
   function openPreview(im, isPhoto, preset) {
     const kid = MQ.save.kid() || {};
-    const choices = [{ tag: preset ? 'preset' : 'trace', name: preset ? preset.name : 'そのまま', png: lastResult.png }];
-    if (lastResult.cool[0]) choices.push({ tag: 'cool', name: 'かっこよく', png: lastResult.cool[0] });
+    const choices = preset ? [{ tag: 'preset', name: preset.name, png: lastResult.png, set: preset }] : lastResult.sets.map(function (x) { return { tag: x.tag, name: x.name, png: x.set.png, set: x.set }; });
     let pick = 0;
     const nameIn = h('input', { class: 'field', type: 'text', maxlength: '8', placeholder: '生きものの 名前', value: preset ? preset.name : ((kid.mon && kid.mon.name) || 'たまごちゃん') });
     const row = h('div', { class: 'preview' });
@@ -264,7 +263,7 @@ MQ.ui = MQ.ui || {};
           MQ.sfx.tap();
           const c = choices[pick];
           const name = (nameIn.value || '').trim() || 'たまごちゃん';
-          makeMon(c.png, name, function (mon) { MQ.save.setMon(mon); MQ.ui.egg.open(); }, preset);
+          makeMon(c.png, name, function (mon) { MQ.save.setMon(mon); MQ.ui.egg.open(); }, preset, c.set);
         } }),
         h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: preset ? 'ほかの キャラクター' : isPhoto ? 'とりなおす' : 'かきなおす', onclick: function () { MQ.sfx.tap(); if (preset) openPresets(preset.group); else if (isPhoto) MQ.ui.draw.open(); else openCanvas(); } })
       ])])
@@ -273,19 +272,13 @@ MQ.ui = MQ.ui || {};
     MQ.ui.show('screen-draw');
   }
 
-  /* まなびモンスターと 同じ 形の「じぶんの モンスター」を 作る（2・3段階めの 絵も）。絵が 読めなくても 1.5秒で 先へ。
-     preset（キャラクターから えらんだ）なら 2・3段階めは charart の リボン／かんむりの 絵（presets.js の png2／png3） */
-  function makeMon(png, name, cb, preset) {
+  /* まなびモンスターと 同じ 形の「じぶんの モンスター」を 作る。2・3段階めの 絵（png2／png3）は set（presets.js の キャラクター か cutout.js の そのまま／絵本ふう）から。
+     v0.1.4 から monstergen の evoPng（ブロック）は 使わない */
+  function makeMon(png, name, cb, preset, set) {
     const mon = { id: 'my-' + MQ.util.uid(), name: name, area: 'sansu', png: png, trace: true, from: 'tamago' };
-    if (preset) { mon.trace = false; mon.preset = preset.id; if (preset.png2) mon.png2 = preset.png2; if (preset.png3) mon.png3 = preset.png3; }
-    let done = false;
-    function finish() { if (done) return; done = true; cb(mon); }
-    const t = setTimeout(finish, 1500);
-    if (/^data:image\/svg/.test(png) || !MQ.monsterGen || !MQ.monsterGen.evoPng) { clearTimeout(t); finish(); return; }   // 絵本ふうの キャラクター（SVG）は そのまま
-    MQ.monsterGen.evoPng(png, 2, function (u2) {
-      if (u2) mon.png2 = u2;
-      MQ.monsterGen.evoPng(png, 3, function (u3) { if (u3) mon.png3 = u3; clearTimeout(t); finish(); });
-    });
+    if (preset) { mon.trace = false; mon.preset = preset.id; }
+    if (set) { if (set.png2) mon.png2 = set.png2; if (set.png3) mon.png3 = set.png3; }
+    cb(mon);
   }
   MQ.ui.makeMon = makeMon;
 
