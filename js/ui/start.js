@@ -279,7 +279,7 @@ MQ.ui = MQ.ui || {};
     let done = false;
     function finish() { if (done) return; done = true; cb(mon); }
     const t = setTimeout(finish, 1500);
-    if (!MQ.monsterGen || !MQ.monsterGen.evoPng) { clearTimeout(t); finish(); return; }
+    if (/^data:image\/svg/.test(png) || !MQ.monsterGen || !MQ.monsterGen.evoPng) { clearTimeout(t); finish(); return; }   // 絵本ふうの キャラクター（SVG）は そのまま
     MQ.monsterGen.evoPng(png, 2, function (u2) {
       if (u2) mon.png2 = u2;
       MQ.monsterGen.evoPng(png, 3, function (u3) { if (u3) mon.png3 = u3; clearTimeout(t); finish(); });

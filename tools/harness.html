@@ -41,6 +41,7 @@
 <script src="../js/core/trace.js"></script>
 <script src="../js/core/tasks.js"></script>
 <script src="../js/content/monstergen.js"></script>
+<script src="../js/content/charart.js"></script>
 <script src="../js/content/presets.js"></script>
 <script src="../js/ui/common.js"></script>
 <script src="../js/ui/start.js"></script>
@@ -121,6 +122,7 @@
     start: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.start.open(); finish(); },
     setup: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.setup.open(); finish(); },
     draw: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.open(); finish(); },
+    pmon: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.save.newKid({ name: 'ゆう', stage: 's' }); const pz = MQ.presets.get(arg || 'dragon'); MQ.ui.makeMon(pz.png, pz.name, function (mon) { mon.trace = false; mon.preset = pz.id; MQ.save.setMon(mon); if (Q[2] === 'egg') MQ.ui.egg.open(); else MQ.ui.home.open(); log('pmon: ' + pz.id + ' svg=' + /^data:image\/svg/.test(mon.png)); setTimeout(finish, 400); }); },
     presets: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openPresets(arg || 'cute'); const n = MQ.presets.list(arg || 'cute').filter(function (p) { return p.png; }).length; log('presets ' + (arg || 'cute') + ': png=' + n); if (Q[2] === 'pick') { click($('#screen-draw .ptile')); } finish(); },
     canvas: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openCanvas(); finish(); },
     preview: function () {
