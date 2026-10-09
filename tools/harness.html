@@ -128,6 +128,22 @@
     setup: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.setup.open(); finish(); },
     draw: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.open(); finish(); },
     pmon: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.save.newKid({ name: 'ゆう', stage: 's' }); const pz = MQ.presets.get(arg || 'dragon'); MQ.ui.makeMon(pz.png, pz.name, function (mon) { MQ.save.setMon(mon); const g = Number(Q[2]); if (g === 2 || g === 3) { const need = g === 2 ? 6 : 15; for (let i = 0; i < need; i++) MQ.save.update(function (d) { d.kid.stamps['2026-01-' + (10 + i)] = 1; }); } if (Q[2] === 'egg') MQ.ui.egg.open(); else MQ.ui.home.open(); log('pmon: ' + pz.id + ' svg=' + (mon.png.indexOf('data:image/svg') === 0) + ' png2=' + !!mon.png2 + ' png3=' + !!mon.png3 + ' growth=' + MQ.save.growth() + ' shown=' + (MQ.save.monPng() === (MQ.save.growth() === 3 ? mon.png3 : MQ.save.growth() === 2 ? mon.png2 : mon.png))); setTimeout(finish, 400); }, pz); },
+    zunda: function () {   // 録音した 声：bank を 読んで 1文 鳴らす（--allow-file-access-from-files --autoplay-policy=no-user-gesture-required）
+      MQ.save.newKid({ name: 'ゆう', stage: 's' });
+      let n = 0;
+      const tick = function () {
+        if (!MQ.voice.hasBank() && n++ < 40) { setTimeout(tick, 250); return; }
+        MQ.voice.setKind('zunda'); MQ.voice.setNames(['ゆう']);
+        MQ.voice.preload('おはよう！', function (dur) {
+          log('zunda: bank=' + MQ.voice.hasBank() + ' clip=' + MQ.voice.clipFor('おはよう！') + ' decoded sec=' + dur.toFixed(2) + ' strip=' + MQ.voice.stripNames('ゆうちゃん、おはよう！'));
+          if (!(dur > 0.3)) { log('ERROR clip not decoded'); errors++; }
+          const ok = MQ.voice.say('ゆうちゃん、おはよう！ きょうは なにを する？');
+          log('zunda say=' + ok + ' kind=' + MQ.voice.kind());
+          finish();
+        });
+      };
+      tick();
+    },
     presets: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openPresets(arg || 'cute'); const n = MQ.presets.list(arg || 'cute').filter(function (p) { return p.png; }).length; log('presets ' + (arg || 'cute') + ': png=' + n); if (Q[2] === 'pick') { click($('#screen-draw .ptile')); } finish(); },
     canvas: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openCanvas(); finish(); },
     preview: function () {

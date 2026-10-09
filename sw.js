@@ -3,7 +3,7 @@
    ファイルを 変えたら CACHE_NAME を 上げる。ファイルを ふやしたら FILES にも。
    install は cache: 'reload'（GitHub Pages の 10分 キャッシュで 古い ファイルが 入るのを ふせぐ＝まなびモンスター v12.9.1 の 教訓）
    --------------------------------------------------------- */
-const CACHE_NAME = 'manabi-tamago-v7';
+const CACHE_NAME = 'manabi-tamago-v8';
 const FONT_CACHE = 'manabi-tamago-fonts-v1';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
@@ -31,6 +31,14 @@ self.addEventListener('fetch', function (e) {
     e.respondWith(caches.open(FONT_CACHE).then(function (c) {
       return c.match(e.request).then(function (r) {
         return r || fetch(e.request).then(function (res) { if (res && res.ok) c.put(e.request, res.clone()); return res; }).catch(function () { return r; });
+      });
+    }));
+    return;
+  }
+  if (/\/assets\/voice\//.test(e.request.url)) {   // 録音した 声（v0.1.7）：使った 文から キャッシュに 入れる
+    e.respondWith(caches.open(CACHE_NAME).then(function (c) {
+      return c.match(e.request).then(function (r) {
+        return r || fetch(e.request).then(function (res) { if (res && res.ok) c.put(e.request, res.clone()); return res; });
       });
     }));
     return;

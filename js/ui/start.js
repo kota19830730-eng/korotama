@@ -83,6 +83,7 @@ MQ.ui = MQ.ui || {};
       let stage = kid.stage || 's';
       let pitch = MQ.save.settings().pitch || 'normal';
       let rate = MQ.save.settings().rate || 'slow';
+      let vkind = MQ.save.settings().voiceKind || 'zunda';
       const name = h('input', { class: 'field', type: 'text', maxlength: '8', placeholder: 'お子さんの 名前（なくても OK）', value: kid.name || '' });
       const segs = {};
       function segRow(items, cur, onPick) {
@@ -103,9 +104,10 @@ MQ.ui = MQ.ui || {};
             segRow([{ id: 's', name: 'ちいさい', sub: '3〜4さい' }, { id: 'm', name: 'なかくらい', sub: '4〜5さい' }, { id: 'l', name: 'おおきい', sub: '5〜6さい' }], stage, function (v) { stage = v; }),
             h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ちいさい：数は 3まで・色 3つ・形 2つ。お皿に くぼみ（数えやすくする印）あり。' })]),
           h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '声' }),
+            segRow([{ id: 'zunda', name: 'ずんだもん', sub: '録音した 声' }, { id: 'device', name: '端末の 声', sub: '高さ・はやさを 変えられる' }], vkind, function (v) { vkind = v; MQ.save.setSetting('voiceKind', v); MQ.voice.setKind(v); }),
             segRow([{ id: 'normal', name: 'ふつうの 声' }, { id: 'high', name: '高めの 声' }], pitch, function (v) { pitch = v; MQ.save.setSetting('pitch', v); MQ.voice.setPitch(v); }),
             segRow([{ id: 'slow', name: 'ゆっくり' }, { id: 'normal', name: 'ふつうの はやさ' }], rate, function (v) { rate = v; MQ.save.setSetting('rate', v); MQ.voice.setRate(v); }),
-            h('div', { class: 'row', style: { marginTop: '10px' } }, [h('button', { class: 'btn', type: 'button', text: '声を ためす', onclick: function () { MQ.sfx.tap(); MQ.voice.setPitch(pitch); MQ.voice.setRate(rate); MQ.voice.say('こんにちは！ わたしの こえ、きこえる？ いっしょに あそぼうね。', { pitch: pitch }); } })]),
+            h('div', { class: 'row', style: { marginTop: '10px' } }, [h('button', { class: 'btn', type: 'button', text: '声を ためす', onclick: function () { MQ.sfx.tap(); MQ.voice.setPitch(pitch); MQ.voice.setRate(rate); MQ.voice.setKind(vkind); MQ.voice.say('こんにちは！ わたしの こえ、きこえる？ いっしょに あそぼうね。', { pitch: pitch }); } })]),
             voiceNote]),
           h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの 名前' }), name]),
           h('button', { class: 'btn btn--gold btn--big btn--wide', type: 'button', text: 'つぎへ：絵を とる', onclick: function () {

@@ -143,5 +143,34 @@ ok(scripts.indexOf('js/core/cutout.js') > scripts.indexOf('js/core/trace.js') &&
 ok(MQ.text && MQ.text.fit('きょうは なにを する？') === 'きょうは なにを する？', 'text.fit は 画面の 字を 変えない（声だけ）');
 ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 'trace.parts（cutout が 借りる 道具）');
 
+/* ---- 録音した 声（ずんだもん・v0.1.7） ---- */
+(function () {
+  const lines = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/voice/lines.json'), 'utf8'));
+  const keys = new Set(lines.map(function (l) { return l.key; }));
+  ok(lines.length >= 300, '声の 文の 一覧 ' + lines.length + '（tools/voice/lines.json）');
+  // 画面の say('…') の 文（名前なし）が ぜんぶ 一覧に ある
+  let miss = [];
+  ['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js'].forEach(function (p) {
+    const src = fs.readFileSync(path.join(ROOT, p), 'utf8');
+    (src.match(/say\('([^']+)'/g) || []).forEach(function (m) {
+      m.slice(5, -1).replace(/([。！？!?])/g, '$1|').split('|').map(function (x) { return x.trim().replace(/[ 　]+/g, ''); }).filter(Boolean).forEach(function (k) { if (!keys.has(k)) miss.push(k); });
+    });
+  });
+  ok(!miss.length, '画面の 声の 文は ぜんぶ 録音の 一覧に ある' + (miss.length ? '：' + miss.join(' / ') : ''));
+  MQ.voice.setNames(['ゆう', 'ドラゴ']);
+  ok(MQ.voice.stripNames('ゆうちゃん、おはよう！ きょうは なにを する？') === 'おはよう！ きょうは なにを する？' && MQ.voice.stripNames('うまれた！ ドラゴだよ。よろしくね！') === 'うまれた！ よろしくね！' && MQ.voice.stripNames('できた！ スタンプ ひとつめ！ ドラゴも うれしいよ！') === 'できた！ スタンプ ひとつめ！ うれしいよ！', '名前を 外して 読む');
+  MQ.voice.setNames([]);
+  const bp = path.join(ROOT, 'assets/voice/bank.json');
+  if (fs.existsSync(bp)) {
+    const bank = JSON.parse(fs.readFileSync(bp, 'utf8'));
+    const nob = lines.filter(function (l) { return !bank[l.key]; });
+    ok(!nob.length, '録音（bank.json）に ぜんぶ ある' + (nob.length ? '：' + nob.length + ' 文 たりない' : '・' + Object.keys(bank).length + ' 文'));
+    ok(Object.keys(bank).every(function (k) { return fs.existsSync(path.join(ROOT, 'assets/voice', bank[k])); }), '録音の mp3 が ぜんぶ ある');
+    MQ.voice._setBank(bank); MQ.voice.setKind('zunda');
+    ok(MQ.voice.clipFor('おはよう！') && MQ.voice.clipFor('りんごを みっつ ちょうだい'), 'clipFor で 文 → mp3');
+    MQ.voice._setBank(null);
+  } else console.log('--   bank.json は まだ ない（tools/voice/render.js で 録音する）');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

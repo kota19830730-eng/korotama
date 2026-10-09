@@ -4,7 +4,7 @@
      kid       … { name, stage('s'|'m'|'l'), mon, stamps{日づけ: 数}, done{count,color,shape}, created }
      kid.mon   … まなびモンスターの「じぶんの モンスター」と 同じ 形
                  { id:'my-…', name, png, png2, png3, trace:true, area:'sansu' } → そのまま つれていける
-     settings  … { voice, pitch('high'|'normal'), hint, sound }
+     settings  … { voice, pitch('normal'|'high'), rate('slow'|'normal'), voiceKind('zunda'|'device'), hint, sound }
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
 
@@ -15,7 +15,7 @@ MQ.save = (function () {
   let data = null;
 
   function fresh() {
-    return { v: 1, kid: null, settings: { voice: true, pitch: 'high', hint: true, sound: true } };
+    return { v: 1, kid: null, settings: { voice: true, pitch: 'normal', rate: 'slow', voiceKind: 'zunda', hint: true, sound: true } };
   }
   function load() {
     if (data) return data;

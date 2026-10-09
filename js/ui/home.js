@@ -74,7 +74,8 @@ MQ.ui = MQ.ui || {};
       MQ.ui.confetti(box, 26);
       const n = MQ.save.stampsToday();
       setTimeout(function () {
-        bl.say(opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！ ありがとう！') : ('できた！ スタンプ ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいって！'));
+        // 名前は 声には 入れない（録音した 声（ずんだもん）に 名前は 無い ので、voice.js が 名前を 外して 読む）
+        bl.say(opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！ ありがとう！') : ('できた！ スタンプ ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！'));
       }, 300);
     }
   };
