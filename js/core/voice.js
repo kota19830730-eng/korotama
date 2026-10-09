@@ -6,15 +6,26 @@
      ready()          … 日本語の 声が あるか
      setPitch('high'|'normal')／setRate('slow'|'normal')
    高めの 声（ユーザー決定 2026-10-08）＝ pitch 1.35 → v0.1.5 で 1.15 に（「AI すぎる」）。
-   ゆっくり（ユーザー決定 2026-10-09「もう少し 悠長に」）＝ rate 0.74・文（。！？）ごとに 区切って 読む＝文の あいだに 息つぎが 入る。声は 女性の 名前を 先に えらぶ（Kyoko・O-ren・Google 日本語・Nanami・Haruka・Ayumi・Sayaka）。
+   ゆっくり（ユーザー決定 2026-10-09「もう少し 悠長に」）＝ rate 0.74・文（。！？）ごとに 区切って 読む＝文の あいだに 息つぎが 入る。
+   イントネーション（ユーザー 2026-10-09「話し方・イントネーションが おかしい」）＝ v0.1.6 で spokenForm()：
+     ① 文節の スペースを 外す（「きょうは なにを する？」の スペースごとに 声が 切れて 単語読みに なって いた）
+     ② ひらがなを かん字に して 読ませる（「いっしょに あそぼう」→「一緒に遊ぼう」。かな だけだと 声の エンジンが ことばの 切れ目と アクセントを まちがえる）
+        ＝ まなびモンスターの 辞書（js/content/kotoba.js・js/core/text.js の _up）を 声だけに 使う。画面の 字幕は 変えない
+     ③ はじめの 声は「ふつう」（pitch 1.0）。高めは 1.1 まで（上げるほど 機械っぽく なる）声は 女性の 名前を 先に えらぶ（Kyoko・O-ren・Google 日本語・Nanami・Haruka・Ayumi・Sayaka）。
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
 
 MQ.voice = (function () {
   const PREFER = ['kyoko', 'o-ren', 'google 日本語', 'nanami', 'haruka', 'ayumi', 'sayaka', 'japanese'];
-  const PITCH = { high: 1.15, normal: 1.0 };
-  const RATE = { slow: 0.74, normal: 0.88 };
-  let pitch = 'high', rate = 'slow';
+  const PITCH = { high: 1.1, normal: 1.0 };
+  const RATE = { slow: 0.78, normal: 0.9 };
+  let pitch = 'normal', rate = 'slow';
+  /* 声に 出す 形：かん字に して スペースを 外す（字幕は もとの まま） */
+  function spokenForm(text) {
+    let s = String(text);
+    try { if (window.MQ && MQ.text && MQ.text._up) { s = MQ.text._up(s, 6); s = MQ.text._up(s, 6); } } catch (e) { /* 辞書が なければ そのまま */ }
+    return s.replace(/[ 　]+/g, '');
+  }
   let list = [];
   let fakeApi = null;      // テスト用
 
@@ -55,14 +66,14 @@ MQ.voice = (function () {
     if (!v) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
     stop();
     // 文ごとに 区切る（。！？ の あとで 息つぎ）→ ゆっくり 悠長に 聞こえる
-    const parts = String(text).replace(/([。！？!?])[ 　]*/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean);   // lookbehind は 古い Safari で 落ちる ので 使わない
+    const parts = spokenForm(text).replace(/([。！？!?])/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean);   // lookbehind は 古い Safari で 落ちる ので 使わない
     if (!parts.length) parts.push(String(text));
     try {
       parts.forEach(function (t, i) {
         const u = new U(t);
         u.voice = v; u.lang = v.lang || 'ja-JP';
         u.rate = opts.rate || RATE[rate] || RATE.slow;
-        u.pitch = PITCH[opts.pitch || pitch] || PITCH.high;
+        u.pitch = PITCH[opts.pitch || pitch] || PITCH.normal;
         u.volume = 1;
         if (i === parts.length - 1 && opts.onend) { u.onend = function () { opts.onend(); }; u.onerror = function () { opts.onend(); }; }
         s.speak(u);
@@ -70,9 +81,9 @@ MQ.voice = (function () {
     } catch (e) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
     return true;
   }
-  function setPitch(p) { pitch = PITCH[p] ? p : 'high'; }
+  function setPitch(p) { pitch = PITCH[p] ? p : 'normal'; }
   function setRate(r) { rate = RATE[r] ? r : 'slow'; }
   function setFake(f) { fakeApi = f; list = []; }
   init();
-  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
+  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
 })();

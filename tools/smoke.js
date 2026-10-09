@@ -108,10 +108,13 @@ ok(!MQ.voice.ready(), '日本語の 声が なければ ready false');
 let spoken = null; const spokenAll = [];
 MQ.voice.setFake({ getVoices: function () { return [{ name: 'O-ren', lang: 'ja-JP' }]; }, cancel: function () {}, speak: function (u) { spoken = u; spokenAll.push(u); }, addEventListener: function () {}, Utterance: function (t) { this.text = t; } });
 MQ.voice.setPitch('high');
-ok(MQ.voice.say('こんにちは') && spoken && spoken.pitch === 1.15 && spoken.text === 'こんにちは', '高めの 声＝pitch 1.15（v0.1.5・AI すぎない ように）');
-ok(spoken.rate === 0.74, 'ゆっくり＝rate 0.74');
-MQ.voice.setRate('normal'); MQ.voice.say('x'); ok(spoken.rate === 0.88, 'ふつうの はやさ＝0.88'); MQ.voice.setRate('slow');
-(function () { const n0 = spokenAll ? spokenAll.length : 0; MQ.voice.say('こんにちは！ げんき？ あそぼう。'); ok(spokenAll && spokenAll.length - n0 === 3 && spokenAll[spokenAll.length - 1].text === 'あそぼう。', '文ごとに 3つに 区切って 読む'); })();
+ok(MQ.voice.say('こんにちは') && spoken && spoken.pitch === 1.1 && spoken.text === 'こんにちは', '高めの 声＝pitch 1.1（上げすぎると 機械っぽい）');
+ok(spoken.rate === 0.78, 'ゆっくり＝rate 0.78');
+MQ.voice.setRate('normal'); MQ.voice.say('x'); ok(spoken.rate === 0.9, 'ふつうの はやさ＝0.9'); MQ.voice.setRate('slow');
+MQ.voice.setPitch('normal'); MQ.voice.say('x'); ok(spoken.pitch === 1.0, 'はじめの 声は ふつう＝pitch 1.0'); MQ.voice.setPitch('high');
+ok(MQ.voice.spokenForm('きょうは なにを する？') === '今日は何をする？' && MQ.voice.spokenForm('いっしょに あそぼう！') === '一緒に遊ぼう！', '声に 出す 形＝かん字に して スペースなし（イントネーションの ため）');
+MQ.voice.say('ゆうちゃん、おはよう！ きょうは なにを する？'); ok(spoken.text === '今日は何をする？', '読む 文は かん字・スペースなし');
+(function () { const n0 = spokenAll ? spokenAll.length : 0; MQ.voice.say('こんにちは！ げんき？ あそぼう。'); ok(spokenAll && spokenAll.length - n0 === 3 && spokenAll[spokenAll.length - 1].text === '遊ぼう。', '文ごとに 3つに 区切って 読む（かん字で）'); })();
 MQ.voice.setPitch('normal');
 MQ.voice.say('x'); ok(spoken.pitch === 1.0, 'ふつうの 声＝pitch 1.0');
 
@@ -137,6 +140,7 @@ MQ.voice.say('x'); ok(spoken.pitch === 1.0, 'ふつうの 声＝pitch 1.0');
 })();
 
 ok(scripts.indexOf('js/core/cutout.js') > scripts.indexOf('js/core/trace.js') && scripts.indexOf('js/content/monstergen.js') < 0, 'cutout.js は trace.js の あと・monstergen.js は もう 読まない（v0.1.4）');
+ok(MQ.text && MQ.text.fit('きょうは なにを する？') === 'きょうは なにを する？', 'text.fit は 画面の 字を 変えない（声だけ）');
 ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 'trace.parts（cutout が 借りる 道具）');
 
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
