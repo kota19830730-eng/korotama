@@ -37,6 +37,14 @@ for (let i = 0; i < 40000; i++) {
   [t.line, t.ok].forEach(add);
   for (let v = 1; v <= 20; v++) { add(t.wrong1(v)); add(t.wrong2(v)); }
 }
+/* ---- くらべっこ（v0.1.12）：4つの 段階 × モード ---- */
+['s', 'm', 'l', 'k'].forEach(function (st) {
+  for (let i = 0; i < 20000; i++) {
+    const t = T.compare(st);
+    [t.line, t.ok, t.wrong2(t.options[0])].forEach(add);
+    t.options.forEach(function (o) { if (!o.ok) add(t.wrong1(o)); });
+  }
+});
 /* ---- 画面の 声（js/ui/*.js の say・名前は 外した 形） ---- */
 [
   'おはよう！ きょうは なにを する？', 'こんにちは！ なにを する？', 'こんばんは！ なにを する？',
@@ -48,7 +56,7 @@ for (let i = 0; i < 40000; i++) {
 ].forEach(add);
 for (let n = 1; n <= 5; n++) add('できた！ スタンプ ' + num(n) + 'め！ うれしいよ！');
 /* js/ui/*.js の say('…') の 文字列も ひろう（手で 書き忘れた ぶん） */
-['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js'].forEach(function (f) {
+['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/kazu.js', 'js/ui/kurabe.js'].forEach(function (f) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
   (src.match(/say\('([^']+)'/g) || []).forEach(function (m) { add(m.slice(5, -1)); });
   (src.match(/pick\(\[([^\]]+)\]/g) || []).forEach(function (m) { (m.match(/'([^']+)'/g) || []).forEach(function (q) { add(q.slice(1, -1)); }); });

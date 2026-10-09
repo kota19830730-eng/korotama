@@ -167,5 +167,92 @@ MQ.tasks = (function () {
       wrong2: function (v) { return 'それは ' + read(v) + 'だね。' + thing.name + 'は ' + num(n) + '。' + read(n) + 'は どれかな？'; }
     };
   }
-  return { sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
+  /* ---- くらべっこ（v0.1.12・③）：くらべる・じゅんばん。4つの 段階 ぜんぶ ----
+     s（3〜4さい）：おおきい／ちいさい・ながい／みじかい を 2つから
+     m（4〜5さい）：いちばん おおきい／ながい を 3つから・おさら 2つの おおい／すくない（5こまで・2こ いじょう ちがう）
+     l（5〜6さい）：おおい／すくない（8こまで・1こ ちがいも・すくない ほうを 広く ならべる＝見た目に だまされない）・まえから なんばんめ（5にん）
+     k（6さい）  ：なんばんめ（8にん・まえから／うしろから）・数字の ふだ 2まいで おおきい／ちいさい かず（1〜20）
+     options＝{ ok, … }。まちがえた とき 1回め＝くらべ方を さそう／2回め＝答えを 声で 教えて 正解を 光らせる（ui）。 */
+  const ORD = ['', 'いちばんめ', 'にばんめ', 'さんばんめ', 'よんばんめ', 'ごばんめ', 'ろくばんめ', 'ななばんめ', 'はちばんめ'];
+  const CMP_FOODS = FOODS.filter(function (f) { return f.id !== 'banana' && f.id !== 'onigiri'; });   // しろい おにぎりは しろい おさらに とける
+  const CMP_MODES = { s: ['size', 'long'], m: ['size', 'long', 'more'], l: ['more', 'more', 'order'], k: ['order', 'bignum'] };
+  function cmpSize(stage, mode) {
+    const big = Math.random() < 0.5;
+    const three = stage !== 's';
+    const scales = mode === 'size' ? (three ? [1.45, 1.0, 0.6] : [1.45, 0.7]) : (three ? [1.0, 0.66, 0.34] : [1.0, 0.45]);
+    const food = U.pick(CMP_FOODS);
+    const word = mode === 'size' ? (big ? 'おおきい' : 'ちいさい') : (big ? 'ながい' : 'みじかい');
+    const other = mode === 'size' ? (big ? 'ちいさい' : 'おおきい') : (big ? 'みじかい' : 'ながい');
+    const name = mode === 'size' ? food.name : 'へび';
+    const want = big ? 0 : scales.length - 1;
+    const options = scales.map(function (k, i) { return { scale: k, ok: i === want }; });
+    return {
+      kind: 'cmp', mode: mode, food: food, color: U.pick(COLORS), options: U.shuffle(options), word: word,
+      line: (three ? 'いちばん ' + word + ' ' + name + 'は どれ？' : word + ' ' + name + 'は どっち？'),
+      ok: 'そう！ ' + (three ? 'いちばん ' : '') + word + 'ね！',
+      wrong1: function () { return three ? 'ほかと くらべて みよう。いちばん ' + word + 'のは どれかな？' : 'それは ' + other + 'ね。' + word + 'のは どっちかな？'; },
+      wrong2: function () { return 'ひかって いるのが ' + (three ? 'いちばん ' : '') + word + 'よ。'; }
+    };
+  }
+  function cmpMore(stage) {
+    const max = stage === 'm' ? 5 : 8, gap = stage === 'm' ? 2 : 1;
+    let a, b;
+    do { a = U.randInt(1, max); b = U.randInt(1, max); } while (Math.abs(a - b) < gap);
+    const more = Math.random() < 0.5;
+    const food = U.pick(CMP_FOODS);
+    const word = more ? 'おおい' : 'すくない';
+    const ans = more ? Math.max(a, b) : Math.min(a, b);
+    const options = [{ n: a, ok: a === ans }, { n: b, ok: b === ans }];
+    // おおきい（5〜6さい）：すくない ほうを 広く ならべる（ならびの 長さに だまされない）
+    const spread = stage !== 'm';
+    options.forEach(function (o) { o.wide = spread && o.n === Math.min(a, b); });
+    return {
+      kind: 'cmp', mode: 'more', food: food, options: options, word: word, a: a, b: b, ans: ans,
+      line: food.name + 'が ' + word + ' おさらは どっち？',
+      ok: 'そう！ ' + num(ans) + 'の ほうが ' + word + 'ね！',
+      wrong1: function (o) { return 'それは ' + num(o.n) + 'だね。かぞえて くらべて みよう。'; },
+      wrong2: function () { return num(Math.min(a, b)) + 'と ' + num(Math.max(a, b)) + '。' + num(ans) + 'の ほうが ' + word + 'ね。'; }
+    };
+  }
+  function cmpOrder(stage) {
+    const n = stage === 'k' ? 8 : 5;
+    const back = stage === 'k' && Math.random() < 0.4;
+    const ord = U.randInt(1, back ? 5 : n);
+    const from = back ? 'うしろから' : 'まえから';
+    const want = back ? n - ord : ord - 1;      // ならびの 番号（0＝いちばん まえ）
+    const options = [];
+    for (let i = 0; i < n; i++) options.push({ pos: i, ok: i === want });
+    const counts = [];
+    for (let i = 1; i <= ord; i++) counts.push(read(i));
+    return {
+      kind: 'cmp', mode: 'order', n: n, back: back, ord: ord, options: options,
+      line: from + ' ' + ORD[ord] + 'の こは どれ？',
+      ok: 'そう！ ' + from + ' ' + ORD[ord] + '！',
+      wrong1: function (o) { const k = back ? n - o.pos : o.pos + 1; return 'それは ' + from + ' ' + ORD[k] + 'だね。' + (back ? 'うしろから' : 'はたの ほうから') + ' かぞえて みよう。'; },
+      wrong2: function () { return counts.join('、') + '。ひかって いる こだよ。'; }
+    };
+  }
+  function cmpNum() {
+    let a, b;
+    do { a = U.randInt(1, 20); b = U.randInt(1, 20); } while (a === b || Math.abs(a - b) > 9);
+    const big = Math.random() < 0.5;
+    const word = big ? 'おおきい' : 'ちいさい';
+    const ans = big ? Math.max(a, b) : Math.min(a, b);
+    return {
+      kind: 'cmp', mode: 'bignum', options: [{ n: a, ok: a === ans }, { n: b, ok: b === ans }], word: word, ans: ans,
+      line: word + ' かずは どっち？',
+      ok: 'そう！ ' + read(ans) + 'の ほうが ' + word + 'ね！',
+      wrong1: function (o) { return 'それは ' + read(o.n) + 'だね。かずを いって くらべて みよう。'; },
+      wrong2: function () { return read(ans) + 'の ほうが ' + word + 'ね。'; }
+    };
+  }
+  function compare(stage, mode) {
+    stage = CMP_MODES[stage] ? stage : 's';
+    mode = mode || U.pick(CMP_MODES[stage]);
+    if (mode === 'size' || mode === 'long') return cmpSize(stage, mode);
+    if (mode === 'more') return cmpMore(stage);
+    if (mode === 'order') return cmpOrder(stage);
+    return cmpNum();
+  }
+  return { compare: compare, CMP_MODES: CMP_MODES, ORD: ORD, sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
 })();

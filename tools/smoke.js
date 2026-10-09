@@ -222,5 +222,32 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(!Object.keys(miss).length, 'ねんちょうの 声の 文は ぜんぶ 録音の 一覧に ある' + (Object.keys(miss).length ? '：' + Object.keys(miss).slice(0, 5).join(' / ') : ''));
 })();
 
+/* ---- くらべっこ（v0.1.12） ---- */
+(function () {
+  const bad = [], seen = {};
+  const keys = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/voice/lines.json'), 'utf8')).map(function (l) { return l.key; }));
+  const miss = {};
+  ['s', 'm', 'l', 'k'].forEach(function (st) {
+    for (let i = 0; i < 2000; i++) {
+      const t = MQ.tasks.compare(st);
+      seen[st + ':' + t.mode] = 1;
+      if (MQ.tasks.CMP_MODES[st].indexOf(t.mode) < 0) bad.push(st + ' mode ' + t.mode);
+      if (t.options.filter(function (o) { return o.ok; }).length !== 1) bad.push(st + ' ok ' + t.mode);
+      if ((t.mode === 'size' || t.mode === 'long') && t.options.length !== (st === 's' ? 2 : 3)) bad.push('size n');
+      if (t.mode === 'more') { if (t.a === t.b || Math.max(t.a, t.b) > (st === 'm' ? 5 : 8) || (st === 'm' && Math.abs(t.a - t.b) < 2)) bad.push('more'); if (st === 'l' && !t.options.some(function (o) { return o.wide; })) bad.push('wide'); }
+      if (t.mode === 'order') { const w = t.options.filter(function (o) { return o.ok; })[0].pos; if ((t.back ? t.n - w : w + 1) !== t.ord || t.n !== (st === 'k' ? 8 : 5)) bad.push('order'); }
+      if (t.mode === 'bignum' && (t.options[0].n === t.options[1].n || t.options.some(function (o) { return o.n < 1 || o.n > 20; }))) bad.push('bignum');
+      const all = [t.line, t.ok, t.wrong2(t.options[0])];
+      t.options.forEach(function (o) { if (!o.ok) all.push(t.wrong1(o)); });
+      if (KANJI.test(all.join(''))) bad.push('kanji ' + t.mode);
+      all.join('|').replace(/([。！？!?])/g, '$1|').split('|').map(function (x) { return x.trim().replace(/[ 　]+/g, ''); }).filter(Boolean).forEach(function (k) { if (!keys.has(k)) miss[k] = 1; });
+    }
+  });
+  ok(!bad.length && Object.keys(seen).length === 9, 'くらべっこ：s 大小・長短 2択／m 3択＋おおい（5まで・2 ちがい）／l おおい（8まで・広く ならべる）＋まえから なんばんめ（5）／k なんばんめ（8・うしろからも）＋数字の 大小' + (bad.length ? '：' + bad.slice(0, 4).join(' / ') : ' ' + Object.keys(seen).sort().join(',')));
+  ok(!Object.keys(miss).length, 'くらべっこの 声の 文は ぜんぶ 録音の 一覧に ある' + (Object.keys(miss).length ? '：' + Object.keys(miss).slice(0, 5).join(' / ') : ''));
+  ok(scripts.indexOf('js/ui/kurabe.js') > 0 && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./js/ui/kurabe.js') > 0 && fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').indexOf('screen-kurabe') > 0, 'kurabe.js と screen-kurabe（index・sw）');
+  MQ.save._set(null); const k0 = MQ.save.newKid({}); ok(k0.done.compare === 0, 'きろく：done.compare');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

@@ -15,6 +15,8 @@
     #flow（ごはん・おみせ・あそぶ を 自動で 答えて できた！まで）
     #kazu:<count|color>[:<add|take|hear|see>][:wrong|:count]（ねんちょう v0.1.11・wrong＝まちがえて 2回め の 声まで／count＝おさらを タッチして かぞえる）
     #kflow（ねんちょうで ごはん・おみせ を 1回ずつ まちがえて から 正解 → できた！）
+    #kurabe:<s|m|l|k>[:<size|long|more|order|bignum>][:wrong]（くらべっこ v0.1.12・wrong＝2回 まちがえて 正解が 光る ところ）
+    #kuflow:<s|m|l|k>（くらべっこを 1回ずつ まちがえて から 正解 → できた！）
     #photo:<file URL>（本物の 写真 → --allow-file-access-from-files が いる）
   にせの 声（headless に 声は ない）・にせの 絵（かいた ように 見せた 画像）で 生きものを 作ってから 画面を 出す。
   けっかは <pre id="log">。
@@ -28,6 +30,7 @@
   <section id="screen-care" class="screen"></section>
   <section id="screen-shop" class="screen"></section>
   <section id="screen-play" class="screen"></section>
+  <section id="screen-kurabe" class="screen"></section>
   <section id="screen-done" class="screen"></section>
   <section id="screen-parent" class="screen"></section>
   <div id="toast" class="toast"></div>
@@ -55,6 +58,7 @@
 <script src="../js/ui/shop.js"></script>
 <script src="../js/ui/play.js"></script>
 <script src="../js/ui/kazu.js"></script>
+<script src="../js/ui/kurabe.js"></script>
 <script src="../js/ui/parent.js"></script>
 <script src="../js/ui/boot.js"></script>
 <script>
@@ -210,6 +214,40 @@
           click($('#screen-done .btn--gold')); await wait(300);
         }
         log('done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
+    },
+    kurabe: function () {
+      withMon(arg || 's', function () {
+        const m = Q[2], extra = Q[3];
+        if (m) { const C0 = MQ.tasks.compare; MQ.tasks.compare = function (st) { return C0(st, m); }; }
+        MQ.ui.kurabe.open();
+        setTimeout(async function () {
+          const st = MQ.ui.kurabe.state();
+          log('kurabe: ' + st.task.mode + ' n=' + st.task.options.length + ' line=' + st.task.line);
+          if (extra === 'wrong') {
+            const btns = $$('#screen-kurabe button').filter(function (b) { return !b.closest('.top'); });
+            const wrong = btns.filter(function (b, i) { return !st.task.options[i].ok; });
+            click(wrong[0]); await wait(60); click(wrong[wrong.length > 1 ? 1 : 0]); await wait(60);
+            log('misses=' + MQ.ui.kurabe.state().misses + ' glow=' + $$('#screen-kurabe .is-glow').length + ' badges=' + $$('#screen-kurabe .is-on').length + ' said=' + said.slice(-2).join(' / '));
+          }
+          finish();
+        }, 400);
+      });
+    },
+    kuflow: function () {
+      withMon(arg || 's', async function () {
+        MQ.ui.home.open(); await wait(200);
+        click($('#screen-home .big--blue')); await wait(400);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.kurabe.state();
+          const btns = $$('#screen-kurabe button').filter(function (b) { return !b.closest('.top'); });
+          click(btns.filter(function (b, i) { return !st.task.options[i].ok; })[0]); await wait(60);
+          click(btns.filter(function (b, i) { return st.task.options[i].ok; })[0]); await wait(1500);
+          log('kurabe r' + r + ' ' + st.task.mode + ' ok=' + (MQ.ui.kurabe.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after kurabe: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
         finish();
       });
     },

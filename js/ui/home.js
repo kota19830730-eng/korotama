@@ -37,9 +37,10 @@ MQ.ui = MQ.ui || {};
           h('div', { class: 'bigs' }, [
             h('button', { class: 'big big--gold', type: 'button', 'aria-label': 'ごはん', html: MQ.ui.SVG.bowl, style: { color: '#4a3b32' }, onclick: go(function () { MQ.ui.care.open(); }) }),
             h('button', { class: 'big big--green', type: 'button', 'aria-label': 'あそぶ', html: MQ.ui.SVG.ball, style: { color: '#fbf4e4' }, onclick: go(function () { MQ.ui.play.open(); }) }),
-            h('button', { class: 'big big--clay', type: 'button', 'aria-label': 'おみせ', html: MQ.ui.SVG.shop, style: { color: '#fbf4e4' }, onclick: go(function () { MQ.ui.shop.open(); }) })
+            h('button', { class: 'big big--clay', type: 'button', 'aria-label': 'おみせ', html: MQ.ui.SVG.shop, style: { color: '#fbf4e4' }, onclick: go(function () { MQ.ui.shop.open(); }) }),
+            h('button', { class: 'big big--blue', type: 'button', 'aria-label': 'くらべっこ', html: MQ.ui.SVG.scale, style: { color: '#fbf4e4' }, onclick: go(function () { MQ.ui.kurabe.open(); }) })
           ]),
-          h('div', { class: 'bigs__labels' }, [h('span', { text: 'ごはん' }), h('span', { text: 'あそぶ' }), h('span', { text: 'おみせ' })]),
+          h('div', { class: 'bigs__labels' }, [h('span', { text: 'ごはん' }), h('span', { text: 'あそぶ' }), h('span', { text: 'おみせ' }), h('span', { text: 'くらべっこ' })]),
           MQ.ui.hintBox('いっしょに「どれに する？」と きいてみて')
         ])
       ]);
