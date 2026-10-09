@@ -1,10 +1,14 @@
 /* ---------------------------------------------------------
-   効果音
-
-   音のファイルは 使わず、ブラウザの中で その場で 音を作ります。
-   （ファイルを 用意しなくてよく、オフラインでも 鳴ります）
-   ブラウザのきまりで、音は「何かを タップしたあと」でないと
-   鳴らせないので、最初のタップで unlock() を呼びます。
+   効果音（ころたま v0.1.15）
+   音のファイルは 使わず、その場で 作る。はじめの タップで unlock()。
+   v0.1.15（ユーザー決定 2026-10-10）：まなびモンスターの ピコピコ音（四角い 波）から、
+   絵本の 世界に 合う やわらかい 音（木琴・鈴・オルゴール）に 作り直した。
+     tap      … 木の 音「コッ」（木琴）
+     correct  … 鈴の 3音（ド・ミ・ソ）
+     coin     … 鈴 2つ（チリン）
+     clear    … オルゴールの ファンファーレ（できた！）
+     rare     … きらきら（上がる 鈴）
+     shutter  … カメラ
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
 
@@ -19,468 +23,131 @@ MQ.sfx = (function () {
         if (AC) ctx = new AC();
       } catch (e) { ctx = null; }
     }
-    // 'suspended'（まだ ひらいて いない）と 'interrupted'（iPad／iPhone で 電話・ほかの アプリ）の どちらも ひらき直す
     if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(function () {});
     return ctx;
   }
-
-  function tone(freq, dur, type, vol, delay, slideTo) {
-    const c = context();
-    if (!c || !enabled) return;
-    const t0 = c.currentTime + (delay || 0);
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.type = type || 'square';
-    osc.frequency.setValueAtTime(freq, t0);
-    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
-    gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(gain);
-    gain.connect(c.destination);
-    osc.start(t0);
-    osc.stop(t0 + dur + 0.05);
+  function env(g, t, vol, attack, dur) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  }
+  function osc(freq, t, vol, dur, type, slideTo, attack) {
+    const c = ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    env(g, t, vol, attack || 0.005, dur);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t + dur + 0.05);
+    o.onended = function () { try { o.disconnect(); g.disconnect(); } catch (e) { /* なし */ } };
   }
 
-  function noise(dur, vol, delay, filterFreq, filterType) {
-    const c = context();
-    if (!c || !enabled) return;
-    const t0 = c.currentTime + (delay || 0);
-    const length = Math.floor(c.sampleRate * dur);
-    const buffer = c.createBuffer(1, length, c.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length);
-    const src = c.createBufferSource();
-    src.buffer = buffer;
-    const filter = c.createBiquadFilter();
-    filter.type = filterType || 'lowpass';
-    filter.frequency.value = filterFreq || 1200;
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(vol || 0.3, t0);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(filter);
-    filter.connect(gain);
-    gain.connect(c.destination);
-    src.start(t0);
+  /* ---- 楽器（オルゴール）。bgm.js も これを 借りる（v0.1.15 ユーザー「ファミコンみたいで 安っぽい」→ 正弦波だけ から 作り直し）
+     kind：'fm'＝オルゴール（FM・ガラスの ような きらめき）／'kalimba'＝カリンバ（あたたかい・丸い）／'tine'＝オルゴールの つめ（にごりの ある 部分音を 2本ずつ ずらして 重ねる）
+     どれも「ピンを はじく チッ」と「上の オクターブの きらめき」を 足す。出口は body()（木の 箱の ひびき・高すぎる 音を 落とす） */
+  const TIMBRE = { kind: 'kalimba' };   // ユーザー決定 2026-10-10「Bで」＝カリンバ（あたたかい・丸い）
+  function inst(c, dest, f, t, vel, dur, kind) {
+    kind = kind || TIMBRE.kind;
+    const out = c.createGain(); out.connect(dest);
+    const nodes = [];
+    function env(g, peak, a, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + d); }
+    function go(o, end) { o.start(t); o.stop(t + end + 0.05); nodes.push(o); }
+    if (kind === 'tine') {
+      [[1, 1.0, 1], [2.76, 0.32, 0.5], [5.40, 0.13, 0.28], [8.93, 0.05, 0.16]].forEach(function (p) {
+        [-5, 5].forEach(function (cents) {
+          const o = c.createOscillator(), g = c.createGain();
+          o.type = 'sine'; o.frequency.value = f * p[0]; o.detune.value = cents;
+          env(g, vel * p[1] * 0.5, 0.003, dur * p[2]);
+          o.connect(g).connect(out); go(o, dur * p[2]);
+        });
+      });
+    } else {
+      const ratio = kind === 'kalimba' ? 2.0 : 3.5, idx0 = kind === 'kalimba' ? 1.1 : 2.0, idxT = kind === 'kalimba' ? 0.16 : 0.4;
+      const car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain(), cg = c.createGain();
+      car.type = 'sine'; mod.type = 'sine';
+      car.frequency.value = f; mod.frequency.value = f * ratio;
+      mg.gain.setValueAtTime(f * idx0, t); mg.gain.exponentialRampToValueAtTime(f * 0.02, t + idxT);
+      mod.connect(mg).connect(car.frequency);
+      env(cg, vel, 0.004, dur);
+      car.connect(cg).connect(out); go(mod, dur); go(car, dur);
+      const sp = c.createOscillator(), sg = c.createGain();
+      sp.type = 'sine'; sp.frequency.value = f * 2; sp.detune.value = 7;
+      env(sg, vel * (kind === 'kalimba' ? 0.08 : 0.16), 0.003, dur * 0.5);
+      sp.connect(sg).connect(out); go(sp, dur * 0.5);
+    }
+    // ピンを はじく「チッ」
+    const n = Math.floor(c.sampleRate * 0.008), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = c.createBufferSource(), bp = c.createBiquadFilter(), ng = c.createGain();
+    s.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = kind === 'kalimba' ? 2200 : 4800; bp.Q.value = 1.2; ng.gain.value = vel * (kind === 'kalimba' ? 0.5 : 0.3);
+    s.connect(bp).connect(ng).connect(out); s.start(t);
+    nodes[nodes.length - 1].onended = function () { try { out.disconnect(); } catch (e) { /* なし */ } };
+  }
+  /* 木の 箱の ひびき：低めを 少し 持ち上げ、きつい 高音を 落とす */
+  function body(c) {
+    const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 320; pk.Q.value = 1.1; pk.gain.value = 3.5;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500; lp.Q.value = 0.5;
+    pk.connect(lp);
+    return { input: pk, output: lp };
+  }
+  /* 部屋の ひびき（ノイズを 減らして 作る・しっぽは こもらせる） */
+  function impulse(c, sec, decay) {
+    const n = Math.floor(c.sampleRate * sec), buf = c.createBuffer(2, n, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); let y = 0; for (let i = 0; i < n; i++) { const x = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); y += 0.28 * (x - y); d[i] = y; } }
+    return buf;
   }
 
-  // ノイズの 高さを 動かす（風の ヒュー・すいこむ音・落ちてくる音）
-  function sweep(dur, vol, delay, fFrom, fTo, type) {
+  let chain = null;   // 効果音の 出口（body → dry＋ひびき → destination）
+  function dest() {
+    const c = context();
+    if (!c) return null;
+    if (!chain) {
+      const b = body(c), dry = c.createGain(), verb = c.createConvolver(), wet = c.createGain();
+      dry.gain.value = 0.85; wet.gain.value = 0.3; verb.buffer = impulse(c, 1.4, 2.8);
+      b.output.connect(dry).connect(c.destination); b.output.connect(verb).connect(wet).connect(c.destination);
+      chain = b.input;
+    }
+    return chain;
+  }
+  function bell(freq, delay, vol, dur, kind) {
     const c = context();
     if (!c || !enabled) return;
-    const t0 = c.currentTime + (delay || 0);
-    const length = Math.floor(c.sampleRate * dur);
-    const buffer = c.createBuffer(1, length, c.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
-    const src = c.createBufferSource();
-    src.buffer = buffer;
-    const filter = c.createBiquadFilter();
-    filter.type = type || 'bandpass';
-    filter.Q.value = 1.2;
-    filter.frequency.setValueAtTime(fFrom, t0);
-    filter.frequency.exponentialRampToValueAtTime(fTo, t0 + dur);
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(vol || 0.3, t0 + Math.min(0.05, dur / 3));
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(filter);
-    filter.connect(gain);
-    gain.connect(c.destination);
-    src.start(t0);
-    src.stop(t0 + dur + 0.05);
+    inst(c, dest(), freq, c.currentTime + (delay || 0), vol, dur, kind);
+  }
+  /* タップ：カリンバの みじかい 一音（1回の あそびで 何十回も 鳴る ので 軽く・みじかく） */
+  function wood(freq, delay, vol) {
+    const c = context();
+    if (!c || !enabled) return;
+    inst(c, dest(), freq, c.currentTime + (delay || 0), vol, 0.35, 'kalimba');
+  }
+  function noise(dur, vol, delay, hz) {
+    const c = context();
+    if (!c || !enabled) return;
+    const t = c.currentTime + (delay || 0);
+    const n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+    s.buffer = buf; f.type = 'highpass'; f.frequency.value = hz || 3000; g.gain.value = vol;
+    s.connect(f).connect(g).connect(c.destination); s.start(t);
   }
 
   return {
     unlock:     function () { context(); },
+    inst: inst, body: body, impulse: impulse, setTimbre: function (k) { TIMBRE.kind = k; }, timbre: function () { return TIMBRE.kind; },
     setEnabled: function (on) { enabled = !!on; },
     isEnabled:  function () { return enabled; },
 
-    // ブロックを たたいたような 木の音
-    tap:     function () { tone(520, 0.045, 'triangle', 0.12, 0, 300); noise(0.04, 0.10, 0, 2600); },
-    key:     function () { tone(700, 0.03, 'square', 0.05); },
-    appear:  function () { tone(220, 0.12, 'sawtooth', 0.1, 0, 440); tone(440, 0.1, 'square', 0.08, 0.12); },
-    hit:     function () { noise(0.18, 0.35); tone(160, 0.15, 'square', 0.18, 0, 60); },
-    // こうげきが 当たった（v13.5）：しゅっ（空気を 切る 音）→ ばしっ（当たった 衝撃）
-    slash:   function () {
-      sweep(0.11, 0.55, 0, 9000, 1400, 'bandpass');     // しゅっ（空を 切る）
-      noise(0.03, 0.4, 0.08, 6000, 'highpass');         // パシッ（当たった 瞬間の かわいた 音）
-      tone(5200, 0.14, 'sine', 0.12, 0.08, 2400);       // キン（けんの 金ぞくの ひびき）
-      noise(0.14, 0.5, 0.08, 900, 'lowpass');           // ばしっ の 芯
-      tone(150, 0.18, 'square', 0.3, 0.085, 40);        // ドッ（ひくい 衝撃）
+    tap:     function () { wood(1047, 0, 0.14); },
+    correct: function () { [523, 659, 784].forEach(function (f, i) { bell(f * 2, i * 0.09, 0.2, 1.1); }); },
+    coin:    function () { bell(2093, 0, 0.14, 0.5); bell(2637, 0.07, 0.14, 0.8); },
+    clear:   function () {
+      [523, 659, 784, 1047].forEach(function (f, i) { bell(f * 2, i * 0.11, 0.2, i === 3 ? 1.6 : 0.8); });
+      [659, 784, 1047].forEach(function (f, i) { bell(f * 2, 0.5 + i * 0.07, 0.12, 1.2); });
+      bell(2637, 0.75, 0.16, 1.8);
     },
-    crit:    function () {
-      sweep(0.09, 0.4, 0, 9000, 1600, 'bandpass');
-      noise(0.03, 0.45, 0.07, 6000, 'highpass');
-      noise(0.24, 0.5, 0.07);
-      tone(120, 0.22, 'square', 0.28, 0.075, 40);
-      [2093, 2637, 3136].forEach(function (f, i) { tone(f, 0.22 - i * 0.03, 'sine', 0.14, 0.09 + i * 0.03); });   // キラーン
-      noise(0.3, 0.12, 0.12, 7000, 'highpass');
-    },
-    /* ---- しゅぎょうば（v14.0）：クイズの「ピンポーン」と「ブブー」 ---- */
-    correct: function () {
-      [[1319, 0], [1047, 0.2]].forEach(function (p) {
-        tone(p[0], 0.5, 'sine', 0.2, p[1]);
-        tone(p[0] * 2, 0.28, 'sine', 0.06, p[1]);
-        tone(p[0], 0.5, 'triangle', 0.07, p[1]);
-      });
-    },
-    wrong:   function () { tone(196, 0.16, 'square', 0.14, 0, 180); tone(165, 0.42, 'square', 0.14, 0.2, 150); },
-    defeat:  function () { tone(523, 0.1, 'square', 0.13, 0.05); tone(659, 0.1, 'square', 0.13, 0.15); tone(784, 0.22, 'square', 0.13, 0.25); },
-    dodge:   function () { tone(500, 0.08, 'triangle', 0.12, 0, 900); },
-    // 相棒の 追い打ち（v4.3）：ぴょんと とんで コツンと あてる
-    palHit:  function () { tone(880, 0.06, 'triangle', 0.12, 0, 1320); tone(1320, 0.09, 'square', 0.12, 0.06); noise(0.1, 0.22, 0.1, 3000); },
-    miss:    function () { tone(300, 0.28, 'sawtooth', 0.13, 0, 110); },
-    guard:   function () { noise(0.12, 0.3, 0, 3500, 'highpass'); tone(190, 0.16, 'square', 0.2, 0, 140); },
-    // とどめの 一撃（v7.5）：ためて ドン！と 当たり、きらっと のこる
-    finish:  function () {
-      tone(80, 0.10, 'sawtooth', 0.16, 0, 200);
-      noise(0.26, 0.45, 0.06);
-      tone(120, 0.22, 'square', 0.22, 0.08, 50);
-      tone(1568, 0.10, 'square', 0.13, 0.10);
-      tone(2093, 0.24, 'square', 0.11, 0.19);
-    },
-    /* ---- てきの ため → カウンター（v7.7） ---- */
-    // 敵が こうげきに 出る（低く うなる → ぐっと 上がる）
-    charge:  function () { tone(90, 0.36, 'sawtooth', 0.14, 0, 260); noise(0.3, 0.12, 0.05, 900, 'lowpass'); tone(660, 0.08, 'square', 0.1, 0.34); },
-    // カウンター（キン！と はね返して ドン）
-    counter: function () { tone(2093, 0.06, 'square', 0.14); tone(2794, 0.12, 'square', 0.12, 0.05); noise(0.08, 0.3, 0.02, 5000, 'highpass'); noise(0.22, 0.4, 0.14); tone(110, 0.2, 'square', 0.2, 0.14, 45); },
-    // くらった（どすっ）
-    // 相棒の ひっさつ（v14.36）：たまった（きらきら）・かまえた・出た
-    palReady: function () { tone(1568, 0.07, 'square', 0.08); tone(2093, 0.07, 'square', 0.08, 0.07); tone(2637, 0.14, 'square', 0.08, 0.14); },
-    palWhisper: function () { tone(1047, 0.06, 'triangle', 0.1); tone(1319, 0.06, 'triangle', 0.1, 0.06); tone(1568, 0.1, 'triangle', 0.09, 0.12); },   // v14.38 C：ささやき（ポロン）
-    palArm: function () { tone(784, 0.08, 'square', 0.12); tone(1175, 0.08, 'square', 0.12, 0.08); tone(1568, 0.16, 'square', 0.12, 0.16); },
-    palMove: function () { sweep(0.22, 0.3, 0, 400, 3000); noise(0.3, 0.5, 0.18, 1200, 'lowpass'); tone(130, 0.3, 'square', 0.22, 0.18, 50); tone(2093, 0.1, 'square', 0.12, 0.2); tone(2637, 0.2, 'square', 0.1, 0.28); },
-    enemyHit: function () { noise(0.14, 0.3, 0, 700, 'lowpass'); tone(140, 0.18, 'square', 0.18, 0, 70); },
-    /* ---- 敵がわの 攻防（v8.1） ---- */
-    // 中ボス 登場（低い ドン ドン ＋ うなり）
-    elite:   function () { tone(70, 0.16, 'square', 0.2); tone(70, 0.16, 'square', 0.2, 0.22); tone(110, 0.4, 'sawtooth', 0.12, 0.44, 180); noise(0.2, 0.15, 0.44, 600, 'lowpass'); },
-    // なかまを よぶ（ピーッ ピーッ の 口ぶえ）
-    whistle: function () { tone(1760, 0.09, 'square', 0.09, 0, 2637); tone(2093, 0.14, 'square', 0.09, 0.13, 2794); },
-    // こうかは ばつぐん（キラッと 高い 三和音）
-    weak:    function () { tone(1319, 0.07, 'square', 0.12); tone(1661, 0.07, 'square', 0.12, 0.06); tone(2093, 0.2, 'square', 0.12, 0.12); noise(0.1, 0.25, 0.1, 4000, 'highpass'); },
-    // たての かまえ（ガチッ）／ガードブレイク（パリーン）
-    kamae:   function () { noise(0.06, 0.3, 0, 2500, 'highpass'); tone(330, 0.14, 'square', 0.16, 0, 240); },
-    // 先制こうげき（2026-09-19）：ボスが ためる（ぐおお → キーン）／つっこんで たたきつける（ドゴォン）
-    ambushWarn: function () { tone(70, 0.5, 'sawtooth', 0.18, 0, 150); noise(0.45, 0.16, 0, 500, 'lowpass'); tone(1760, 0.07, 'square', 0.09, 0.38); tone(2349, 0.12, 'square', 0.08, 0.44); },
-    // 大わざ（2026-09-19）：ほのお（ごおお）・かみなり（バリバリ）・こおり（ヒュオオ キラキラ）・やみ（ずうん）・こばん（ジャラジャラ）
-    amb_fire:  function () { noise(0.6, 0.36, 0, 700, 'lowpass'); noise(0.5, 0.22, 0.05, 2400, 'bandpass'); tone(80, 0.6, 'sawtooth', 0.14, 0, 150); },
-    amb_bolt:  function () { for (let i = 0; i < 5; i++) noise(0.05, 0.4, i * 0.06, 5000, 'highpass'); tone(1200, 0.3, 'square', 0.08, 0, 180); tone(90, 0.3, 'square', 0.16, 0.18, 50); },
-    amb_ice:   function () { noise(0.5, 0.3, 0, 3000, 'highpass'); [2637, 3136, 3520, 2794].forEach(function (f, i) { tone(f, 0.12, 'triangle', 0.08, 0.08 + i * 0.07); }); },
-    amb_dark:  function () { tone(60, 0.6, 'sine', 0.3, 0, 110); tone(62, 0.6, 'sawtooth', 0.08, 0, 115); noise(0.4, 0.14, 0.1, 600, 'lowpass'); },
-    amb_gold:  function () { [1568, 2093, 1760, 2349, 1976, 2637].forEach(function (f, i) { tone(f, 0.08, 'square', 0.07, i * 0.05); }); noise(0.3, 0.1, 0, 5000, 'highpass'); },
-    ambushRush: function () { noise(0.22, 0.28, 0, 1800, 'bandpass'); tone(300, 0.2, 'sawtooth', 0.08, 0, 900); },
-    ambushSmash: function () { noise(0.32, 0.55, 0, 900, 'lowpass'); tone(95, 0.4, 'square', 0.24, 0, 38); tone(55, 0.5, 'sine', 0.32, 0, 30); noise(0.08, 0.3, 0, 5000, 'highpass'); },
-    guardBreak: function () { noise(0.12, 0.4, 0, 6000, 'highpass'); tone(2637, 0.08, 'square', 0.12); tone(3520, 0.16, 'square', 0.1, 0.06); tone(160, 0.18, 'square', 0.18, 0.08, 60); },
-    // ぶんしん（ふわん と 2つに）
-    clone:   function () { tone(440, 0.18, 'triangle', 0.12, 0, 880); tone(440, 0.18, 'triangle', 0.12, 0.1, 880); noise(0.16, 0.12, 0.05, 2000); },
-    alarm:   function () { for (let i = 0; i < 3; i++) { tone(660, 0.16, 'sawtooth', 0.12, i * 0.36); tone(494, 0.16, 'sawtooth', 0.12, i * 0.36 + 0.18); } },
-    enrage:  function () { tone(110, 0.5, 'sawtooth', 0.2, 0, 220); noise(0.4, 0.25, 0.05); },
-    bossdown: function () {
-      noise(0.5, 0.4);
-      tone(400, 0.8, 'sawtooth', 0.22, 0, 55);
-      // 上がっていく 音は やめた（ファンファーレ（bgm）が そのあと 鳴る）
-    },
-    clear:   function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, i === 3 ? 0.45 : 0.12, 'square', 0.13, i * 0.12); }); },
-    // レベルアップ：かけ上がる 音 → 高い わおん＋キラキラ
-    levelup: function () {
-      [523, 659, 784, 1047, 1319, 1568, 2093].forEach(function (f, i) { tone(f, 0.07, 'square', 0.13, 0.25 + i * 0.055); });
-      [2093, 2637, 3136].forEach(function (f) { tone(f, 0.9, 'triangle', 0.15, 0.66); });
-      noise(0.6, 0.12, 0.66, 7000, 'highpass');
-    },
-    item:    function () { tone(1047, 0.08, 'square', 0.12, 0); tone(1319, 0.2, 'square', 0.12, 0.09); },
-    rare:    function () { [784, 988, 1175, 1568, 1976].forEach(function (f, i) { tone(f, 0.09, 'square', 0.12, i * 0.07); }); },
-
-    /* ---- カプセルマシン（v9.0）----
-       レバー → カプセルが ころころ → パカッ の 3つ。
-       げきレアの ときは ひっさつわざの 音を 借りず、専用の 音（capsuleSr）を 鳴らす。 */
-    // レバーを 引く（ガチャッ と 機械の 音）
-    capsuleLever: function () {
-      noise(0.07, 0.28, 0, 2200, 'highpass');
-      tone(220, 0.10, 'square', 0.16, 0, 130);
-      tone(140, 0.12, 'square', 0.14, 0.09, 90);
-    },
-    // カプセルが ころころ 落ちて くる（コツ コツ コツ と 弾む）
-    capsuleRoll: function () {
-      [0, 0.16, 0.30, 0.42, 0.52].forEach(function (d, i) {
-        tone(520 + i * 60, 0.05, 'triangle', 0.10 - i * 0.012, d, 380 + i * 40);
-        noise(0.04, 0.10, d, 3000, 'highpass');
-      });
-    },
-    // パカッと 開く（ぽん ＋ きらっ）
-    capsuleOpen: function () {
-      tone(660, 0.05, 'triangle', 0.14, 0, 1200);
-      noise(0.09, 0.22, 0.03, 4000, 'highpass');
-      [1319, 1760].forEach(function (f, i) { tone(f, 0.14, 'square', 0.11, 0.06 + i * 0.06); });
-    },
-    // 「ためる」だんかい（レア いじょう）。big＝げきレア は もっと 上まで 上がる
-    capsuleHot: function (big) {
-      sweep(big ? 0.9 : 0.6, 0.20, 0, 300, big ? 2600 : 1400, 'bandpass');
-      [880, 1109, 1319].forEach(function (f, i) { tone(f, 0.10, 'triangle', 0.09, i * 0.14); });
-      if (big) [1568, 1760, 2093].forEach(function (f, i) { tone(f, 0.10, 'triangle', 0.09, 0.46 + i * 0.14); });
-    },
-    // げきレア（むらさきの 光）：ためて → ぱあっと 開く
-    capsuleSr: function () {
-      sweep(0.42, 0.26, 0, 500, 3600, 'bandpass');
-      [1047, 1319, 1568, 2093].forEach(function (f, i) { tone(f, 0.10, 'square', 0.13, 0.30 + i * 0.06); });
-      [523, 659, 784, 1047].forEach(function (f) { tone(f, 0.85, 'triangle', 0.10, 0.54); });
-      noise(0.5, 0.16, 0.54, 6000, 'highpass');
-    },
-
-    /* ---- v1.2 で ふえた 音 ---- */
-    // たからばこが 出る（カタカタ）
-    chestAppear: function () {
-      for (let i = 0; i < 4; i++) { noise(0.05, 0.16, i * 0.13, 1800); tone(300, 0.05, 'triangle', 0.07, i * 0.13); }
-    },
-    // たからばこが 開く
-    chestOpen: function () {
-      noise(0.12, 0.22, 0, 2200);
-      [1047, 1319, 1568, 2093, 2637].forEach(function (f, i) { tone(f, i === 4 ? 0.4 : 0.1, 'square', 0.13, 0.12 + i * 0.08); });
-    },
-    // 2体・3体 まとめて たおした
-    multiKO: function (n) {
-      const base = n >= 3 ? [1047, 1319, 1568, 1976, 2349, 2637] : [880, 1109, 1319, 1760];
-      noise(0.25, 0.4);
-      base.forEach(function (f, i) { tone(f, i === base.length - 1 ? 0.45 : 0.09, 'square', 0.15, i * 0.06); });
-      tone(110, 0.3, 'sawtooth', 0.2, 0, 55);
-    },
-    /* ひっさつわざ（v2.5）。level＝1〜4（コンボの だんかい）、id＝わざの 名前
-       1 = 教科の わざ（fire ほのお／leaf はっぱ／ice こおり／wind かぜ）
-       2 = サンダー ドライブ／3 = メテオ ストーム／4 = ビッグバン インパクト */
-    special: function (level, id) {
-      const lv = level || 1;
-      // スターバースト ストライク（20コンボ〜・v7.5。名前は v9.5 で 変えた・v13.8 で さいごに 大ばくはつ）：
-      // きらきら 上がる → 4れんぞく 一閃（シュパッ ×4）→ ためる（ギュイーン）→
-      // 1.3秒 大ばくはつ（ドッゴーン＋わおん）→ つづけて 3回 ばくはつ（ボン ボン ボン）→ さいごの しょうげき → きらきらの 余いん
-      // 見た目（js/ui/fxcanvas.js の starburst）の 時間と そろえて ある
-      if (lv >= 5) {
-        sweep(0.45, 0.26, 0, 600, 4200, 'bandpass');
-        [523, 659, 784, 988, 1175, 1319].forEach(function (f, i) { tone(f, 0.12, 'triangle', 0.12, i * 0.05); });
-        [0.5, 0.62, 0.74, 0.86].forEach(function (t, i) {                      // 一閃 ×4
-          sweep(0.1, 0.34, t - 0.04, 9000, 1500, 'bandpass');
-          noise(0.05, 0.3, t, 6000, 'highpass');
-          tone(1568 + i * 262, 0.14, 'square', 0.1, t);
-          tone(140, 0.14, 'square', 0.18, t, 50);
-        });
-        sweep(0.42, 0.3, 0.9, 300, 5200, 'bandpass');                         // ためる
-        tone(180, 0.42, 'sawtooth', 0.1, 0.9, 1400);
-        [1047, 1319, 1568, 2093].forEach(function (f, i) { tone(f, 0.08, 'triangle', 0.08, 0.96 + i * 0.08); });
-        // 大ばくはつ（1.3秒）
-        noise(0.35, 0.36, 1.3, 6000, 'highpass');                              // バシャーン（はじける 音）
-        noise(2.4, 0.56, 1.3, 700);                                            // ドッゴーン（長い 地なり）
-        noise(1.2, 0.22, 1.32, 2400, 'bandpass');
-        tone(46, 2.0, 'sine', 0.32, 1.3, 20);                                  // おなかに ひびく 低い 音
-        tone(80, 1.5, 'sawtooth', 0.18, 1.3, 26);
-        [262, 330, 392, 523, 659, 784].forEach(function (f) { tone(f, 1.2, 'square', 0.045, 1.34); });   // わおん
-        // つづけて 3回 ばくはつ
-        [1.48, 1.64, 1.8].forEach(function (t, i) {
-          noise(0.45, 0.34, t, 900);
-          noise(0.08, 0.2, t, 5000, 'highpass');
-          tone(120 - i * 10, 0.36, 'square', 0.14, t, 45);
-          tone(2093 + i * 349, 0.14, 'square', 0.08, t + 0.02);
-        });
-        // さいごの しょうげき（1.95秒）と きらきらの 余いん
-        noise(1.3, 0.4, 1.95, 520);
-        tone(58, 1.1, 'sawtooth', 0.2, 1.95, 24);
-        [1047, 1319, 1568, 2093, 2637, 3136, 4186].forEach(function (f, i) { tone(f, 0.12, 'square', 0.09, 2.02 + i * 0.06); });
-        [523, 784, 1047, 1568].forEach(function (f) { tone(f, 1.3, 'triangle', 0.07, 2.1); });
-        noise(0.9, 0.12, 2.1, 8000, 'highpass');
-        return;
-      }
-      if (lv >= 4) {
-        // ビッグバン：すいこむ（下がる ヒュー）→ 一しゅん しずか → 大ばくはつ＋わおん → 虹の アルペジオ → エコー
-        sweep(0.5, 0.35, 0, 3000, 120, 'bandpass');
-        tone(1400, 0.5, 'sawtooth', 0.12, 0, 60);
-        [2093, 1760, 1568, 1319].forEach(function (f, i) { tone(f, 0.08, 'triangle', 0.1, i * 0.1); });
-        noise(1.6, 0.6, 0.56, 500);
-        tone(55, 1.4, 'sawtooth', 0.3, 0.56, 22);
-        [523, 659, 784, 1047, 1319, 1568].forEach(function (f) { tone(f, 0.9, 'square', 0.07, 0.56); });
-        [1047, 1319, 1568, 2093, 2637, 3136, 3520, 3136, 2637, 2093, 1568, 1319].forEach(function (f, i) { tone(f, 0.1, 'square', 0.13, 0.62 + i * 0.055); });
-        noise(0.8, 0.28, 1.15, 400);
-        noise(0.5, 0.15, 1.3, 8000, 'highpass');
-        return;
-      }
-      if (lv === 3) {
-        // メテオ：上がっていく 音 → 落ちてくる ヒュー → 大ばくはつ＋わおん → きらきら
-        [1047, 1319, 1568, 1976, 2349, 2794, 3136].forEach(function (f, i) { tone(f, 0.09, 'square', 0.15, i * 0.045); });
-        tone(2600, 0.32, 'triangle', 0.14, 0.18, 300);
-        sweep(0.32, 0.22, 0.18, 4000, 400, 'bandpass');
-        noise(1.1, 0.55, 0.42, 600);
-        tone(3520, 0.6, 'square', 0.15, 0.42);
-        tone(60, 1.1, 'sawtooth', 0.28, 0.42, 26);
-        [523, 659, 784, 1047].forEach(function (f) { tone(f, 0.5, 'square', 0.08, 0.44); });
-        noise(0.5, 0.2, 0.6, 7000, 'highpass');
-        [2093, 2637, 3136, 4186].forEach(function (f, i) { tone(f, 0.12, 'square', 0.1, 0.8 + i * 0.07); });
-        return;
-      }
-      if (id === 'triple') {
-        // トリプル スラッシュ：シュッ シュッ シャキーン（3連斬り・260・370・480ms）
-        [0.26, 0.37, 0.48].forEach(function (t, i) {
-          sweep(0.08, 0.3, t - 0.05, 7000, 1800, 'bandpass');
-          noise(0.05, 0.26, t, 5200, 'highpass');
-          tone(1760 + i * 440, 0.1, 'square', 0.13, t);
-        });
-        tone(2637, 0.22, 'triangle', 0.12, 0.5);
-        tone(110, 0.3, 'sawtooth', 0.16, 0.5, 48);
-        return;
-      }
-      /* v14.12 教科の 大わざ（8〜10コンボ・tier 2）。当たる 時間は js/ui/fxcanvas.js の 台本と そろえる */
-      if (id === 'blaze') {
-        // クリムゾン クロス：もえあがる ゴォォ → ザシュッ（0.44）→ ザシュッ（0.62）＋ボワァッ → ドーン（0.88）
-        noise(0.5, 0.42, 0, 900);
-        sweep(0.4, 0.28, 0.02, 400, 2200, 'bandpass');
-        tone(2093, 0.1, 'square', 0.16, 0.44);
-        noise(0.1, 0.3, 0.44, 4000, 'bandpass');
-        tone(2637, 0.14, 'square', 0.16, 0.62);
-        noise(0.12, 0.34, 0.62, 4200, 'bandpass');
-        noise(0.9, 0.46, 0.62, 700);
-        tone(78, 0.8, 'sawtooth', 0.24, 0.62, 34);
-        noise(0.8, 0.5, 0.88, 520);
-        tone(60, 0.7, 'sawtooth', 0.22, 0.88, 28);
-        [523, 659, 784].forEach(function (f) { tone(f, 0.4, 'square', 0.05, 0.9); });
-        return;
-      }
-      if (id === 'storm') {
-        // リーフ ハリケーン：風と はっぱ サササッ → ザシュッ ×3（0.34・0.5・0.66）→ ゴオオ（うず）→ バサァッ（0.95）
-        sweep(0.5, 0.3, 0, 500, 3000, 'bandpass');
-        for (let i = 0; i < 8; i++) noise(0.05, 0.2, 0.04 + i * 0.04, 3200, 'bandpass');
-        [0.34, 0.5, 0.66].forEach(function (t, i) { tone(1760 + i * 330, 0.1, 'square', 0.15, t); noise(0.06, 0.26, t, 5000, 'highpass'); });
-        sweep(0.55, 0.3, 0.4, 300, 1800, 'bandpass');
-        noise(0.6, 0.38, 0.95, 1200, 'bandpass');
-        tone(2637, 0.3, 'triangle', 0.12, 0.95);
-        tone(90, 0.5, 'sawtooth', 0.2, 0.95, 44);
-        return;
-      }
-      if (id === 'icicle') {
-        // アイシクル レイン：キーン（ためる）→ ヒュン ヒュン（落ちる）→ ガシャッ（0.62 大きい 1本）→ パリーン（1.0 くだける）
-        [1568, 2093, 2637, 3136, 3951].forEach(function (f, i) { tone(f, 0.12, 'triangle', 0.1, i * 0.06); });
-        tone(4186, 0.4, 'triangle', 0.08, 0.3);
-        [0.5, 0.56, 0.78, 0.84].forEach(function (t) { tone(2400, 0.08, 'triangle', 0.08, t - 0.08, 900); noise(0.05, 0.2, t, 6000, 'highpass'); });
-        sweep(0.12, 0.26, 0.5, 5000, 800, 'bandpass');
-        noise(0.4, 0.46, 0.62, 1600);
-        tone(70, 0.6, 'sawtooth', 0.22, 0.62, 34);
-        for (let i = 0; i < 6; i++) noise(0.06, 0.3, 1.0 + i * 0.04, 7000, 'highpass');
-        [4186, 3520, 4699, 3136, 5274].forEach(function (f, i) { tone(f, 0.14, 'triangle', 0.13, 1.0 + i * 0.045); });
-        return;
-      }
-      if (id === 'gale') {
-        // ツイン トルネード：ビュン ×2（0.4・0.56）→ ゴオオオ（2つの うずが よって くる）→ ドドン（0.76 合体）→ ブワッ（1.08）
-        sweep(0.3, 0.3, 0, 800, 3200, 'bandpass');
-        [0.4, 0.56].forEach(function (t) { sweep(0.14, 0.34, t - 0.06, 5000, 900, 'bandpass'); tone(1400, 0.12, 'triangle', 0.1, t - 0.04, 3200); });
-        sweep(0.5, 0.38, 0.3, 200, 1400, 'bandpass');
-        sweep(0.5, 0.3, 0.3, 260, 1700, 'bandpass');
-        noise(0.7, 0.44, 0.76, 700);
-        tone(72, 0.7, 'sawtooth', 0.22, 0.76, 36);
-        tone(600, 0.5, 'triangle', 0.1, 0.78, 2400);
-        noise(0.5, 0.36, 1.08, 1000, 'bandpass');
-        tone(84, 0.45, 'sawtooth', 0.18, 1.08, 40);
-        return;
-      }
-      if (lv === 2) {
-        // かみなり：チッチッ（ため）→ バリッ！→ ゴロゴロ → もう1発
-        tone(3520, 0.04, 'square', 0.12, 0);
-        tone(3520, 0.04, 'square', 0.12, 0.08);
-        noise(0.16, 0.55, 0.14, 9000, 'highpass');
-        tone(3136, 0.12, 'square', 0.22, 0.14);
-        tone(2349, 0.18, 'square', 0.2, 0.2, 1175);
-        noise(1.0, 0.4, 0.22, 380);
-        tone(90, 0.9, 'sawtooth', 0.26, 0.22, 40);
-        noise(0.1, 0.35, 0.5, 9000, 'highpass');
-        tone(2794, 0.1, 'square', 0.16, 0.5, 1400);
-        return;
-      }
-      if (id === 'ice') {
-        // こおり：キラキラ → シュッ → パリーン（われる）
-        [2093, 2637, 3136, 3951].forEach(function (f, i) { tone(f, 0.1, 'triangle', 0.14, i * 0.05); });
-        sweep(0.3, 0.25, 0.1, 1500, 6000, 'bandpass');
-        for (let i = 0; i < 4; i++) noise(0.06, 0.3, 0.34 + i * 0.05, 7000, 'highpass');
-        [4186, 3520, 4699, 3136].forEach(function (f, i) { tone(f, 0.12, 'triangle', 0.14, 0.34 + i * 0.05); });
-        tone(90, 0.5, 'sawtooth', 0.2, 0.34, 45);
-        return;
-      }
-      if (id === 'leaf') {
-        // はっぱ：ヒュルル（風）→ サササッ（はっぱ）→ ザシュッ
-        sweep(0.45, 0.3, 0, 600, 3200, 'bandpass');
-        for (let i = 0; i < 6; i++) noise(0.05, 0.22, 0.1 + i * 0.06, 3000, 'bandpass');
-        tone(2093, 0.1, 'square', 0.16, 0.36);
-        tone(2637, 0.3, 'square', 0.14, 0.44);
-        tone(100, 0.45, 'sawtooth', 0.18, 0.4, 50);
-        return;
-      }
-      if (id === 'wind') {
-        // かぜ：ゴオオ（うずまく）→ ピュー（高くなる）→ ドン
-        sweep(0.7, 0.4, 0, 300, 2400, 'bandpass');
-        tone(600, 0.6, 'triangle', 0.1, 0.05, 2400);
-        for (let i = 0; i < 5; i++) noise(0.08, 0.2, 0.15 + i * 0.09, 1200, 'bandpass');
-        noise(0.5, 0.35, 0.55, 700);
-        tone(80, 0.5, 'sawtooth', 0.22, 0.55, 40);
-        return;
-      }
-      // ほのお：ゴォッと もえる 音 → ザシュッ ザシュッ → ボワッ
-      noise(0.7, 0.5, 0, 900);
-      noise(0.35, 0.22, 0.08, 2600, 'bandpass');
-      tone(2093, 0.12, 'square', 0.18);
-      tone(2637, 0.12, 'square', 0.18, 0.09);
-      tone(3136, 0.42, 'square', 0.15, 0.18);
-      noise(0.12, 0.3, 0.3, 4000, 'bandpass');
-      tone(80, 0.7, 'sawtooth', 0.24, 0.1, 36);
-      noise(0.5, 0.3, 0.45, 500);
-    },
-    // どうぐを 使った（atk＝ゴゥッ／def＝キィン／wis＝ポロン／luck＝チャリン）
-    item: function (kind) {
-      if (kind === 'atk') {
-        [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.08, 'square', 0.16, i * 0.05); });
-        noise(0.4, 0.35, 0.2, 1200);
-        tone(1568, 0.35, 'square', 0.14, 0.22);
-        tone(90, 0.5, 'sawtooth', 0.2, 0.2, 45);
-        return;
-      }
-      if (kind === 'def') {
-        tone(1319, 0.12, 'triangle', 0.18);
-        tone(1976, 0.5, 'triangle', 0.16, 0.1);
-        tone(2637, 0.4, 'sine', 0.12, 0.16);
-        noise(0.25, 0.12, 0.1, 5000, 'highpass');
-        return;
-      }
-      if (kind === 'wis') {
-        [784, 988, 1175, 1568, 1976].forEach(function (f, i) { tone(f, 0.14, 'triangle', 0.14, i * 0.08); });
-        return;
-      }
-      [2093, 2637, 3136, 2637, 3520].forEach(function (f, i) { tone(f, 0.09, 'square', 0.13, i * 0.07); });
-      noise(0.3, 0.12, 0.3, 7000, 'highpass');
-    },
-    // コインを つかう／もらう（チャリン）
-    coin: function () {
-      tone(2093, 0.06, 'square', 0.14);
-      tone(2637, 0.2, 'square', 0.12, 0.06);
-      noise(0.12, 0.1, 0.02, 8000, 'highpass');
-    },
-    // たからものを 手に入れた
-    treasure: function () {
-      [1319, 1568, 1976, 2637].forEach(function (f, i) { tone(f, i === 3 ? 0.5 : 0.12, 'triangle', 0.14, i * 0.11); });
-    },
-    // かけらを 手に入れた
-    frag: function () {
-      [1568, 2093, 2637, 3136].forEach(function (f, i) { tone(f, i === 3 ? 0.7 : 0.14, 'sine', 0.16, i * 0.14); });
-      noise(0.6, 0.14, 0.2, 6000, 'highpass');
-    },
-    // ラスボス 登場
-    towerIntro: function () {
-      tone(55, 1.4, 'sawtooth', 0.26, 0, 28);
-      noise(1.2, 0.3, 0, 500);
-      for (let i = 0; i < 4; i++) tone(233, 0.3, 'sawtooth', 0.14, 0.6 + i * 0.3, 220);
-    },
-    // 第2形態に 変身
-    henshin: function () {
-      tone(200, 0.7, 'sawtooth', 0.24, 0, 900);
-      noise(0.8, 0.35, 0.1, 1500);
-      [1568, 1319, 1047, 880].forEach(function (f, i) { tone(f, 0.2, 'square', 0.14, 0.5 + i * 0.09); });
-      tone(60, 1.0, 'sawtooth', 0.24, 0.5, 30);
-    },
-    // 写真を とる
-    shutter: function () { noise(0.06, 0.3, 0, 4000, 'highpass'); tone(1200, 0.04, 'square', 0.1, 0.05); },
-    // タイムアタックの のこり時間
-    tick:    function () { tone(1400, 0.04, 'square', 0.07); },
-    timeup:  function () { tone(400, 0.5, 'sawtooth', 0.16, 0, 120); noise(0.3, 0.2); }
+    rare:    function () { [784, 988, 1175, 1568, 1976, 2349].forEach(function (f, i) { bell(f * 1.5, i * 0.06, 0.12, 0.9); }); },
+    shutter: function () { noise(0.05, 0.25, 0, 4000); wood(1568, 0.04, 0.1); },
+    /* まなびモンスターの 名前も のこして おく（よばれても 落ちない） */
+    key: function () { wood(1200, 0, 0.1); }, appear: function () { bell(1047, 0, 0.1, 0.6); }, hit: function () { wood(440, 0, 0.14); }
   };
 })();

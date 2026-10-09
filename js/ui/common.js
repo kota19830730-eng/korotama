@@ -18,6 +18,7 @@ MQ.ui = MQ.ui || {};
 
   MQ.ui.show = function (id) {
     document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('is-active', s.id === id); });
+    try { if (MQ.bgm) MQ.bgm.forScreen(id); } catch (e) { /* 音が なくても 画面は 進む */ }
     MQ.ui.current = id;
   };
   MQ.ui.mount = function (id, node) {
@@ -61,8 +62,9 @@ MQ.ui = MQ.ui || {};
   // 読む。おわったら cb。声が ない／切って ある ときは 字の 長さぶん（1字 110ms・さいてい 900ms）待ってから cb
   MQ.ui.speak = function (text, cb, opts) {
     clearTimeout(speakT);
-    const done = function () { clearTimeout(speakT); if (cb) { const f = cb; cb = null; f(); } };
+    const done = function () { clearTimeout(speakT); try { MQ.bgm.duck(false); } catch (e) { /* なし */ } if (cb) { const f = cb; cb = null; f(); } };
     if (voiceOn()) {
+      try { MQ.bgm.duck(true); } catch (e) { /* なし */ }   // 声の あいだ 音楽を 小さく（v0.1.15）
       MQ.voice.setPitch(MQ.save.settings().pitch || 'normal');
       MQ.voice.setRate(MQ.save.settings().rate || 'slow');
       MQ.voice.setKind(MQ.save.settings().voiceKind || 'zunda');
@@ -72,7 +74,7 @@ MQ.ui = MQ.ui || {};
     }
     speakT = setTimeout(done, (opts && opts.quick) ? 300 : Math.max(900, String(text).length * 110));
   };
-  MQ.ui.stopSpeak = function () { clearTimeout(speakT); MQ.voice.stop(); };
+  MQ.ui.stopSpeak = function () { clearTimeout(speakT); MQ.voice.stop(); try { MQ.bgm.duck(false); } catch (e) { /* なし */ } };
 
   /* 字幕の ふきだし。say(text) で 字を かえて 読む */
   MQ.ui.balloon = function (text, opts) {

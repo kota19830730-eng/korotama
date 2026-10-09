@@ -2,13 +2,14 @@
    起動（ころたま）
    --------------------------------------------------------- */
 (function () {
-  function unlock() { try { MQ.sfx.unlock(); } catch (e) { /* なし */ } }
+  function unlock() { try { MQ.sfx.unlock(); MQ.bgm.wake(); } catch (e) { /* なし */ } }
   ['touchend', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
 
   function start() {
     MQ.stage.fit();
     const s = MQ.save.settings();
     MQ.sfx.setEnabled(s.sound !== false);
+    MQ.bgm.setEnabled(s.sound !== false && s.music !== false);   // おんがく（v0.1.15・はじめは あり）
     MQ.voice.setPitch(s.pitch || 'high');
     try { MQ.voice.refresh(); } catch (e) { /* なし */ }
     const kid = MQ.save.kid();

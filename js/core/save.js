@@ -4,7 +4,7 @@
      kid       … { name, stage('s'|'m'|'l'|'k'), mon, stamps{日づけ: 数}, done{count,color,shape,compare,moji,tokei}, created }
      kid.mon   … まなびモンスターの「じぶんの モンスター」と 同じ 形
                  { id:'my-…', name, png, png2, png3, trace:true, area:'sansu' } → そのまま つれていける
-     settings  … { voice, pitch('normal'|'high'), rate('slow'|'normal'), voiceKind('zunda'|'device'), hint, sound }
+     settings  … { voice, pitch('normal'|'high'), rate('slow'|'normal'), voiceKind('zunda'|'device'), hint, sound, music }
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
 
@@ -15,7 +15,7 @@ MQ.save = (function () {
   let data = null;
 
   function fresh() {
-    return { v: 1, kid: null, settings: { voice: true, pitch: 'normal', rate: 'slow', voiceKind: 'zunda', hint: true, sound: true } };
+    return { v: 1, kid: null, settings: { voice: true, pitch: 'normal', rate: 'slow', voiceKind: 'zunda', hint: true, sound: true, music: true } };
   }
   function load() {
     if (data) return data;
@@ -25,6 +25,7 @@ MQ.save = (function () {
     } catch (e) { data = fresh(); }
     if (!data || typeof data !== 'object') data = fresh();
     if (!data.settings) data.settings = fresh().settings;
+    (function (def) { Object.keys(def).forEach(function (k) { if (data.settings[k] === undefined) data.settings[k] = def[k]; }); })(fresh().settings);   // 足りない 設定は はじめの 値（music は v0.1.15 から）
     if (data.kid) ensureKid(data.kid);
     return data;
   }

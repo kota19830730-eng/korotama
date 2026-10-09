@@ -316,5 +316,18 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   MQ.save._set(null); ok(MQ.save.newKid({}).done.tokei === 0, 'きろく：done.tokei');
 })();
 
+/* ---- おんがく（v0.1.15） ---- */
+(function () {
+  const bad = MQ.bgm.validate();
+  ok(!bad.length, 'おんがく：楽ふが 読めて オルゴールの はんい・声部の 長さが そろう' + (bad.length ? '：' + bad.join(' / ') : ''));
+  ok(MQ.bgm.SCREEN['screen-home'] === 'home' && MQ.bgm.SCREEN['screen-done'] === 'done' && MQ.bgm.SCREEN['screen-care'] === 'field' && MQ.bgm.SCREEN['screen-parent'] === null && ['care', 'shop', 'play', 'kurabe', 'moji', 'tokei'].every(function (k) { return MQ.bgm.SCREEN['screen-' + k] === 'field'; }), 'おんがく：おうち・できた！だけ 曲、もんだいの 画面は 環境音（ユーザー決定 案B）');
+  MQ.save._set(null); ok(MQ.save.settings().music === true && MQ.save.settings().sound === true, '設定：おんがくは はじめ あり（古い きろくにも 足す）');
+  ok(scripts.indexOf('js/core/bgm.js') > scripts.indexOf('js/core/sfx.js') && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./js/core/bgm.js') > 0, 'bgm.js を 読む（index・sw）');
+  const cm = fs.readFileSync(path.join(ROOT, 'js/ui/common.js'), 'utf8');
+  ok(/MQ\.bgm\.forScreen\(id\)/.test(cm) && (cm.match(/MQ\.bgm\.duck\(/g) || []).length >= 3, '画面が かわると 曲が かわる・声の あいだは 小さく（duck）');
+  ['tap', 'correct', 'coin', 'clear', 'rare', 'shutter', 'unlock', 'setEnabled'].forEach(function (k) { if (typeof MQ.sfx[k] !== 'function') { fails++; console.log('FAIL sfx.' + k); } });
+  ok(!/'square'|'sawtooth'/.test(fs.readFileSync(path.join(ROOT, 'js/core/sfx.js'), 'utf8')), '効果音：ピコピコの 波（square）は つかわない（絵本の 音）');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

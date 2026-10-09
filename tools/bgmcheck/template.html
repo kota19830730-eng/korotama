@@ -1,0 +1,131 @@
+<title>ころたまの 音</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+  /* 絵本の 紙の 上に 音の カードを ならべる。1列・上から 聞く じゅん */
+  :root {
+    --paper: #fbf4e4; --card: #fffdf7; --line: #e2d5b8; --ink: #3f3328; --ink2: #7a6a58;
+    --clay: #d2765c; --gold: #f2b544; --green: #7fb069; --sky: #cfe3ef;
+    --f: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper: #2a241d; --card: #352e26; --line: #4b4034; --ink: #f3eadb; --ink2: #c4b6a2; --sky: #3b4a55; color-scheme: dark; } }
+  :root[data-theme="dark"] { --paper: #2a241d; --card: #352e26; --line: #4b4034; --ink: #f3eadb; --ink2: #c4b6a2; --sky: #3b4a55; color-scheme: dark; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--f); font-weight: 500; line-height: 1.7; margin: 0; }
+  .wrap { max-width: 640px; margin: 0 auto; padding-block: 28px 56px; padding-inline: 18px; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-size: 28px; font-weight: 700; margin: 0; text-wrap: balance; }
+  h2 { font-size: 19px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px; }
+  h2 i { display: inline-block; width: 30px; height: 30px; border-radius: 50%; background: var(--gold); flex: none; }
+  p { margin: 0; }
+  .lead { color: var(--ink2); font-size: 15px; }
+  .card { background: var(--card); border-radius: 18px; padding: 18px; box-shadow: 0 3px 0 var(--line); display: flex; flex-direction: column; gap: 12px; }
+  .note { font-size: 14px; color: var(--ink2); }
+  audio { width: 100%; min-width: 0; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .pair { grid-template-columns: 1fr; } }
+  .pair--3 { grid-template-columns: 1fr; }
+  .pair > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .tag { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--ink2); }
+  .tag.new { color: var(--clay); }
+  .btn { font-family: inherit; font-weight: 700; font-size: 16px; color: var(--ink); background: var(--gold); border: 0; border-radius: 14px; padding: 12px 18px; box-shadow: 0 4px 0 #c9901f; cursor: pointer; }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #c9901f; }
+  .btn:focus-visible { outline: 3px solid var(--clay); outline-offset: 2px; }
+  .btn--stop { background: var(--sky); box-shadow: 0 4px 0 #9fb8c7; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .meter { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+  .meter b { display: block; height: 100%; width: 100%; background: var(--green); transform-origin: left; transition: transform .25s; }
+  ul { margin: 0; padding-left: 20px; } li { margin: 2px 0; }
+  .ask { background: var(--sky); border-radius: 18px; padding: 16px 18px; }
+  @media (prefers-reduced-motion: reduce) { .meter b { transition: none; } }
+</style>
+<div class="wrap">
+  <h1>ころたまの 音（オルゴール案）</h1>
+  <p class="lead">曲は OK・音色が 安っぽい（2026-10-10）→ 音色を 作り直して 3つ ならべました。2026-10-10 の 壁打ちで 決めた 案B：おうちと できた！の 画面だけ オルゴール、もんだいの 画面は 小鳥と 風の 音だけ、声の あいだは 音楽を 小さく。効果音も 木琴と 鈴に 作り直しました。公開は この ページを 聞いて もらってからです。音は アプリの 中で その場で 作る ものと 同じ 作り方で 書き出しました。</p>
+
+  <div class="card">
+    <h2><i></i>音色を えらぶ（同じ 曲の はじめ 18秒）</h2>
+    <p class="note">前の 版は 正弦波だけで「ファミコンみたい」でした。つめを はじく 音・金属の にごり・木の 箱の ひびき・部屋の ひびきを 足して 3つ 作りました。</p>
+    <div class="pair pair--3">
+      <div><span class="tag new">A オルゴール（ガラスの きらめき）</span><audio id="a-home" controls preload="auto" src="{{home_fm}}"></audio></div>
+      <div><span class="tag new">B カリンバ（あたたかい・丸い）</span><audio controls preload="auto" src="{{home_kalimba}}"></audio></div>
+      <div><span class="tag new">C オルゴールの つめ（にごりあり）</span><audio controls preload="auto" src="{{home_tine}}"></audio></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i></i>声と いっしょに（音楽が 小さく なる ところ）</h2>
+    <div class="row">
+      <button class="btn" id="duck-go" type="button">おうちの 曲 → 2秒後に ずんだもんが 話す</button>
+      <button class="btn btn--stop" id="duck-stop" type="button">止める</button>
+    </div>
+    <div class="meter"><b id="meter"></b></div>
+    <p class="note" id="duck-note">音楽の 大きさ：ふつう。声が 始まると 3わりまで 下がり、おわると ゆっくり もどります。</p>
+  </div>
+
+  <div class="card">
+    <h2><i></i>できた！（ジングル → おうちの 曲を 小さく）</h2>
+    <audio id="a-done" controls preload="auto" src="{{done}}"></audio>
+    <p class="note">スタンプが つく 画面。あかるい 4拍子の ジングルを 1回 鳴らして、そのあと おうちの 曲が 小さく つづきます。</p>
+  </div>
+
+  <div class="card">
+    <h2><i></i>もんだいの 画面（音楽なし・小鳥と 風）</h2>
+    <audio id="a-field" controls preload="auto" src="{{field}}"></audio>
+    <p class="note">ごはん・おみせ・あそぶ・くらべっこ・もじ・とけい の あいだ。声の じゃまを しない ように、ほとんど 聞こえない くらいの 風と、5〜12秒に 1回の 小鳥だけです。タブレットの スピーカーで 聞こえるか どうかが 気に なる ところです。</p>
+  </div>
+
+  <div class="card">
+    <h2><i></i>効果音：タップ×3 → 正解 → コイン（音色ごと）</h2>
+    <div class="pair pair--3">
+      <div><span class="tag new">A</span><audio controls preload="auto" src="{{sfx1_fm}}"></audio></div>
+      <div><span class="tag new">B</span><audio controls preload="auto" src="{{sfx1_kalimba}}"></audio></div>
+      <div><span class="tag new">C</span><audio controls preload="auto" src="{{sfx1_tine}}"></audio></div>
+      <div><span class="tag">いま（ピコピコ）</span><audio controls preload="auto" src="{{sfx_old1}}"></audio></div>
+    </div>
+    <p class="note">タップは どれも カリンバの みじかい 一音（1回の あそびで 何十回も 鳴る ので 軽く）。正解は ド・ミ・ソ、コインは 2つ。</p>
+  </div>
+
+  <div class="card">
+    <h2><i></i>効果音：できた！ → レア → カメラ</h2>
+    <div class="pair">
+      <div><span class="tag">いま（ピコピコ）</span><audio controls preload="auto" src="{{sfx_old2}}"></audio></div>
+      <div><span class="tag new">新しい（A の 音色）</span><audio controls preload="auto" src="{{sfx_new2}}"></audio></div>
+    </div>
+  </div>
+
+  <div class="ask">
+    <p><b>聞いて ほしい こと</b></p>
+    <ul>
+      <li><b>音色は A・B・C の どれが よいか</b>（曲は 決まった ので 音だけ）</li>
+      <li>声と いっしょ：声が 聞きとりやすいか（小さく なり方が 足りなければ もっと 下げます）</li>
+      <li>小鳥と 風：聞こえるか・いらないか（なしに するのも かんたんです）</li>
+      <li>効果音：新しい ほうで よいか</li>
+    </ul>
+    <p class="note" style="margin-top:8px">おうちの人の 画面に「音楽も 効果音も／効果音だけ／ぜんぶ なし」の 切りかえを つけて います。はじめは「音楽も 効果音も」です。</p>
+  </div>
+</div>
+<audio id="v1" preload="auto" src="{{voice1}}"></audio>
+<audio id="v2" preload="auto" src="{{voice2}}"></audio>
+<script>
+(function () {
+  var home = document.getElementById('a-home');
+  var v1 = document.getElementById('v1'), v2 = document.getElementById('v2');
+  var meter = document.getElementById('meter'), note = document.getElementById('duck-note');
+  var timers = [];
+  function setVol(v, label) { home.volume = v; meter.style.transform = 'scaleX(' + v + ')'; note.textContent = label; }
+  function clear() { timers.forEach(clearTimeout); timers = []; }
+  function stopAll() { clear(); home.pause(); home.currentTime = 0; v1.pause(); v2.pause(); v1.currentTime = 0; v2.currentTime = 0; setVol(1, '音楽の 大きさ：ふつう。声が 始まると 3わりまで 下がり、おわると ゆっくり もどります。'); }
+  document.getElementById('duck-go').onclick = function () {
+    stopAll();
+    home.loop = true; home.play().catch(function () {});
+    timers.push(setTimeout(function () {
+      setVol(0.3, '音楽の 大きさ：3わり（ずんだもんが 話して いる あいだ）');
+      v1.play().catch(function () {});
+      v1.onended = function () { v2.play().catch(function () {}); };
+      v2.onended = function () { timers.push(setTimeout(function () { setVol(1, '音楽の 大きさ：ふつうに もどった'); }, 350)); };
+    }, 2000));
+  };
+  document.getElementById('duck-stop').onclick = stopAll;
+  // ほかの 音を 鳴らしたら、鳴って いる ものは 止める
+  var all = Array.prototype.slice.call(document.querySelectorAll('audio[controls]'));
+  all.forEach(function (a) { a.addEventListener('play', function () { all.forEach(function (b) { if (b !== a) b.pause(); }); if (a !== home) { clear(); v1.pause(); v2.pause(); } }); });
+})();
+</script>

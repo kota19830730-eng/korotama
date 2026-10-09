@@ -109,6 +109,8 @@ MQ.ui = MQ.ui || {};
             segRow([{ id: 'zunda', name: 'ずんだもん', sub: '録音した 声' }, { id: 'device', name: '端末の 声', sub: '高さ・はやさを 変えられる' }], vkind, function (v) { vkind = v; MQ.save.setSetting('voiceKind', v); MQ.voice.setKind(v); }),
             segRow([{ id: 'normal', name: 'ふつうの 声' }, { id: 'high', name: '高めの 声' }], pitch, function (v) { pitch = v; MQ.save.setSetting('pitch', v); MQ.voice.setPitch(v); }),
             segRow([{ id: 'slow', name: 'ゆっくり' }, { id: 'normal', name: 'ふつうの はやさ' }], rate, function (v) { rate = v; MQ.save.setSetting('rate', v); MQ.voice.setRate(v); }),
+            h('p', { class: 'note', style: { marginTop: '10px' }, text: '音楽と 効果音（音楽は おうちの 画面だけ・声の あいだは 小さく なります）' }),
+            (function () { const st = MQ.save.settings(); return segRow([{ id: 'all', name: '両方 あり', sub: 'おすすめ' }, { id: 'sfx', name: '効果音だけ', sub: '音楽なし' }, { id: 'none', name: 'なし' }], (st.sound === false ? 'none' : st.music === false ? 'sfx' : 'all'), function (v) { MQ.save.setSetting('sound', v !== 'none'); MQ.save.setSetting('music', v === 'all'); MQ.sfx.setEnabled(v !== 'none'); MQ.bgm.setEnabled(v === 'all'); }); })(),
             h('div', { class: 'row', style: { marginTop: '10px' } }, [h('button', { class: 'btn', type: 'button', text: '声を ためす', onclick: function () { MQ.sfx.tap(); MQ.voice.setPitch(pitch); MQ.voice.setRate(rate); MQ.voice.setKind(vkind); MQ.voice.say('こんにちは！ わたしの こえ、きこえる？ いっしょに あそぼうね。', { pitch: pitch }); } })]),
             voiceNote]),
           h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの 名前' }), name]),
