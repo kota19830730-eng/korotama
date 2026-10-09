@@ -8,6 +8,7 @@
    成長の 姿（v0.1.4・ユーザー決定 2026-10-09「リボンや 王冠では なく 姿が どんどん 立派に」）：
      1＝ちび（小さくて まるい）→ 2＝こども（体が のびて 手足・しっぽ・はねが 出る）→ 3＝立派（大きく・その 生きもの らしい 見せ場＝たてがみ・つばさ・つの・よろい…）。
      かざりを のせるのでは なく、体そのものを 描き分ける。ART[id](g) の 中で g で 分ける。
+     ★3段階めも かわいく（ユーザー 2026-10-09「3だんかいめが かっこよすぎる。もう少し 可愛く」）＝かわいい 組は 目は まるい まま・きばは 出さない・ほっぺと にっこり。かっこいい 組も つめ・手裏剣は 出さず、口は にっこり（歯は サメだけ）。
    node でも 動く（見本の ページを この ファイルから 作る ため）。
    --------------------------------------------------------- */
 (function () {
@@ -61,7 +62,7 @@
   }
   function wrap(inner) { return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">' + inner + '</svg>'; }
   /* 段階ごとの 大きさ（足もと 50,94 を 中心に）：ちびは 小さく・立派は いっぱいに */
-  const SCALE = [0.78, 0.9, 1.0];
+  const SCALE = [0.78, 0.9, 0.97];
   function grow(gr, inner) { const s = SCALE[gr - 1] || 1; return s === 1 ? inner : grp(inner, { transform: 'translate(50 94) scale(' + s + ') translate(-50 -94)' }); }
 
   /* ---- キャラクター（gr＝1 ちび／2 こども／3 立派） ---- */
@@ -76,8 +77,7 @@
       if (gr >= 2) s += ellipse(76, 80, 7, 7, C) + arms(66, A, gr === 3);
       s += ellipse(50, gr === 1 ? 62 : 60, 30, gr === 1 ? 28 : 31, A) + ellipse(50, gr === 3 ? 72 : 70, gr === 3 ? 20 : 18, gr === 3 ? 17 : 14, C);
       s += feet(38, 62, 90, B, gr === 3 ? 10 : 8);
-      s += eyes(40, 60, 56, 6) + cheeks(31, 69, 65) + ellipse(50, 64, 3, 2.2, B);
-      s += gr === 3 ? stroke('M44 69 q6 6 12 0', INK, 2.6) + path('M48 70 l2 4 l2 -4 Z', WHITE) : smile(50, 69, 5);
+      s += eyes(40, 60, 56, 6) + cheeks(31, 69, 65) + ellipse(50, 64, 3, 2.2, B) + smile(50, 69, gr === 3 ? 6 : 5);
       return s;
     },
     cat: function (gr) {
@@ -90,8 +90,7 @@
       s += stroke('M44 28 q6 -6 12 0', B, 3) + stroke('M40 34 q10 -8 20 0', B, 3);
       if (gr === 3) s += stroke('M24 70 q6 4 12 0 M64 70 q6 4 12 0 M28 80 q6 4 10 0 M62 80 q6 4 10 0', B, 3);
       s += feet(38, 62, 89, B);
-      s += eyes(40, 60, 56, 6, gr === 3 ? 'sharp' : 'round') + cheeks(31, 69, 65) + path('M47 63 L53 63 L50 66 Z', B);
-      s += gr === 3 ? fangs(50, 68, 8) : smile(50, 68, 5);
+      s += eyes(40, 60, 56, 6) + cheeks(31, 69, 65) + path('M47 63 L53 63 L50 66 Z', B) + smile(50, 68, gr === 3 ? 6 : 5);
       const wl = gr === 1 ? 12 : gr === 2 ? 16 : 20;
       s += stroke('M' + (46 - wl) + ' 62 L34 64 M' + (46 - wl) + ' 70 L34 68 M' + (54 + wl) + ' 62 L66 64 M' + (54 + wl) + ' 70 L66 68', B, 2);
       return s;
@@ -124,7 +123,7 @@
       s += feet(39, 61, 90, D, 8);
       s += ellipse(50, cy - 14, 20, 14, C);
       if (gr >= 2) s += path('M30 40 q-6 -8 2 -14 q4 6 4 12 Z M70 40 q6 -8 -2 -14 q-4 6 -4 12 Z', gr === 3 ? Y : D);
-      s += eyes(42, 58, cy - 14, 5.5, gr === 3 ? 'sharp' : 'round') + cheeks(33, 67, cy - 6, 4) + path('M45 ' + (cy - 8) + ' L55 ' + (cy - 8) + ' L50 ' + (cy - 2) + ' Z', D);
+      s += eyes(42, 58, cy - 14, 5.5) + cheeks(33, 67, cy - 6, 4) + path('M45 ' + (cy - 8) + ' L55 ' + (cy - 8) + ' L50 ' + (cy - 2) + ' Z', D);
       return s;
     },
     bear: function (gr) {
@@ -132,11 +131,9 @@
       let s = shadow();
       s += circle(27, 34, 11, A) + circle(73, 34, 11, A) + circle(27, 34, 6, C) + circle(73, 34, 6, C);
       if (gr >= 2) s += arms(66, A, gr === 3, 7);
-      if (gr === 3) s += stroke('M12 48 l-3 -5 M16 46 l-1 -6 M20 46 l1 -6 M88 48 l3 -5 M84 46 l1 -6 M80 46 l-1 -6', C, 2.2);
       s += ellipse(50, 60, 31, gr === 1 ? 29 : 32, A) + (gr === 3 ? path('M38 70 q12 -14 24 0 q-12 18 -24 0 Z', C) : ellipse(50, 72, 20, 14, C));
       s += feet(38, 62, 90, B, gr === 3 ? 10 : 8);
-      s += eyes(40, 60, 53, 5.5, gr === 3 ? 'sharp' : 'round') + cheeks(30, 70, 62) + ellipse(50, 66, 5, 3.5, B);
-      s += gr === 3 ? fangs(50, 71, 7) : smile(50, 71, 5);
+      s += eyes(40, 60, 53, 5.5) + cheeks(30, 70, 62) + ellipse(50, 66, 5, 3.5, B) + smile(50, 71, gr === 3 ? 6 : 5);
       return s;
     },
     pig: function (gr) {
@@ -148,9 +145,9 @@
       if (gr >= 2) s += arms(68, A, gr === 3);
       s += ellipse(50, 62, gr === 3 ? 32 : 30, gr === 1 ? 28 : 30, A) + ellipse(50, 72, 18, 12, C);
       s += feet(38, 62, 90, B);
-      s += eyes(38, 62, 54, 6, gr === 3 ? 'sharp' : 'round') + cheeks(29, 71, 62);
+      s += eyes(38, 62, 54, 6) + cheeks(29, 71, 62);
       s += ellipse(50, 66, gr === 3 ? 13 : 11, gr === 3 ? 9 : 8, B) + circle(46, 66, 2.2, '#b0606e') + circle(54, 66, 2.2, '#b0606e');
-      if (gr === 3) s += path('M38 70 l-4 8 l6 -5 Z M62 70 l4 8 l-6 -5 Z', WHITE);
+      if (gr === 3) s += smile(50, 76, 5);
       return s;
     },
     sheep: function (gr) {
@@ -166,7 +163,7 @@
       s += ellipse(50, 60, 17, 15, C) + ellipse(30, 52, 7, 4, C, { transform: 'rotate(-20 30 52)' }) + ellipse(70, 52, 7, 4, C, { transform: 'rotate(20 70 52)' });
       s += rect(36, 82, gr === 3 ? 8 : 6, 12, 3, C) + rect(gr === 3 ? 56 : 58, 82, gr === 3 ? 8 : 6, 12, 3, C);
       s += circle(50, 40, 9, A);
-      s += eyes(43, 57, 59, 5, gr === 3 ? 'sharp' : 'round') + smile(50, 68, 4);
+      s += eyes(43, 57, 59, 5) + cheeks(36, 64, 65, 3.5) + smile(50, 68, 4);
       return s;
     },
     frog: function (gr) {
@@ -178,7 +175,7 @@
       if (gr >= 2) s += circle(30, 56, 3.5, B) + circle(70, 58, 3, B) + circle(50, 50, 2.5, B);
       if (gr === 3) s += circle(24, 68, 2.5, B) + circle(76, 68, 2.5, B) + circle(40, 46, 2, B) + circle(62, 48, 2, B);
       s += feet(32, 68, 90, B, gr === 3 ? 12 : 10);
-      s += eyes(36, 64, 36, 7, gr === 3 ? 'sharp' : 'round') + cheeks(30, 70, 60) + stroke('M36 64 q14 12 28 0', INK, 2.8);
+      s += eyes(36, 64, 36, 7) + cheeks(30, 70, 60) + stroke('M36 64 q14 12 28 0', INK, 2.8);
       return s;
     },
     /* ===== かっこいい ===== */
@@ -193,12 +190,11 @@
       const hh = gr === 1 ? 12 : gr === 2 ? 6 : 2;
       s += path('M36 30 L40 ' + hh + ' L48 28 Z', C) + path('M64 30 L60 ' + hh + ' L52 28 Z', C);
       if (gr >= 2) s += arms(68, A, gr === 3);
-      if (gr === 3) s += stroke('M10 48 l-3 -4 M14 46 l-1 -5 M90 48 l3 -4 M86 46 l1 -5', C, 2);
       s += ellipse(50, 60, gr === 3 ? 32 : 30, gr === 1 ? 28 : 30, A) + ellipse(50, 70, 18, 14, C);
       if (gr >= 2) s += path('M76 78 q18 2 18 -14 q-8 -2 -12 6', A) + path('M92 60 l4 -4 l2 6 Z', C);
       else s += path('M76 76 q14 2 14 -10 q-6 -2 -10 4', A);
       s += feet(38, 62, 90, B);
-      s += eyes(40, 60, 54, 6, 'sharp') + cheeks(30, 70, 63, 4) + fangs(50, 68, 7);
+      s += eyes(40, 60, 54, 6, 'sharp') + cheeks(30, 70, 63, 4) + (gr === 3 ? smile(50, 68, 6) : fangs(50, 68, 7));
       if (gr === 3) s += path('M62 72 q10 2 14 -4 q-4 8 -14 8 Z', F) + path('M64 74 q8 0 10 -4 q-2 6 -10 6 Z', C);
       return s;
     },
@@ -207,7 +203,7 @@
       let s = shadow();
       if (gr === 3) s += path('M40 98 l-6 -8 l6 -2 l6 2 Z M60 98 l-6 -8 l6 -2 l6 2 Z', '#f49a2e') + path('M40 96 l-3 -5 l3 -1 l3 1 Z M60 96 l-3 -5 l3 -1 l3 1 Z', D);
       const ah = gr === 1 ? 12 : gr === 2 ? 16 : 20;
-      s += rect(48, 22 - ah, 4, ah, 2, B) + circle(50, 21 - ah, gr === 3 ? 5.5 : 4.5, gr === 3 ? R : D);
+      s += rect(48, 22 - ah, 4, ah, 2, B) + circle(50, 21 - ah, gr === 3 ? 5.5 : 4.5, D);
       if (gr === 3) s += rect(2, 56, 18, 14, 5, B) + rect(80, 56, 18, 14, 5, B) + circle(11, 63, 4, V) + circle(89, 63, 4, V);
       else if (gr === 2) s += rect(8, 58, 14, 10, 4, B) + rect(78, 58, 14, 10, 4, B);
       s += rect(20, 22, 60, 40, 14, A) + rect(27, 28, 46, 26, 9, gr === 3 ? V : C);
@@ -215,7 +211,7 @@
       if (gr === 3) s += star(50, 72, 4, D);
       s += rect(gr === 3 ? 6 : 8, 66, 12, gr === 3 ? 24 : 22, 6, B) + rect(gr === 3 ? 82 : 80, 66, 12, gr === 3 ? 24 : 22, 6, B);
       s += feet(38, 62, 92, B, 9);
-      if (gr === 3) s += circle(40, 41, 5, L) + circle(60, 41, 5, L) + circle(38, 39, 1.8, '#ffffff') + circle(58, 39, 1.8, '#ffffff') + stroke('M42 51 q8 2 16 0', L, 2);
+      if (gr === 3) s += circle(40, 41, 5.5, L) + circle(60, 41, 5.5, L) + circle(40, 41, 2.6, V) + circle(60, 41, 2.6, V) + circle(38.5, 39.5, 1.6, '#ffffff') + circle(58.5, 39.5, 1.6, '#ffffff') + stroke('M42 51 q8 5 16 0', L, 2.4) + cheeks(31, 69, 48, 3.5);
       else s += rect(34, 36, 12, 12, 4, INK) + rect(54, 36, 12, 12, 4, INK) + circle(38, 40, 2, '#ffffff') + circle(58, 40, 2, '#ffffff') + stroke('M42 51 q8 4 16 0', INK, 2.4);
       return s;
     },
@@ -231,8 +227,7 @@
       s += ellipse(50, 58, 25, 24, A) + ellipse(50, 68, 15, 11, C);
       s += circle(32, 36, 6, A) + circle(68, 36, 6, A);
       s += feet(38, 62, 92, B, gr === 3 ? 10 : 8);
-      s += eyes(40, 60, 53, 6, 'sharp') + ellipse(50, 64, 4, 3, INK);
-      s += gr === 3 ? fangs(50, 69, 7) : smile(50, 69, 5);
+      s += eyes(40, 60, 53, 6, 'sharp') + cheeks(31, 69, 61, 3.5) + ellipse(50, 64, 4, 3, INK) + smile(50, 69, gr === 3 ? 6 : 5);
       return s;
     },
     shark: function (gr) {
@@ -245,7 +240,7 @@
       if (gr === 3) s += stroke('M22 52 q6 4 10 0 M68 52 q6 4 10 0 M28 44 q4 2 8 0', B, 3);
       s += path('M84 56 L' + (gr === 3 ? 100 : 96) + ' 42 L' + (gr === 3 ? 100 : 96) + ' 74 Z', A) + path('M14 62 L' + (gr === 3 ? -2 : 2) + ' 52 L' + (gr === 3 ? 4 : 8) + ' 72 Z', A);
       if (gr >= 2) s += path('M24 80 L10 90 L20 76 Z', A) + path('M76 80 L90 90 L80 76 Z', A);
-      s += eyes(38, 62, 56, 6, 'sharp');
+      s += eyes(38, 62, 56, 6, 'sharp') + cheeks(28, 72, 63, 3.5);
       const tw = gr === 1 ? 12 : gr === 2 ? 16 : 20, tn = gr === 1 ? 2 : gr === 2 ? 4 : 6;
       s += stroke('M' + (50 - tw) + ' 70 q' + tw + ' 8 ' + (tw * 2) + ' 0', INK, 2.6);
       let teeth = '';
@@ -262,11 +257,9 @@
       s += path('M24 42 L26 ' + eh + ' L46 32 Z', B) + path('M76 42 L74 ' + eh + ' L54 32 Z', B) + path('M30 40 L31 ' + (eh + 12) + ' L41 34 Z', CHEEK) + path('M70 40 L69 ' + (eh + 12) + ' L59 34 Z', CHEEK);
       if (gr === 3) s += path('M20 48 q-6 10 0 24 q4 -12 10 -16 Z M80 48 q6 10 0 24 q-4 -12 -10 -16 Z', C);
       if (gr >= 2) s += arms(68, A, gr === 3);
-      if (gr === 3) s += stroke('M12 48 l-3 -5 M16 46 l-1 -6 M88 48 l3 -5 M84 46 l1 -6', C, 2.2);
       s += ellipse(50, 60, 30, gr === 1 ? 28 : 31, A) + (gr === 3 ? path('M36 66 q14 -14 28 0 q-14 20 -28 0 Z', C) : ellipse(50, 70, 18, 13, C));
       s += feet(38, 62, 90, B, gr === 3 ? 10 : 8);
-      s += eyes(40, 60, 54, 6, 'sharp') + ellipse(50, 66, 4, 3, INK);
-      s += gr === 3 ? fangs(50, 71, 7) : smile(50, 71, 5);
+      s += eyes(40, 60, 54, 6, 'sharp') + cheeks(31, 69, 62, 3.5) + ellipse(50, 66, 4, 3, INK) + smile(50, 71, gr === 3 ? 6 : 5);
       return s;
     },
     knight: function (gr) {
@@ -297,14 +290,12 @@
       else if (gr === 2) s += path('M70 42 q26 -8 28 14 q-8 -6 -20 -2 Z', D) + path('M70 48 q24 10 18 30 q-8 -10 -16 -16 Z', D);
       else s += path('M68 40 q30 -14 32 18 q-10 -10 -24 -4 Z', D) + path('M70 48 q30 12 22 40 q-10 -16 -20 -24 Z', D) + path('M30 40 q-30 -6 -30 20 q10 -8 24 -6 Z', D);
       if (gr >= 2) s += rect(70, 20, 5, 34, 2, S, { transform: 'rotate(30 72 37)' });
-      if (gr === 3) s += rect(26, 20, 5, 34, 2, S, { transform: 'rotate(-30 28 37)' });
       if (gr >= 2) s += arms(68, A, gr === 3);
       s += ellipse(50, 58, 30, gr === 1 ? 28 : 30, A) + rect(26, 46, 48, 14, 7, C);
       s += rect(42, 66, 16, 14, 4, D);
-      if (gr === 3) s += star(14, 76, 6, S) + star(86, 72, 5, S) + circle(14, 76, 1.6, B) + circle(86, 72, 1.4, B);
       s += feet(38, 62, 90, B);
       s += eyes(40, 60, 53, 5.5, 'sharp') + cheeks(31, 69, 56, 3.5);
-      if (gr === 3) s += stroke('M34 46 l6 2 M66 46 l-6 2', B, 2.4);
+      if (gr === 3) s += stroke('M44 56 q6 4 12 0', INK, 2.2);
       return s;
     },
     rocket: function (gr) {
@@ -321,7 +312,7 @@
       if (gr >= 2) s += star(50, 70, 4, D);
       const wr = gr === 1 ? 12 : gr === 2 ? 14 : 16;
       s += circle(50, 50, wr + 3, B) + circle(50, 50, wr, '#eaf3fb');
-      s += eyes(45, 55, 49, gr === 1 ? 4 : 5, gr === 3 ? 'sharp' : 'round') + smile(50, 55, 3);
+      s += eyes(45, 55, 49, gr === 1 ? 4 : 5) + smile(50, 55, 3) + (gr >= 2 ? cheeks(41, 59, 54, 2.2) : '');
       if (gr === 3) s += star(6, 20, 4, D) + star(94, 14, 3, D) + star(92, 36, 2.5, D);
       return s;
     }

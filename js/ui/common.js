@@ -61,6 +61,7 @@ MQ.ui = MQ.ui || {};
     const done = function () { clearTimeout(speakT); if (cb) { const f = cb; cb = null; f(); } };
     if (voiceOn()) {
       MQ.voice.setPitch(MQ.save.settings().pitch || 'high');
+      MQ.voice.setRate(MQ.save.settings().rate || 'slow');
       const ok = MQ.voice.say(text, { onend: done });
       if (ok) { speakT = setTimeout(done, Math.min(12000, 1500 + String(text).length * 260)); return; }   // 保険（onend が 来ない 端末）
     }

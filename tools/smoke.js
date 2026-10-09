@@ -105,10 +105,13 @@ MQ.voice.setFake({ getVoices: function () { return [{ name: 'Google US English',
 ok(MQ.voice.ready() && MQ.voice.voiceFor().name === 'Kyoko', '日本語の 声は Kyoko を 先に えらぶ');
 MQ.voice.setFake({ getVoices: function () { return [{ name: 'Google US English', lang: 'en-US' }]; }, cancel: function () {}, speak: function () {}, addEventListener: function () {}, Utterance: function (t) { this.text = t; } });
 ok(!MQ.voice.ready(), '日本語の 声が なければ ready false');
-let spoken = null;
-MQ.voice.setFake({ getVoices: function () { return [{ name: 'O-ren', lang: 'ja-JP' }]; }, cancel: function () {}, speak: function (u) { spoken = u; }, addEventListener: function () {}, Utterance: function (t) { this.text = t; } });
+let spoken = null; const spokenAll = [];
+MQ.voice.setFake({ getVoices: function () { return [{ name: 'O-ren', lang: 'ja-JP' }]; }, cancel: function () {}, speak: function (u) { spoken = u; spokenAll.push(u); }, addEventListener: function () {}, Utterance: function (t) { this.text = t; } });
 MQ.voice.setPitch('high');
-ok(MQ.voice.say('こんにちは') && spoken && spoken.pitch === 1.35 && spoken.text === 'こんにちは', '高めの 声＝pitch 1.35');
+ok(MQ.voice.say('こんにちは') && spoken && spoken.pitch === 1.15 && spoken.text === 'こんにちは', '高めの 声＝pitch 1.15（v0.1.5・AI すぎない ように）');
+ok(spoken.rate === 0.74, 'ゆっくり＝rate 0.74');
+MQ.voice.setRate('normal'); MQ.voice.say('x'); ok(spoken.rate === 0.88, 'ふつうの はやさ＝0.88'); MQ.voice.setRate('slow');
+(function () { const n0 = spokenAll ? spokenAll.length : 0; MQ.voice.say('こんにちは！ げんき？ あそぼう。'); ok(spokenAll && spokenAll.length - n0 === 3 && spokenAll[spokenAll.length - 1].text === 'あそぼう。', '文ごとに 3つに 区切って 読む'); })();
 MQ.voice.setPitch('normal');
 MQ.voice.say('x'); ok(spoken.pitch === 1.0, 'ふつうの 声＝pitch 1.0');
 
