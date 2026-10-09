@@ -85,12 +85,6 @@ MQ.save = (function () {
     return (g === 3 && k.mon.png3) || (g >= 2 && k.mon.png2) || k.mon.png;
   }
   function reset() { data = fresh(); write(); }
-  // まなびモンスターへ つれていく ファイルの 中身
-  function exportMon() {
-    const k = kid();
-    if (!k || !k.mon) return '';
-    return JSON.stringify({ app: 'manabi-tamago', v: 1, at: Date.now(), name: k.name, mon: Object.assign({}, k.mon, { area: k.mon.area || 'sansu' }), stamps: stampsTotal() });
-  }
   function exportText() { return JSON.stringify(load()); }
   function importText(text) {
     const d = JSON.parse(text);
@@ -100,5 +94,5 @@ MQ.save = (function () {
 
   return { KEY: KEY, STAGES: STAGES, GROW_AT: GROW_AT, load: load, kid: kid, settings: settings, setSetting: setSetting, update: update, newKid: newKid, setMon: setMon,
            today: today, stamp: stamp, stampsToday: stampsToday, stampsTotal: stampsTotal, growth: growth, nextGrowAt: nextGrowAt, monPng: monPng, reset: reset,
-           exportMon: exportMon, exportText: exportText, importText: importText, _set: function (d) { data = d; } };
+           exportText: exportText, importText: importText, _set: function (d) { data = d; } };
 })();

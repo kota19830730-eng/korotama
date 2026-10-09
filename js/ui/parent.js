@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------
-   おうちの人の 画面（まなびたまご）：段階・声・字幕・きょうの きろく・つれていく・絵を とりなおす・消す
+   おうちの人の 画面（まなびたまご）：段階・声・字幕・きょうの きろく・絵を とりなおす・消す
    入り方：子どもの 画面の 右上の かぎを 1.5秒 長おし
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
@@ -63,9 +63,10 @@ MQ.ui.parent = (function () {
           seg([{ id: 's', name: 'ちいさい', sub: '3〜4さい' }, { id: 'm', name: 'なかくらい', sub: '4〜5さい' }, { id: 'l', name: 'おおきい', sub: '5〜6さい' }], kid.stage, function (v) { MQ.save.update(function (d) { d.kid.stage = v; }); }),
           h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ちいさい：数 3まで・色 3つ・形 2つ（お皿に くぼみ）／なかくらい：数 5まで・色 4つ・形 3つ／おおきい：数 10まで・色 5つ・形 4つ＋色（くぼみ なし・自分で「あげる」）' })]) : null,
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '声と 字幕' }),
-          h('div', { class: 'kv', style: { marginBottom: '6px' } }, [h('span', { text: '声の 高さ' })]),
+          h('div', { class: 'kv', style: { marginBottom: '6px' } }, [h('span', { text: '声の しゅるい' })]),
           seg([{ id: 'zunda', name: 'ずんだもん' }, { id: 'device', name: '端末の 声' }], st.voiceKind || 'zunda', function (v) { MQ.save.setSetting('voiceKind', v); MQ.voice.setKind(v); }, true),
           h('p', { class: 'note', text: '声：VOICEVOX：ずんだもん（録音した 声・通信は しません）。高さ・はやさは「端末の 声」の ときだけ 効きます。名前は 声では よびません。' }),
+          h('div', { class: 'kv', style: { margin: '10px 0 6px' } }, [h('span', { text: '声の 高さ・はやさ（端末の 声の とき）' })]),
           seg([{ id: 'normal', name: 'ふつうの 声' }, { id: 'high', name: '高めの 声' }], st.pitch || 'normal', function (v) { MQ.save.setSetting('pitch', v); MQ.voice.setPitch(v); }, true),
           seg([{ id: 'slow', name: 'ゆっくり' }, { id: 'normal', name: 'ふつうの はやさ' }], st.rate || 'slow', function (v) { MQ.save.setSetting('rate', v); MQ.voice.setRate(v); }, true),
           h('div', { class: 'kv', style: { margin: '12px 0 6px' } }, [h('span', { text: '字幕と おうちの人への 声かけヒント' })]),
@@ -83,10 +84,6 @@ MQ.ui.parent = (function () {
             h('div', { class: 'kv' }, [h('span', { text: 'おみせ（いろ）' }), h('b', { text: done.color + ' 回' })]),
             h('div', { class: 'kv' }, [h('span', { text: 'あそぶ（かたち）' }), h('b', { text: done.shape + ' 回' })])
           ])]) : null,
-        hasMon ? h('div', { class: 'card', style: { background: '#fff4df', border: '2px solid #f2b544' } }, [h('p', { class: 'card__title', text: '小学生に なったら' }),
-          h('div', { class: 'row', style: { marginBottom: '8px' } }, [MQ.blocks.imgBox(MQ.save.monPng(), { size: 64 }), h('span', { text: kid.mon.name })]),
-          h('p', { class: 'note', text: '育てた 生きものを「まなびモンスター」の 相棒として つれていけます。ファイルに 保存して、まなびモンスターで 読みこみます（読みこみは まなびモンスターの つぎの 版で）。' }),
-          h('button', { class: 'btn btn--gold btn--wide', type: 'button', text: 'まなびモンスターへ つれていく（ファイルに 保存）', onclick: function () { MQ.sfx.tap(); saveFile(MQ.save.exportMon(), fileName(), 'まなびたまごの 生きもの'); } })]) : null,
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'そのほか' }),
           h('div', { class: 'col', style: { gap: '8px' } }, [
             h('button', { class: 'btn btn--wide', type: 'button', text: hasMon ? '絵を とりなおす（生きものが かわります）' : '絵を とる', onclick: function () { MQ.sfx.tap(); if (!kid) MQ.save.newKid({}); MQ.ui.draw.open(); } }),
