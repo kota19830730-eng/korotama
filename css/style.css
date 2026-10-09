@@ -80,8 +80,11 @@ input { font-family: inherit; }
 .pics__sq { width: 26px; height: 26px; border-radius: 6px; }
 
 /* ---- 大きな まるい ボタン ---- */
-.bigs { display: flex; gap: 12px; justify-content: center; }
-.big { width: 80px; height: 80px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center; padding: 0; }
+.bigs { display: grid; grid-template-columns: repeat(3, 96px); gap: 6px 26px; justify-content: center; }
+.bigs__it { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bigs__it span { font-size: 15px; white-space: nowrap; }
+.big--pink { background: #e98bb0; box-shadow: 0 6px 0 #c4608a; }
+.big { width: 84px; height: 84px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center; padding: 0; }
 .big svg { width: 46px; height: 46px; }
 .big--gold { background: var(--gold); box-shadow: 0 6px 0 var(--gold2); }
 .big--green { background: var(--green); box-shadow: 0 6px 0 var(--green2); }
@@ -310,3 +313,29 @@ input { font-family: inherit; }
 .numcards--2 { grid-template-columns: 1fr 1fr; }
 .numcards--2 .numcard { min-height: 130px; font-size: 72px; }
 .numcard.is-glow { animation: glowPulse 1s ease-in-out infinite; }
+
+/* ---- もじ（v0.1.13・moji.js） ---- */
+.kana { min-height: 92px; border: 0; border-radius: 20px; background: var(--card); box-shadow: 0 5px 0 var(--line); font-size: 56px; line-height: 1; color: #2f2a26; display: flex; align-items: center; justify-content: center; padding: 0; font-family: var(--f); }
+.kana:active { transform: translateY(3px); }
+.kana.is-shake { animation: shake .4s ease-in-out 1; }
+.kana.is-ok { background: #e6f2d9; box-shadow: 0 5px 0 var(--green2); }
+.kana.is-glow { animation: glowPulse 1s ease-in-out infinite; }
+.kana.is-used { opacity: .25; }
+.kanas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.kanas--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kanas--2 .kana { min-height: 120px; font-size: 72px; }
+.kanas--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.kanas--4 .kana { font-size: 46px; min-height: 84px; }
+.mshow { display: flex; justify-content: center; align-items: center; gap: 10px; }
+.kana--big { width: 110px; min-height: 110px; font-size: 76px; background: #fff3d6; box-shadow: 0 5px 0 #e6c98a; }
+.kana--word { width: 84px; min-height: 92px; font-size: 60px; background: #fff3d6; box-shadow: 0 5px 0 #e6c98a; }
+.mcard { width: 130px; height: 120px; border-radius: 22px; background: var(--card); box-shadow: 0 4px 0 var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.mpic { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+.mpic__img { display: block; pointer-events: none; }
+.mtoy .mpic, .mtoy .mpic__img { pointer-events: none; }
+.mbuild { gap: 14px; }
+.mbuild .mcard { width: 96px; height: 96px; }
+.mslots { display: flex; gap: 8px; }
+.mslot { width: 66px; height: 78px; border-radius: 16px; border: 4px dashed var(--ink3); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 46px; font-family: var(--f); background: #fffaf0; }
+.mslot.is-full { border-style: solid; border-color: #9cc77f; background: #eef7e6; animation: platePop .3s ease-out 1; }
+.page > .scene { flex-shrink: 0; }

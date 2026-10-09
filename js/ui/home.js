@@ -23,24 +23,27 @@ MQ.ui = MQ.ui || {};
       MQ.ui.stopSpeak();
       const kid = MQ.save.kid();
       if (!kid || !kid.mon) { MQ.ui.start.open(); return; }
-      const scene = MQ.ui.sceneNode(400);
+      const SH = 296;   // ボタンが 2段に なった ので 少し ひくく（v0.1.13）
+      const scene = MQ.ui.sceneNode(SH);
       const mon = MQ.ui.monNode(160);
-      scene.appendChild(h('div', { style: { position: 'absolute', left: '120px', top: '236px' } }, [mon]));
+      scene.appendChild(h('div', { style: { position: 'absolute', left: '226px', top: (SH - 166) + 'px' } }, [mon]));
       const bl = MQ.ui.balloon('');
-      scene.appendChild(h('div', { style: { position: 'absolute', left: '118px', top: '70px', width: '262px' } }, [bl]));
+      scene.appendChild(h('div', { style: { position: 'absolute', left: '14px', top: '34px', width: '210px' } }, [bl]));
       mon.addEventListener('click', function () { MQ.sfx.tap(); mon.mood('happy'); bl.say(MQ.util.pick(['えへへ！', 'くすぐったい！', 'だいすき！', 'いっしょに あそぼう！'])); });
       const go = function (fn) { return function () { MQ.sfx.tap(); MQ.ui.stopSpeak(); fn(); }; };
       const page = h('div', { class: 'page' }, [
         MQ.ui.topBar({}),
         scene,
-        h('div', { class: 'wrap col', style: { gap: '12px', paddingTop: '22px' } }, [
+        h('div', { class: 'wrap col', style: { gap: '12px', paddingTop: '14px' } }, [
           h('div', { class: 'bigs' }, [
-            h('button', { class: 'big big--gold', type: 'button', 'aria-label': 'ごはん', html: MQ.ui.SVG.bowl, style: { color: '#4a3b32' }, onclick: go(function () { MQ.ui.care.open(); }) }),
-            h('button', { class: 'big big--green', type: 'button', 'aria-label': 'あそぶ', html: MQ.ui.SVG.ball, style: { color: '#fbf4e4' }, onclick: go(function () { MQ.ui.play.open(); }) }),
-            h('button', { class: 'big big--clay', type: 'button', 'aria-label': 'おみせ', html: MQ.ui.SVG.shop, style: { color: '#fbf4e4' }, onclick: go(function () { MQ.ui.shop.open(); }) }),
-            h('button', { class: 'big big--blue', type: 'button', 'aria-label': 'くらべっこ', html: MQ.ui.SVG.scale, style: { color: '#fbf4e4' }, onclick: go(function () { MQ.ui.kurabe.open(); }) })
-          ]),
-          h('div', { class: 'bigs__labels' }, [h('span', { text: 'ごはん' }), h('span', { text: 'あそぶ' }), h('span', { text: 'おみせ' }), h('span', { text: 'くらべっこ' })]),
+            ['big--gold', 'ごはん', 'bowl', '#4a3b32', function () { MQ.ui.care.open(); }],
+            ['big--green', 'あそぶ', 'ball', '#fbf4e4', function () { MQ.ui.play.open(); }],
+            ['big--clay', 'おみせ', 'shop', '#fbf4e4', function () { MQ.ui.shop.open(); }],
+            ['big--blue', 'くらべっこ', 'scale', '#fbf4e4', function () { MQ.ui.kurabe.open(); }],
+            ['big--pink', 'もじ', 'moji', '#fbf4e4', function () { MQ.ui.moji.open(); }]
+          ].map(function (it) {   // 3つずつ 2段（v0.1.13 で 5つに なった）
+            return h('div', { class: 'bigs__it' }, [h('button', { class: 'big ' + it[0], type: 'button', 'aria-label': it[1], html: MQ.ui.SVG[it[2]], style: { color: it[3] }, onclick: go(it[4]) }), h('span', { text: it[1] })]);
+          })),
           MQ.ui.hintBox('いっしょに「どれに する？」と きいてみて')
         ])
       ]);

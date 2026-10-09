@@ -249,5 +249,42 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   MQ.save._set(null); const k0 = MQ.save.newKid({}); ok(k0.done.compare === 0, 'きろく：done.compare');
 })();
 
+/* ---- もじ（v0.1.13・④ ひらがな） ---- */
+(function () {
+  const bad = [], seen = {};
+  const keys = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/voice/lines.json'), 'utf8')).map(function (l) { return l.key; }));
+  const miss = {};
+  const HIRA = /^[ぁ-ゖー]+$/;
+  ['s', 'm', 'l', 'k'].forEach(function (st) {
+    for (let i = 0; i < 2000; i++) {
+      const t = MQ.tasks.hira(st);
+      seen[st + ':' + t.mode] = 1;
+      if (MQ.tasks.HIRA_MODES[st].indexOf(t.mode) < 0) bad.push(st + ' mode');
+      const all = [t.line, t.ok];
+      if (t.mode === 'build') {
+        if (t.tiles.length !== t.letters.length + 1 || t.letters.join('') !== t.ans.w) bad.push('build');
+        t.letters.forEach(function (c) { if (!t.tiles.some(function (o) { return o.kana === c; })) bad.push('build tile'); });
+        t.tiles.forEach(function (o) { all.push(o.kana, t.wrong1(o, 0), t.wrong2(o, 0)); });
+      } else {
+        if (t.options.filter(function (o) { return o.ok; }).length !== 1) bad.push(st + ' ok ' + t.mode);
+        const want = t.mode === 'sound' ? (st === 's' ? 2 : 3) : t.mode === 'read' ? 3 : (st === 'm' ? 2 : 3);
+        if (t.options.length !== want) bad.push(st + ' n ' + t.mode + ' ' + t.options.length);
+        if (t.mode === 'sound' && new Set(t.options.map(function (o) { return o.word.i; })).size !== t.options.length) bad.push('sound same initial');
+        if ((t.mode === 'hear' || t.mode === 'first') && (new Set(t.options.map(function (o) { return o.kana; })).size !== t.options.length || t.options.some(function (o) { return !HIRA.test(o.kana); }))) bad.push('kana');
+        if (st !== 'k' && t.ans && t.ans.k) bad.push('dakuten ' + st);
+        all.push(t.wrong2(t.options[0]));
+        t.options.forEach(function (o) { if (!o.ok) all.push(t.wrong1(o)); if (o.kana) all.push(o.kana); });
+      }
+      if (KANJI.test(all.join(''))) bad.push('kanji');
+      all.join('|').replace(/([。！？!?])/g, '$1|').split('|').map(function (x) { return x.trim().replace(/[ 　]+/g, ''); }).filter(Boolean).forEach(function (k) { if (!keys.has(k)) miss[k] = 1; });
+    }
+  });
+  ok(!bad.length && Object.keys(seen).length === 7, 'もじ：s はじめの おと 2つ（字なし）／m おと 3つ＋字・聞いた 字 2まい／l 絵→字・聞いた 字（にた 字 3まい）／k 読む・ことばを つくる' + (bad.length ? '：' + bad.slice(0, 4).join(' / ') : ''));
+  ok(!Object.keys(miss).length, 'もじの 声の 文は ぜんぶ 録音の 一覧に ある' + (Object.keys(miss).length ? '：' + Object.keys(miss).slice(0, 5).join(' / ') : ''));
+  ok(MQ.voice.kanaRead('は') === 'ハ' && MQ.voice.kanaRead('それは「へ」だね。') === 'それは「ヘ」だね。' && MQ.voice.kanaRead('おはよう！') === 'おはよう！', '字の 名前は カタカナで 読む（「は」を「わ」と 読まない）');
+  ok(scripts.indexOf('js/ui/moji.js') > 0 && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./js/ui/moji.js') > 0 && fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').indexOf('screen-moji') > 0, 'moji.js と screen-moji（index・sw）');
+  MQ.save._set(null); ok(MQ.save.newKid({}).done.moji === 0, 'きろく：done.moji');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

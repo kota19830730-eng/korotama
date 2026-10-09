@@ -71,7 +71,14 @@ MQ.voice = (function () {
   function spokenForm(text) {
     let s = stripNames(String(text));
     try { if (window.MQ && MQ.text && MQ.text._up) { s = MQ.text._up(s, 6); s = MQ.text._up(s, 6); } } catch (e) { /* 辞書が なければ そのまま */ }
-    return s.replace(/[ 　]+/g, '');
+    return kanaRead(s.replace(/[ 　]+/g, ''));
+  }
+  /* 字の 名前を 読む とき（もじ v0.1.13）：「は」「へ」や 1字だけの 文は 助詞と まちがえて「わ」「え」と 読まれる → カタカナに する */
+  function kata(t) { return t.replace(/[ぁ-ゖ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) + 0x60); }); }
+  function kanaRead(s) {
+    s = s.replace(/「([ぁ-ゖ]{1,4})」/g, function (m, t) { return '「' + kata(t) + '」'; });
+    if (/^[ぁ-ゖ][。！？!?]?$/.test(s)) s = kata(s);
+    return s;
   }
   let list = [];
   let fakeApi = null;      // テスト用
@@ -159,5 +166,5 @@ MQ.voice = (function () {
   init();
   loadBank();
   if (typeof document !== 'undefined') ['touchend', 'click', 'keydown', 'pointerdown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
-  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b) { bank = b; }, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
+  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, kanaRead: kanaRead, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b) { bank = b; }, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
 })();

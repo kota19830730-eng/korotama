@@ -254,5 +254,85 @@ MQ.tasks = (function () {
     if (mode === 'order') return cmpOrder(stage);
     return cmpNum();
   }
-  return { compare: compare, CMP_MODES: CMP_MODES, ORD: ORD, sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
+  /* ---- もじ（v0.1.13・④ ひらがな）。4つの 段階 ----
+     s（3〜4さい）：はじめの おとを 聞きわける（字は 出さない）「はじめが「う」の ものは どれ？」絵 2つ
+     m（4〜5さい）：おとと 字を むすぶ＝上を 絵 3つ＋大きな 字を 見せる／「「ね」の もじは どれ？」字 2まい
+     l（5〜6さい）：絵 → はじめの 字（3まい・ね／れ・い／り など にた 字を まぜる）／聞いた 字（3まい・にた 字）
+     k（6さい）  ：ことばを 読む（字を 読んで 同じ 絵）・字を ならべて ことばを つくる（はじめから じゅんに）
+     絵は ゲームに ある もの だけ（食べもの・キャラクター・ほし）。だく音（ぶ）は ねんちょう だけ。 */
+  const WORDS = [
+    { w: 'りんご', food: 'apple' }, { w: 'みかん', food: 'orange' }, { w: 'いちご', food: 'strawberry' },   // おにぎりは しろい カードに とける ので 入れない
+    { w: 'うさぎ', chr: 'rabbit' }, { w: 'ねこ', chr: 'cat' }, { w: 'ひよこ', chr: 'chick' }, { w: 'くま', chr: 'bear' }, { w: 'かえる', chr: 'frog' },
+    { w: 'ひつじ', chr: 'sheep' }, { w: 'おおかみ', chr: 'wolf' }, { w: 'にんじゃ', chr: 'ninja' }, { w: 'ほし', shape: 'star' },
+    { w: 'ぶた', chr: 'pig', k: true }, { w: 'ぶどう', food: 'grape', k: true }
+  ];
+  WORDS.forEach(function (x) { x.i = x.w.charAt(0); });
+  const LOOK = { ね: ['れ', 'わ'], い: ['り', 'こ'], り: ['い', 'け'], お: ['あ', 'す'], く: ['へ', 'し'], ほ: ['は', 'ま'], み: ['め', 'あ'], ひ: ['し', 'つ'], か: ['や', 'が'], う: ['つ', 'ら'], に: ['こ', 'た'], ぶ: ['ふ', 'ぷ'] };
+  const HIRA_MODES = { s: ['sound'], m: ['sound', 'hear'], l: ['first', 'hear'], k: ['read', 'build'] };
+  function q(c) { return '「' + c + '」'; }
+  function wordsFor(stage) { return WORDS.filter(function (x) { return stage === 'k' || !x.k; }); }
+  function hira(stage, mode) {
+    stage = HIRA_MODES[stage] ? stage : 's';
+    mode = mode || U.pick(HIRA_MODES[stage]);
+    const pool = wordsFor(stage);
+    if (mode === 'sound') {
+      const n = stage === 's' ? 2 : 3;
+      const ans = U.pick(pool);
+      const others = U.sample(pool.filter(function (x) { return x.i !== ans.i; }), 12).filter(function (x, i, a) { return a.findIndex(function (y) { return y.i === x.i; }) === i; }).slice(0, n - 1);
+      const options = U.shuffle([ans].concat(others).map(function (x) { return { word: x, ok: x === ans }; }));
+      return {
+        kind: 'hira', mode: 'sound', ans: ans, letter: ans.i, showLetter: stage !== 's', options: options,
+        line: 'はじめが ' + q(ans.i) + 'の ものは どれ？',
+        ok: 'そう！ ' + ans.w + 'の ' + q(ans.i) + '！',
+        wrong1: function (o) { return 'それは ' + o.word.w + '。' + q(o.word.i) + 'から はじまるね。'; },
+        wrong2: function () { return q(ans.i) + 'から はじまるのは ' + ans.w + 'だよ。'; }
+      };
+    }
+    if (mode === 'hear' || mode === 'first') {
+      const n = stage === 'm' ? 2 : 3;
+      const ansW = U.pick(pool.filter(function (x) { return LOOK[x.i]; }));
+      const c = ansW.i;
+      const dis = (stage === 'm' ? U.sample(pool.filter(function (x) { return x.i !== c; }).map(function (x) { return x.i; }), 1) : LOOK[c].slice(0, n - 1));
+      const options = U.shuffle([c].concat(dis).map(function (x) { return { kana: x, ok: x === c }; }));
+      if (mode === 'hear') return {
+        kind: 'hira', mode: 'hear', letter: c, options: options,
+        line: q(c) + 'の もじは どれ？',
+        ok: 'そう！ ' + q(c) + '！',
+        wrong1: function (o) { return 'それは ' + q(o.kana) + 'だね。' + q(c) + 'は どれかな？'; },
+        wrong2: function () { return 'ひかって いるのが ' + q(c) + 'だよ。'; }
+      };
+      return {
+        kind: 'hira', mode: 'first', ans: ansW, letter: c, options: options,
+        line: ansW.w + 'の はじめの もじは どれ？',
+        ok: 'そう！ ' + ansW.w + 'の ' + q(c) + '！',
+        wrong1: function (o) { return 'それは ' + q(o.kana) + 'だね。もういちど よく みて みよう。'; },
+        wrong2: function () { return ansW.w + 'の はじめは ' + q(c) + '。ひかって いる もじだよ。'; }
+      };
+    }
+    if (mode === 'read') {
+      const ans = U.pick(pool.filter(function (x) { return x.w.length <= 3; }));
+      const others = U.sample(pool.filter(function (x) { return x !== ans; }), 2);
+      const options = U.shuffle([ans].concat(others).map(function (x) { return { word: x, ok: x === ans }; }));
+      return {
+        kind: 'hira', mode: 'read', ans: ans, options: options,
+        line: 'なんて かいて あるかな？ おなじ えを えらんでね',
+        ok: 'そう！ ' + ans.w + '！',
+        wrong1: function (o) { return 'それは ' + o.word.w + 'だね。もじを タッチして ひとつずつ よんで みよう。'; },
+        wrong2: function () { return ans.w.split('').map(q).join('') + 'で ' + ans.w + 'だよ。'; }
+      };
+    }
+    // build：字を ならべて ことばを つくる
+    const ans = U.pick(pool.filter(function (x) { return x.w.length <= 3; }));
+    const letters = ans.w.split('');
+    const extra = U.pick((LOOK[letters[0]] || ['あ']).concat(['あ', 'す', 'た']).filter(function (x) { return letters.indexOf(x) < 0; }));
+    const tiles = U.shuffle(letters.concat([extra]).map(function (c, i) { return { kana: c, id: i }; }));
+    return {
+      kind: 'hira', mode: 'build', ans: ans, letters: letters, tiles: tiles, options: tiles,
+      line: ans.w + 'を つくろう。はじめの もじから タッチしてね',
+      ok: 'できた！ ' + ans.w + '！',
+      wrong1: function (o, step) { return 'それは ' + q(o.kana) + 'だね。' + ans.w + '。つぎの もじは なにかな？'; },
+      wrong2: function (o, step) { return 'つぎは ' + q(letters[step]) + 'だよ。'; }
+    };
+  }
+  return { hira: hira, HIRA_MODES: HIRA_MODES, WORDS: WORDS, LOOK: LOOK, compare: compare, CMP_MODES: CMP_MODES, ORD: ORD, sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
 })();
