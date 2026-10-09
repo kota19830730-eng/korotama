@@ -19,6 +19,8 @@
     #kuflow:<s|m|l|k>（くらべっこを 1回ずつ まちがえて から 正解 → できた！）
     #moji:<s|m|l|k>[:<sound|hear|first|read|build>][:wrong|:build]（もじ v0.1.13）
     #mjflow:<s|m|l|k>（もじを まちがえて から 正解 → できた！）
+    #tokei:<s|m|l|k>[:<day|next|hour|pick|read>][:wrong]（とけい v0.1.14）
+    #tkflow:<s|m|l|k>（とけいを まちがえて から 正解 → できた！）
     #photo:<file URL>（本物の 写真 → --allow-file-access-from-files が いる）
   にせの 声（headless に 声は ない）・にせの 絵（かいた ように 見せた 画像）で 生きものを 作ってから 画面を 出す。
   けっかは <pre id="log">。
@@ -34,6 +36,7 @@
   <section id="screen-play" class="screen"></section>
   <section id="screen-kurabe" class="screen"></section>
   <section id="screen-moji" class="screen"></section>
+  <section id="screen-tokei" class="screen"></section>
   <section id="screen-done" class="screen"></section>
   <section id="screen-parent" class="screen"></section>
   <div id="toast" class="toast"></div>
@@ -63,6 +66,7 @@
 <script src="../js/ui/kazu.js"></script>
 <script src="../js/ui/kurabe.js"></script>
 <script src="../js/ui/moji.js"></script>
+<script src="../js/ui/tokei.js"></script>
 <script src="../js/ui/parent.js"></script>
 <script src="../js/ui/boot.js"></script>
 <script>
@@ -296,6 +300,40 @@
         }
         await wait(200);
         log('after moji: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
+    },
+    tokei: function () {
+      withMon(arg || 's', function () {
+        const m = Q[2], extra = Q[3];
+        if (m) { const C0 = MQ.tasks.clock; MQ.tasks.clock = function (st) { return C0(st, m); }; }
+        MQ.ui.tokei.open();
+        setTimeout(async function () {
+          const st = MQ.ui.tokei.state();
+          log('tokei: ' + st.task.mode + ' n=' + st.task.options.length + ' line=' + st.task.line);
+          if (extra === 'wrong') {
+            const btns = $$('#screen-tokei .toys button, #screen-tokei .ttexts button');
+            const wrong = btns.filter(function (b, i) { return !st.task.options[i].ok; });
+            click(wrong[0]); await wait(60); click(wrong[wrong.length - 1]); await wait(60);
+            log('misses=' + MQ.ui.tokei.state().misses + ' glow=' + $$('#screen-tokei .is-glow').length + ' said=' + said.slice(-2).join(' / '));
+          }
+          finish();
+        }, 400);
+      });
+    },
+    tkflow: function () {
+      withMon(arg || 's', async function () {
+        MQ.ui.home.open(); await wait(200);
+        click($('#screen-home .big--teal')); await wait(400);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.tokei.state();
+          const btns = $$('#screen-tokei .toys button, #screen-tokei .ttexts button');
+          click(btns.filter(function (b, i) { return !st.task.options[i].ok; })[0]); await wait(60);
+          click(btns.filter(function (b, i) { return st.task.options[i].ok; })[0]); await wait(1500);
+          log('tokei r' + r + ' ' + st.task.mode + ' ok=' + (MQ.ui.tokei.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after tokei: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
         finish();
       });
     },

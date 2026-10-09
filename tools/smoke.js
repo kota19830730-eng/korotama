@@ -286,5 +286,35 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   MQ.save._set(null); ok(MQ.save.newKid({}).done.moji === 0, 'きろく：done.moji');
 })();
 
+/* ---- とけい（v0.1.14・⑤） ---- */
+(function () {
+  const bad = [], seen = {};
+  const keys = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/voice/lines.json'), 'utf8')).map(function (l) { return l.key; }));
+  const miss = {};
+  ['s', 'm', 'l', 'k'].forEach(function (st) {
+    for (let i = 0; i < 2000; i++) {
+      const t = MQ.tasks.clock(st);
+      seen[st + ':' + t.mode] = 1;
+      if (MQ.tasks.CLOCK_MODES[st].indexOf(t.mode) < 0) bad.push('mode');
+      if (t.options.filter(function (o) { return o.ok; }).length !== 1) bad.push('ok ' + t.mode);
+      if (t.options.length !== (st === 's' ? 2 : 3)) bad.push('n ' + st + t.mode);
+      if (t.options[0].clock) {
+        const sig = t.options.map(function (o) { const c = o.clock; return c.swapOf ? 'sw' + c.swapOf : c.h + (c.half ? 'h' : ''); });
+        if (new Set(sig).size !== sig.length) bad.push('same clock ' + sig.join(','));
+        if (t.options.some(function (o) { return o.clock.h < 1 || o.clock.h > 12; })) bad.push('h');
+        if (st === 'l' && t.options.some(function (o) { return o.clock.half; })) bad.push('half in l');
+      }
+      const all = [t.line, t.ok, t.wrong2(t.options[0])];
+      t.options.forEach(function (o) { if (!o.ok) all.push(t.wrong1(o)); });
+      if (KANJI.test(all.join(''))) bad.push('kanji');
+      all.join('|').replace(/([。！？!?])/g, '$1|').split('|').map(function (x) { return x.trim().replace(/[ 　]+/g, ''); }).filter(Boolean).forEach(function (k) { if (!keys.has(k)) miss[k] = 1; });
+    }
+  });
+  ok(!bad.length && Object.keys(seen).length === 6, 'とけい：s あさ・ひる・よる 2つ／m 3つ＋つぎは？／l ちょうど（はり ぎゃくも）／k はん・読む' + (bad.length ? '：' + bad.slice(0, 4).join(' / ') : ''));
+  ok(!Object.keys(miss).length, 'とけいの 声の 文は ぜんぶ 録音の 一覧に ある' + (Object.keys(miss).length ? '：' + Object.keys(miss).slice(0, 5).join(' / ') : ''));
+  ok(scripts.indexOf('js/ui/tokei.js') > 0 && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./js/ui/tokei.js') > 0 && fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').indexOf('screen-tokei') > 0, 'tokei.js と screen-tokei（index・sw）');
+  MQ.save._set(null); ok(MQ.save.newKid({}).done.tokei === 0, 'きろく：done.tokei');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

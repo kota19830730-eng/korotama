@@ -40,7 +40,8 @@ MQ.ui = MQ.ui || {};
             ['big--green', 'あそぶ', 'ball', '#fbf4e4', function () { MQ.ui.play.open(); }],
             ['big--clay', 'おみせ', 'shop', '#fbf4e4', function () { MQ.ui.shop.open(); }],
             ['big--blue', 'くらべっこ', 'scale', '#fbf4e4', function () { MQ.ui.kurabe.open(); }],
-            ['big--pink', 'もじ', 'moji', '#fbf4e4', function () { MQ.ui.moji.open(); }]
+            ['big--pink', 'もじ', 'moji', '#fbf4e4', function () { MQ.ui.moji.open(); }],
+            ['big--teal', 'とけい', 'clock', '#fbf4e4', function () { MQ.ui.tokei.open(); }]
           ].map(function (it) {   // 3つずつ 2段（v0.1.13 で 5つに なった）
             return h('div', { class: 'bigs__it' }, [h('button', { class: 'big ' + it[0], type: 'button', 'aria-label': it[1], html: MQ.ui.SVG[it[2]], style: { color: it[3] }, onclick: go(it[4]) }), h('span', { text: it[1] })]);
           })),

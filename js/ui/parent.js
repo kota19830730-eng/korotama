@@ -84,7 +84,8 @@ MQ.ui.parent = (function () {
             h('div', { class: 'kv' }, [h('span', { text: 'おみせ（いろ）' }), h('b', { text: done.color + ' 回' })]),
             h('div', { class: 'kv' }, [h('span', { text: 'あそぶ（かたち）' }), h('b', { text: done.shape + ' 回' })]),
             h('div', { class: 'kv' }, [h('span', { text: 'くらべっこ（くらべる・じゅんばん）' }), h('b', { text: (done.compare || 0) + ' 回' })]),
-            h('div', { class: 'kv' }, [h('span', { text: 'もじ（ひらがな）' }), h('b', { text: (done.moji || 0) + ' 回' })])
+            h('div', { class: 'kv' }, [h('span', { text: 'もじ（ひらがな）' }), h('b', { text: (done.moji || 0) + ' 回' })]),
+            h('div', { class: 'kv' }, [h('span', { text: 'とけい（あさ・ひる・よる／時計）' }), h('b', { text: (done.tokei || 0) + ' 回' })])
           ])]) : null,
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'そのほか' }),
           h('div', { class: 'col', style: { gap: '8px' } }, [

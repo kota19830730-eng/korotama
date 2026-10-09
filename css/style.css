@@ -83,6 +83,7 @@ input { font-family: inherit; }
 .bigs { display: grid; grid-template-columns: repeat(3, 96px); gap: 6px 26px; justify-content: center; }
 .bigs__it { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .bigs__it span { font-size: 15px; white-space: nowrap; }
+.big--teal { background: #4fb3a8; box-shadow: 0 6px 0 #33877e; }
 .big--pink { background: #e98bb0; box-shadow: 0 6px 0 #c4608a; }
 .big { width: 84px; height: 84px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center; padding: 0; }
 .big svg { width: 46px; height: 46px; }
@@ -339,3 +340,20 @@ input { font-family: inherit; }
 .mslot { width: 66px; height: 78px; border-radius: 16px; border: 4px dashed var(--ink3); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 46px; font-family: var(--f); background: #fffaf0; }
 .mslot.is-full { border-style: solid; border-color: #9cc77f; background: #eef7e6; animation: platePop .3s ease-out 1; }
 .page > .scene { flex-shrink: 0; }
+
+/* ---- とけい（v0.1.14・tokei.js） ---- */
+.tday svg.day { width: 88%; height: auto; display: block; pointer-events: none; }
+.toys--many .tday svg.day { width: 92%; }
+.toys--clock .toy { width: 110px; height: 110px; }
+.tclock svg.clk { width: 94%; height: 94%; display: block; pointer-events: none; }
+.toy.is-glow, .ttext.is-glow { animation: glowPulse 1s ease-in-out infinite; }
+.tshow { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.tcardbig { width: 120px; } .tcardbig svg { width: 100%; display: block; }
+.tarrow { width: 0; height: 0; border-left: 22px solid #c9955a; border-top: 14px solid transparent; border-bottom: 14px solid transparent; }
+.tq { width: 100px; height: 80px; border-radius: 14px; border: 4px dashed var(--ink3); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 40px; color: var(--ink3); }
+.tclockbig { width: 170px; height: 170px; } .tclockbig svg { width: 100%; height: 100%; display: block; }
+.ttexts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ttext { min-height: 84px; border: 0; border-radius: 20px; background: var(--card); box-shadow: 0 5px 0 var(--line); font-size: 28px; color: #2f2a26; padding: 0 4px; white-space: nowrap; }
+.ttext:active { transform: translateY(3px); }
+.ttext.is-shake { animation: shake .4s ease-in-out 1; }
+.ttext.is-ok { background: #e6f2d9; box-shadow: 0 5px 0 var(--green2); }

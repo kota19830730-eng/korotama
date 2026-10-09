@@ -69,10 +69,14 @@ MQ.voice = (function () {
   }
   /* 声に 出す 形：かん字に して スペースを 外す（字幕は もとの まま） */
   function spokenForm(text) {
-    let s = stripNames(String(text));
+    let s = clockRead(stripNames(String(text)));
     try { if (window.MQ && MQ.text && MQ.text._up) { s = MQ.text._up(s, 6); s = MQ.text._up(s, 6); } } catch (e) { /* 辞書が なければ そのまま */ }
     return kanaRead(s.replace(/[ 　]+/g, ''));
   }
+  /* 時刻（とけい v0.1.14）：「にじ」は「虹」の 読み方に なる → 声に わたす 前に「2時」「9時半」に する（スペースが ある うちに 区切りを 見る） */
+  const JI_RE = /(^|[\s、。！？「])(じゅういち|じゅうに|じゅう|いち|しち|はち|さん|ろく|よ|ご|く|に)じ(はん)?(?=[\sのだ！？。、]|$)/g;
+  const JI_NUM = { いち: 1, に: 2, さん: 3, よ: 4, ご: 5, ろく: 6, しち: 7, はち: 8, く: 9, じゅう: 10, じゅういち: 11, じゅうに: 12 };
+  function clockRead(s) { return String(s).replace(JI_RE, function (m, pre, n, han) { return pre + JI_NUM[n] + '時' + (han ? '半' : ''); }); }
   /* 字の 名前を 読む とき（もじ v0.1.13）：「は」「へ」や 1字だけの 文は 助詞と まちがえて「わ」「え」と 読まれる → カタカナに する */
   function kata(t) { return t.replace(/[ぁ-ゖ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) + 0x60); }); }
   function kanaRead(s) {
@@ -166,5 +170,5 @@ MQ.voice = (function () {
   init();
   loadBank();
   if (typeof document !== 'undefined') ['touchend', 'click', 'keydown', 'pointerdown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
-  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, kanaRead: kanaRead, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b) { bank = b; }, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
+  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, kanaRead: kanaRead, clockRead: clockRead, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b) { bank = b; }, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
 })();

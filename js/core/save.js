@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------
    きろく（ころたま）
    localStorage に 1つだけ。外には 何も 送らない。
-     kid       … { name, stage('s'|'m'|'l'|'k'), mon, stamps{日づけ: 数}, done{count,color,shape,compare,moji}, created }
+     kid       … { name, stage('s'|'m'|'l'|'k'), mon, stamps{日づけ: 数}, done{count,color,shape,compare,moji,tokei}, created }
      kid.mon   … まなびモンスターの「じぶんの モンスター」と 同じ 形
                  { id:'my-…', name, png, png2, png3, trace:true, area:'sansu' } → そのまま つれていける
      settings  … { voice, pitch('normal'|'high'), rate('slow'|'normal'), voiceKind('zunda'|'device'), hint, sound }
@@ -34,6 +34,7 @@ MQ.save = (function () {
     if (!k.done) k.done = { count: 0, color: 0, shape: 0 };
     if (k.done.compare == null) k.done.compare = 0;   // くらべっこ（v0.1.12）
     if (k.done.moji == null) k.done.moji = 0;         // もじ（v0.1.13）
+    if (k.done.tokei == null) k.done.tokei = 0;       // とけい（v0.1.14）
     if (!k.name) k.name = '';
     return k;
   }
@@ -47,7 +48,7 @@ MQ.save = (function () {
 
   function newKid(opts) {
     load();
-    data.kid = ensureKid({ name: (opts && opts.name) || '', stage: (opts && opts.stage) || 's', mon: null, stamps: {}, done: { count: 0, color: 0, shape: 0, compare: 0, moji: 0 }, created: Date.now() });
+    data.kid = ensureKid({ name: (opts && opts.name) || '', stage: (opts && opts.stage) || 's', mon: null, stamps: {}, done: { count: 0, color: 0, shape: 0, compare: 0, moji: 0, tokei: 0 }, created: Date.now() });
     write();
     return data.kid;
   }

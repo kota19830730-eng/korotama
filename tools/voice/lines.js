@@ -56,6 +56,14 @@ for (let i = 0; i < 40000; i++) {
     if (t.mode === 'read' || t.mode === 'build') t.ans.w.split('').forEach(add);   // タッチで 読む 1字
   }
 });
+/* ---- とけい（v0.1.14） ---- */
+['s', 'm', 'l', 'k'].forEach(function (st) {
+  for (let i = 0; i < 20000; i++) {
+    const t = T.clock(st);
+    [t.line, t.ok, t.wrong2(t.options[0])].forEach(add);
+    t.options.forEach(function (o) { if (!o.ok) add(t.wrong1(o)); });
+  }
+});
 /* ---- 画面の 声（js/ui/*.js の say・名前は 外した 形） ---- */
 [
   'おはよう！ きょうは なにを する？', 'こんにちは！ なにを する？', 'こんばんは！ なにを する？',
@@ -67,13 +75,13 @@ for (let i = 0; i < 40000; i++) {
 ].forEach(add);
 for (let n = 1; n <= 5; n++) add('できた！ スタンプ ' + num(n) + 'め！ うれしいよ！');
 /* js/ui/*.js の say('…') の 文字列も ひろう（手で 書き忘れた ぶん） */
-['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/kazu.js', 'js/ui/kurabe.js', 'js/ui/moji.js'].forEach(function (f) {
+['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/kazu.js', 'js/ui/kurabe.js', 'js/ui/moji.js', 'js/ui/tokei.js'].forEach(function (f) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
   (src.match(/say\('([^']+)'/g) || []).forEach(function (m) { add(m.slice(5, -1)); });
   (src.match(/pick\(\[([^\]]+)\]/g) || []).forEach(function (m) { (m.match(/'([^']+)'/g) || []).forEach(function (q) { add(q.slice(1, -1)); }); });
 });
 const V = (function () { const c = { window: null, console: console }; c.window = c; c.MQ = ctx.MQ; vm.createContext(c); vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/core/voice.js'), 'utf8'), c); return c.MQ.voice; })();
-function spoken(s) { let o = X._up(X._up(s, 6), 6); return V.kanaRead(o.replace(/[ 　]+/g, '')); }
+function spoken(s) { let o = X._up(X._up(V.clockRead(s), 6), 6); return V.kanaRead(o.replace(/[ 　]+/g, '')); }
 const list = out.map(function (k) { return { key: k.replace(/[ 　]+/g, ''), text: spoken(k) }; });
 fs.writeFileSync(path.join(__dirname, 'lines.json'), JSON.stringify(list, null, 1));
 console.log('lines: ' + list.length);

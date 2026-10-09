@@ -334,5 +334,78 @@ MQ.tasks = (function () {
       wrong2: function (o, step) { return 'つぎは ' + q(letters[step]) + 'だよ。'; }
     };
   }
-  return { hira: hira, HIRA_MODES: HIRA_MODES, WORDS: WORDS, LOOK: LOOK, compare: compare, CMP_MODES: CMP_MODES, ORD: ORD, sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
+  /* ---- とけい（v0.1.14・⑤）。4つの 段階 ----
+     s（3〜4さい）：あさ・ひる・よる の 絵（2つから）
+     m（4〜5さい）：あさ・ひる・よる（3つから）・「あさの つぎは？」（一日の じゅんばん）
+     l（5〜6さい）：「さんじの とけいは どれ？」ちょうどの 時刻（3つ・はりを ぎゃくに した とけいも まぜる）
+     k（6さい）  ：「よじはんの とけいは どれ？」・「この とけいは なんじ？」（ちょうど／はん） */
+  const DAY = [
+    { id: 'asa', name: 'あさ', tip: 'あさは おひさまが ひくくて、そらが あかるく なって くるよ。', ok: 'おひさまが のぼって きたね！' },
+    { id: 'hiru', name: 'ひる', tip: 'ひるは おひさまが そらの うえに あるよ。', ok: 'おひさまが うえに あるね！' },
+    { id: 'yoru', name: 'よる', tip: 'よるは そらが くらくて、おつきさまが でるよ。', ok: 'おつきさまが でて いるね！' }
+  ];
+  const JI = ['', 'いちじ', 'にじ', 'さんじ', 'よじ', 'ごじ', 'ろくじ', 'しちじ', 'はちじ', 'くじ', 'じゅうじ', 'じゅういちじ', 'じゅうにじ'];
+  const CLOCK_MODES = { s: ['day'], m: ['day', 'next'], l: ['hour'], k: ['pick', 'read'] };
+  function jiName(h, half) { return JI[h] + (half ? 'はん' : ''); }
+  function hourOf(h) { return ((h - 1 + 12) % 12) + 1; }
+  function clock(stage, mode) {
+    stage = CLOCK_MODES[stage] ? stage : 's';
+    mode = mode || U.pick(CLOCK_MODES[stage]);
+    if (mode === 'day') {
+      const n = stage === 's' ? 2 : 3;
+      const ans = U.pick(DAY);
+      const opts = n === 3 ? DAY.slice() : [ans, U.pick(DAY.filter(function (d) { return d !== ans; }))];
+      return {
+        kind: 'clock', mode: 'day', ans: ans, options: U.shuffle(opts.map(function (d) { return { day: d, ok: d === ans }; })),
+        line: ans.name + 'は どれ？',
+        ok: 'そう！ ' + ans.name + 'だね。' + ans.ok,
+        wrong1: function (o) { return 'それは ' + o.day.name + 'だね。' + ans.tip; },
+        wrong2: function () { return 'ひかって いるのが ' + ans.name + 'だよ。'; }
+      };
+    }
+    if (mode === 'next') {
+      const i = U.randInt(0, 2), from = DAY[i], ans = DAY[(i + 1) % 3];
+      return {
+        kind: 'clock', mode: 'next', from: from, ans: ans, options: U.shuffle(DAY.map(function (d) { return { day: d, ok: d === ans }; })),
+        line: from.name + 'の つぎは どれ？',
+        ok: 'そう！ ' + from.name + 'の つぎは ' + ans.name + '！',
+        wrong1: function (o) { return 'それは ' + o.day.name + 'だね。あさ、ひる、よる、また あさ の じゅんばんだよ。'; },
+        wrong2: function () { return from.name + 'の つぎは ' + ans.name + 'だよ。'; }
+      };
+    }
+    const half = mode !== 'hour' && Math.random() < 0.6;
+    const h = U.randInt(1, 12);
+    const ans = { h: h, half: half };
+    let opts;
+    if (mode === 'hour') {
+      const other = U.pick([hourOf(h + 1), hourOf(h - 1), hourOf(h + 3)]);
+      const swap = h !== 12 && h !== 6 ? { h: 12, half: false, swapOf: h } : { h: hourOf(h + 2), half: false };   // はりを ぎゃく（みじかい はりが 12・ながい はりが h）
+      opts = [ans, { h: other, half: false }, swap];
+    } else if (half) {
+      opts = [ans, { h: h, half: false }, { h: hourOf(h - 1), half: true }];   // 「はん」で ない／みじかい はりの 見まちがい（ひとつ 前の 数字）
+    } else {
+      opts = [ans, { h: h, half: true }, { h: hourOf(h + 1), half: false }];
+    }
+    const options = U.shuffle(opts.map(function (c) { return { clock: c, ok: c === ans }; }));
+    const nm = jiName(h, half);
+    const teach = half ? 'ながい はりが したの ろくを さしたら はん。みじかい はりは ' + read(h) + 'と ' + read(hourOf(h + 1)) + 'の あいだだよ。'
+      : 'みじかい はりが ' + read(h) + '、ながい はりが うえの じゅうにで ' + nm + 'だよ。';
+    const base = {
+      kind: 'clock', mode: mode, ans: ans, options: options, name: nm,
+      ok: 'そう！ ' + nm + '！',
+      wrong2: function () { return teach; }
+    };
+    if (mode === 'read') {
+      base.line = 'この とけいは なんじ？';
+      base.wrong1 = function (o) { return 'それは ' + jiName(o.clock.h, o.clock.half) + 'だね。ながい はりと みじかい はりを よく みて みよう。'; };
+      return base;
+    }
+    base.line = nm + 'の とけいは どれ？';
+    base.wrong1 = function (o) {
+      if (o.clock.swapOf) return 'それは はりが ぎゃくだね。みじかい はりが なんじかを おしえて くれるよ。';
+      return 'それは ' + jiName(o.clock.h, o.clock.half) + 'の とけいだね。' + (o.clock.half !== half ? 'ながい はりを みて みよう。' : 'みじかい はりを みて みよう。');
+    };
+    return base;
+  }
+  return { clock: clock, CLOCK_MODES: CLOCK_MODES, DAY: DAY, JI: JI, jiName: jiName, hira: hira, HIRA_MODES: HIRA_MODES, WORDS: WORDS, LOOK: LOOK, compare: compare, CMP_MODES: CMP_MODES, ORD: ORD, sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
 })();
