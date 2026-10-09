@@ -1,6 +1,7 @@
 /* ---------------------------------------------------------
    ごはん（かず）：「りんごを みっつ ちょうだい」（ころたま）
    かごから タップで おさらへ（ドラッグは 3さいには むずかしい）。おさらの ものを タップすると かごへ もどる。
+   かごには ほかの 食べものも まざって いる（v0.1.10）。ちがう ものを おすと のせずに「それは みかんだね。りんごを …」と 声で 教える（ばつなし）。
    ちいさい・なかくらい＝おさらに くぼみ（N こ）→ ぜんぶ うまったら 正解。
    おおきい＝くぼみなし → 生きものを タップして「あげる」→ 多い／少ない を 声で 教える。
    3回で できた！
@@ -53,7 +54,7 @@ MQ.ui.care = (function () {
       ]),
       h('div', { class: 'wrap col', style: { gap: '14px', paddingTop: '8px' } }, [
         plate, basket,
-        MQ.ui.hintBox(task.slots ? '「いち、に、さん」と いっしょに かぞえて。くぼみが ぜんぶ うまると 正解です' : 'おさらに のせたら、生きものを タップして「あげる」。多い・少ないは 声で 教えます')
+        MQ.ui.hintBox((task.slots ? '「' + task.food.name + 'は どれ？」と えらんでから「いち、に、さん」と かぞえて。くぼみが ぜんぶ うまると 正解です' : '「' + task.food.name + 'だけ」を おさらに のせたら、生きものを タップして「あげる」。多い・少ないは 声で 教えます') + '。ちがう 食べものを おしても 声で 教えます')
       ])
     ]);
     MQ.ui.mount('screen-care', page);
@@ -62,6 +63,8 @@ MQ.ui.care = (function () {
   function paint() {
     const plate = els.plate, basket = els.basket;
     plate.innerHTML = ''; basket.innerHTML = '';
+    basket.classList.toggle('is-many', task.basket.length > 10);
+    plate.classList.toggle('is-many', Math.max(task.slots ? task.n : 0, placed) > 6);
     const slots = task.slots ? task.n : Math.max(placed, 0);
     for (let i = 0; i < Math.max(slots, placed); i++) {
       const full = i < placed;
@@ -70,10 +73,19 @@ MQ.ui.care = (function () {
       plate.appendChild(s);
     }
     if (!task.slots && !placed) plate.appendChild(h('div', { class: 'note', text: 'おさら' }));
-    for (let i = 0; i < task.basket - placed; i++) {
-      const b = h('button', { class: 'item', type: 'button', 'aria-label': task.food.name }, [MQ.ui.foodNode(task.food.id)]);
+    let left = placed;   // おさらに のせた ぶんだけ、かごの ほしい 食べものを へらす
+    task.basket.forEach(function (id) {
+      if (id === task.food.id && left > 0) { left--; return; }
+      const f = MQ.tasks.foodById(id) || task.food;
+      const b = h('button', { class: 'item', type: 'button', 'aria-label': f.name }, [MQ.ui.foodNode(id)]);
       b.onclick = function () {
         if (busy) return;
+        if (id !== task.food.id) {   // ちがう 食べもの：のせない・声で 教える
+          MQ.sfx.tap();
+          els.mon.mood('sad');
+          els.bl.say(task.wrong(f), null, foodPics(task.n));
+          return;
+        }
         if (task.slots && placed >= task.n) return;
         MQ.sfx.tap();
         placed++;
@@ -82,7 +94,7 @@ MQ.ui.care = (function () {
         if (task.slots && placed === task.n) judge();
       };
       basket.appendChild(b);
-    }
+    });
   }
   function judge() {
     if (busy) return;

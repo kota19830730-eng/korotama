@@ -171,5 +171,21 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   } else console.log('--   bank.json は まだ ない（tools/voice/render.js で 録音する）');
 })();
 
+/* ---- ごはん：かごに ほかの 食べもの（v0.1.10） ---- */
+(function () {
+  let bad = 0;
+  ['s', 'm', 'l'].forEach(function (st) {
+    for (let k = 0; k < 300; k++) {
+      const c = MQ.tasks.count(st);
+      const mine = c.basket.filter(function (id) { return id === c.food.id; }).length;
+      const other = c.basket.filter(function (id) { return id !== c.food.id; });
+      const kinds = new Set(other).size;
+      if (mine !== c.n + 1 || other.length < MQ.tasks.MIX[st].kinds || other.length > MQ.tasks.MIX[st].n || kinds !== MQ.tasks.MIX[st].kinds || c.basket.length > 14) bad++;
+      if (!/^それは .+だね。/.test(c.wrong(MQ.tasks.foodById(other[0])))) bad++;
+    }
+  });
+  ok(!bad, 'ごはん：かごに ほかの 食べもの（s 1しゅるい2こ／m 2しゅるい3こ／l 3しゅるい4こ）・ほしい ものは n＋1 こ');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

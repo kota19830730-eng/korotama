@@ -33,14 +33,26 @@ MQ.tasks = (function () {
   function lim(stage) { return LIMIT[stage] || LIMIT.s; }
   function num(n) { return NUM[n] || String(n); }
 
-  /* ごはん：N こ。ちいさい・なかくらいは おさらに くぼみ（1対1で かぞえる）。おおきいは くぼみなし＋生きものを タップして「あげる」 */
+  /* ごはん：N こ。ちいさい・なかくらいは おさらに くぼみ（1対1で かぞえる）。おおきいは くぼみなし＋生きものを タップして「あげる」
+     v0.1.10（ユーザー「りんごしか ないから タッチするだけ。ほかの 果物も まぜた ほうが」）：かごに ほかの 食べものを まぜる＝「えらぶ」＋「かぞえる」。
+     まぜる しゅるい／こ数：ちいさい 1しゅるい 2こ／なかくらい 2しゅるい 3こ／おおきい 3しゅるい 4こ。ほしい 食べものは n＋1 こ（ちょうど だけに しない）。
+     basket＝食べものの id の ならび（まぜて ある） */
+  const MIX = { s: { kinds: 1, n: 2 }, m: { kinds: 2, n: 3 }, l: { kinds: 3, n: 4 } };
   function count(stage) {
     const L = lim(stage);
     const n = U.randInt(1, L.n);
     const food = U.pick(FOODS);
+    const mx = MIX[stage] || MIX.s;
+    const others = U.sample(FOODS.filter(function (f) { return f !== food; }), mx.kinds);
+    const want = n + 1;
+    const nOther = Math.max(mx.kinds, Math.min(mx.n, 14 - want));   // かごは 14こまで（10こ ほしい ときは まぜる 数を へらす）
+    const basket = [];
+    for (let i = 0; i < want; i++) basket.push(food.id);
+    for (let i = 0; i < nOther; i++) basket.push(others[i % others.length].id);
     return {
-      kind: 'count', food: food, n: n, slots: stage !== 'l', basket: Math.min(12, Math.max(n + 1, stage === 's' ? 4 : stage === 'm' ? 6 : 10)),
+      kind: 'count', food: food, n: n, slots: stage !== 'l', basket: U.shuffle(basket), others: others,
       line: food.name + 'を ' + num(n) + ' ちょうだい',
+      wrong: function (f) { return 'それは ' + f.name + 'だね。' + food.name + 'を ' + num(n) + ' ちょうだい'; },
       ok: 'ぴったり ' + num(n) + '！ ありがとう！',
       more: 'まだ たりないよ。あと ' + num(1),
       over: 'ちょっと おおいね。ひとつ もどそう'
@@ -85,5 +97,5 @@ MQ.tasks = (function () {
       wrong: function (o) { return 'それは ' + (withColor && o.shape === want ? o.color.say + 'の ' + o.shape.name : o.shape.name) + 'だね。' + (col ? col.name + ' ' : '') + want.name + 'は どれかな？'; }
     };
   }
-  return { count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
+  return { MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
 })();

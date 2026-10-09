@@ -24,6 +24,7 @@ for (let n = 1; n <= 10; n++) {
 add('まだ たりないよ。あと ' + num(1)); add('ちょっと おおいね。ひとつ もどそう'); add('あと ' + num(1) + ' ほしいな');
 T.THINGS.forEach(function (th) { T.COLORS.forEach(function (c) { add('わあ、' + c.name + ' ' + th.name + 'だ！ ありがとう！'); }); });
 T.COLORS.forEach(function (c) { add('それは ' + c.say + 'だね。'); add(c.say + 'は どれかな？'); });
+T.FOODS.forEach(function (f) { add('それは ' + f.name + 'だね。'); });   // ごはん：ちがう 食べものを おした とき（v0.1.10）
 const base = T.COLORS.slice(0, 4);
 T.SHAPES.forEach(function (s) {
   add(s.adj + ' おもちゃは どれ？'); add('そう！ ' + s.name + 'だね！'); add('それは ' + s.name + 'だね。'); add(s.name + 'は どれかな？');
