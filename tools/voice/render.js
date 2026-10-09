@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------
-   ずんだもんで 声を 録音する（まなびたまご v0.1.7）
+   ずんだもんで 声を 録音する（ころたま v0.1.7）
      1) VOICEVOX（CPU 版）を 入れて エンジンを 立てる：%LOCALAPPDATA%\Programs\VOICEVOX\vv-engine\run.exe（http://127.0.0.1:50021）
      2) node tools/voice/render.js [--only=<key の 一部>]
         → tools/voice/lines.json の 文を 1つずつ audio_query → synthesis（speaker 3＝ずんだもん ノーマル）→ WAV → ffmpeg で mp3（48kbps モノラル）

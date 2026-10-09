@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------
-   絵を ブロックの すがたに する（まなびたまご）
+   絵を ブロックの すがたに する（ころたま）
    まなびモンスターの js/ui/photo.js の「しらべる 道具」（紙を 白に 直す → 線と 色を ひろう → 64マスの ぬりえ方式 traceCells → かっこよく coolTrace）
    を そのまま 持ってきて、画面を 知らない 形に した。中の 関数は いじって いない（写真の 見え方が まなびモンスターと 同じに なる ように）。
    使い方：
@@ -13,7 +13,7 @@ window.MQ = window.MQ || {};
 MQ.trace = (function () {
   const WORK = 320;                 // しらべる ときの 大きさ（長い ほう）
   let inkLv = 50;                   // 線の こさ（50 = ふつう）
-  let eyeTaps = [];                 // 「目は どこ？」の タップ（まなびたまごでは つかわない）
+  let eyeTaps = [];                 // 「目は どこ？」の タップ（ころたまでは つかわない）
   let lastInfo = null, lastDark = false;
   function lumOf(r, g, b) { return 0.299 * r + 0.587 * g + 0.114 * b; }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -2102,7 +2102,7 @@ MQ.trace = (function () {
 
   /* </trace> */
 
-  /* ---- 画面を 知らない 入り口（まなびたまご） ---- */
+  /* ---- 画面を 知らない 入り口（ころたま） ---- */
   function workCanvas(src, c) {
     const sx = Math.round(src.naturalWidth * c.x);
     const sy = Math.round(src.naturalHeight * c.y);

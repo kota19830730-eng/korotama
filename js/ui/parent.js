@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------
-   おうちの人の 画面（まなびたまご）：段階・声・字幕・きょうの きろく・絵を とりなおす・消す
+   おうちの人の 画面（ころたま）：段階・声・字幕・きょうの きろく・絵を とりなおす・消す
    入り方：子どもの 画面の 右上の かぎを 1.5秒 長おし
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
@@ -19,7 +19,7 @@ MQ.ui.parent = (function () {
   }
   function fileName() {
     const d = new Date();
-    return 'manabi-tamago-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
+    return 'korotama-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
   }
   /* ファイルに 保存（iPhone／iPad は 共有メニュー、ほかは ダウンロード）。まなびモンスターの v14.46 と 同じ 作り */
   function saveFile(text, name, title) {
@@ -87,14 +87,14 @@ MQ.ui.parent = (function () {
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'そのほか' }),
           h('div', { class: 'col', style: { gap: '8px' } }, [
             h('button', { class: 'btn btn--wide', type: 'button', text: hasMon ? '絵を とりなおす（生きものが かわります）' : '絵を とる', onclick: function () { MQ.sfx.tap(); if (!kid) MQ.save.newKid({}); MQ.ui.draw.open(); } }),
-            h('button', { class: 'btn btn--wide', type: 'button', text: 'きろくを ファイルに 保存', onclick: function () { MQ.sfx.tap(); saveFile(MQ.save.exportText(), fileName().replace('.json', '-all.json'), 'まなびたまごの きろく'); } }),
+            h('button', { class: 'btn btn--wide', type: 'button', text: 'きろくを ファイルに 保存', onclick: function () { MQ.sfx.tap(); saveFile(MQ.save.exportText(), fileName().replace('.json', '-all.json'), 'ころたまの きろく'); } }),
             h('button', { class: 'btn btn--wide', type: 'button', text: 'ファイルから もどす', onclick: function () {
               MQ.sfx.tap();
               const inp = h('input', { type: 'file', accept: 'application/json,.json', class: 'visually-hidden' });
               inp.addEventListener('change', function () {
                 const f = inp.files && inp.files[0]; if (!f) return;
                 const r = new FileReader();
-                r.onload = function () { try { MQ.save.importText(String(r.result)); MQ.ui.toast('もどしました'); open(); } catch (e) { MQ.ui.toast('まなびたまごの ファイルでは ないようです', 2600); } };
+                r.onload = function () { try { MQ.save.importText(String(r.result)); MQ.ui.toast('もどしました'); open(); } catch (e) { MQ.ui.toast('ころたまの ファイルでは ないようです', 2600); } };
                 r.readAsText(f);
               });
               document.body.appendChild(inp); inp.click();

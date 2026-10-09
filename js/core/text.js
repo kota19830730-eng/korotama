@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------
-   【まなびたまご】まなびモンスターの js/core/text.js の 写し（v0.1.6）。声の イントネーションを 直す ため、
+   【ころたま】まなびモンスターの js/core/text.js の 写し（v0.1.6）。声の イントネーションを 直す ため、
    読み上げる 直前に ひらがなを かん字に する（_up）だけに 使う。画面の 字は 変えない（watch を 外した）。
    ことばを 学年に 合わせる（v13.2）
 
@@ -329,7 +329,7 @@ MQ.text = (function () {
   function fit(s, opts) {
     if (s == null) return s;
     s = String(s);
-    if (!(opts && opts.level)) return s;   // まなびたまご：画面の 字は さわらない（util.h から 来る ぶん）。声の 変換は voice.js が _up を 直に 呼ぶ
+    if (!(opts && opts.level)) return s;   // ころたま：画面の 字は さわらない（util.h から 来る ぶん）。声の 変換は voice.js が _up を 直に 呼ぶ
     if (!RE_JPANY.test(s)) return s;
     if (paused && !(opts && opts.level)) return s;   // おうちの人ページを 作って いる あいだ
     const lv = (opts && opts.level) || level();
@@ -367,7 +367,7 @@ MQ.text = (function () {
 
   /* HTML の 文字列：タグの 中は さわらない。<rt>（ふりがな）の 中も さわらない */
   function fitHtml(html, opts) {
-    if (!(opts && opts.level)) return html;   // まなびたまご：画面の 字は さわらない
+    if (!(opts && opts.level)) return html;   // ころたま：画面の 字は さわらない
     if (html == null) return html;
     html = String(html);
     if (html.indexOf('<') < 0) return fit(html, opts);
@@ -453,7 +453,7 @@ MQ.text = (function () {
   }
   function pause(on) { paused = !!on; }
 
-  /* まなびたまご：画面の 字は さわらない（子どもの 画面に 字は いらない・字幕は 親が 読む）。声に 出す 前の 変換（voice.js の spokenForm）だけに 使う ので、自動の watch() は しない */
+  /* ころたま：画面の 字は さわらない（子どもの 画面に 字は いらない・字幕は 親が 読む）。声に 出す 前の 変換（voice.js の spokenForm）だけに 使う ので、自動の watch() は しない */
 
   return {
     fit: fit, fitHtml: fitHtml, level: level, limitOf: limitOf, unspace: unspace, soften: soften,

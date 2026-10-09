@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------
-   はじめの 画面 → おうちの人の 設定 → 絵を とる／かく → たまご（まなびたまご）
+   はじめの 画面 → おうちの人の 設定 → 絵を とる／かく → たまご（ころたま）
      MQ.ui.start.open()  … タイトル
      MQ.ui.setup.open()  … おうちの人が さいしょに 決める（名前・だんかい・声）
      MQ.ui.draw.open()   … 写真を とる か ゆびで かく → ブロックの すがた（MQ.trace）→ えらぶ → たまごへ
@@ -24,7 +24,7 @@ MQ.ui = MQ.ui || {};
           return b;
         })()]),
         h('div', { class: 'page__body' }, [h('div', { class: 'wrap col', style: { alignItems: 'center', gap: '26px', paddingTop: '30px' } }, [
-          h('div', { class: 'title' }, [h('h1', { class: 'title__logo', text: 'まなびたまご' }), h('p', { class: 'title__sub', text: 'きみの えが たまごから うまれる' })]),
+          h('div', { class: 'title' }, [h('h1', { class: 'title__logo', text: 'ころたま' }), h('p', { class: 'title__sub', text: 'きみの えが たまごから うまれる' })]),
           h('div', { style: { position: 'relative', width: '200px', height: '230px' } }, [
             h('div', { style: { position: 'absolute', left: '30px', top: '0' } }, [egg]),
             h('div', { class: 'nest', style: { position: 'absolute', left: '0', top: '160px' } }, [h('i', { class: 'nest__a' }), h('i', { class: 'nest__b' })]),

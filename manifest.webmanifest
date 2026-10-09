@@ -1,6 +1,6 @@
 {
-  "name": "まなびたまご",
-  "short_name": "まなびたまご",
+  "name": "ころたま",
+  "short_name": "ころたま",
   "description": "3〜6さいの ちいく あそび。きみの えが たまごから うまれる。",
   "start_url": "./index.html",
   "scope": "./",
