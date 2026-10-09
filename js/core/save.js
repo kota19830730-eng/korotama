@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------
    きろく（ころたま）
    localStorage に 1つだけ。外には 何も 送らない。
-     kid       … { name, stage('s'|'m'|'l'), mon, stamps{日づけ: 数}, done{count,color,shape}, created }
+     kid       … { name, stage('s'|'m'|'l'|'k'), mon, stamps{日づけ: 数}, done{count,color,shape}, created }
      kid.mon   … まなびモンスターの「じぶんの モンスター」と 同じ 形
                  { id:'my-…', name, png, png2, png3, trace:true, area:'sansu' } → そのまま つれていける
      settings  … { voice, pitch('normal'|'high'), rate('slow'|'normal'), voiceKind('zunda'|'device'), hint, sound }
@@ -10,7 +10,7 @@ window.MQ = window.MQ || {};
 
 MQ.save = (function () {
   const KEY = 'manabi-tamago-save-v1';   // 名前は「ころたま」に なったが キーは そのまま（変えると 記録が 消える）
-  const STAGES = { s: 'ちいさい', m: 'なかくらい', l: 'おおきい' };
+  const STAGES = { s: 'ちいさい', m: 'なかくらい', l: 'おおきい', k: 'ねんちょう' };
   const GROW_AT = [0, 6, 15];          // スタンプの 合計で すがたが かわる（1→2 は 6こ・2→3 は 15こ）
   let data = null;
 

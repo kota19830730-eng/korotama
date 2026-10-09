@@ -13,6 +13,8 @@
   画面の 通しテストと スクリーンショット（headless Chrome）。ハッシュで モード：
     #start #setup #draw #canvas #preview #egg #home #care #care:l #care:l:max #shop #play #play:l #done #done:grow #parent
     #flow（ごはん・おみせ・あそぶ を 自動で 答えて できた！まで）
+    #kazu:<count|color>[:<add|take|hear|see>][:wrong|:count]（ねんちょう v0.1.11・wrong＝まちがえて 2回め の 声まで／count＝おさらを タッチして かぞえる）
+    #kflow（ねんちょうで ごはん・おみせ を 1回ずつ まちがえて から 正解 → できた！）
     #photo:<file URL>（本物の 写真 → --allow-file-access-from-files が いる）
   にせの 声（headless に 声は ない）・にせの 絵（かいた ように 見せた 画像）で 生きものを 作ってから 画面を 出す。
   けっかは <pre id="log">。
@@ -52,6 +54,7 @@
 <script src="../js/ui/care.js"></script>
 <script src="../js/ui/shop.js"></script>
 <script src="../js/ui/play.js"></script>
+<script src="../js/ui/kazu.js"></script>
 <script src="../js/ui/parent.js"></script>
 <script src="../js/ui/boot.js"></script>
 <script>
@@ -164,6 +167,51 @@
       im.onload = function () { const t0 = performance.now(); MQ.ui.draw.fromImage(im, true); log('photo ms=' + Math.round(performance.now() - t0) + ' info=' + JSON.stringify(MQ.cutout.info() && MQ.cutout.info().drawn)); finish(); };
       im.onerror = function () { log('ERROR photo load'); errors++; finish(); };
       im.src = Q.slice(1).join(':');
+    },
+    kazu: function () {
+      withMon('k', function () {
+        const kind = arg || 'count', m = Q[2], extra = Q[3];
+        if (m) { const S0 = MQ.tasks.sum, N0 = MQ.tasks.numeral; MQ.tasks.sum = function () { return S0(m === 'take' ? 'take' : 'add'); }; MQ.tasks.numeral = function () { return N0(m === 'see' ? 'see' : 'hear'); }; }
+        (kind === 'count' ? MQ.ui.care : MQ.ui.shop).open();
+        setTimeout(async function () {
+          const st = MQ.ui.kazu.state();
+          log('kazu: ' + st.kind + ' ' + st.task.mode + ' ans=' + st.task.ans + ' choices=' + st.task.choices.join(',') + ' line=' + st.task.line);
+          if (extra === 'wrong') {
+            const w = $$('.screen.is-active .numcard').filter(function (b) { return Number(b.dataset.v) !== st.task.ans; });
+            click(w[0]); await wait(60); click(w[1]); await wait(60);
+            log('misses=' + MQ.ui.kazu.state().misses + ' last said=' + said.slice(-3).join(' / '));
+          }
+          if (extra === 'count') {
+            const items = $$('.screen.is-active .cnt').filter(function (b) { return !b.classList.contains('is-eaten'); });
+            items.slice(0, 3).forEach(function (b) { click(b); });
+            log('counted=' + MQ.ui.kazu.state().counted + ' eaten=' + $$('.screen.is-active .cnt.is-eaten').length);
+          }
+          finish();
+        }, m === 'take' ? 1600 : 400);
+      });
+    },
+    kflow: function () {
+      withMon('k', async function () {
+        MQ.ui.home.open(); await wait(200);
+        const kinds = [['.big--gold', 'count'], ['.big--clay', 'color']];
+        for (let q = 0; q < kinds.length; q++) {
+          click($('#screen-home ' + kinds[q][0])); await wait(1600);
+          for (let r = 0; r < 3; r++) {
+            const st = MQ.ui.kazu.state();
+            if (st.task.mode === 'take') await wait(1200);
+            const btns = $$('.screen.is-active .numcard');
+            const w = btns.filter(function (b) { return Number(b.dataset.v) !== st.task.ans; })[0];
+            click(w); await wait(60);
+            click(btns.filter(function (b) { return Number(b.dataset.v) === st.task.ans; })[0]); await wait(1500);
+            log(kinds[q][1] + ' r' + r + ' ' + st.task.mode + ' ok=' + (MQ.ui.kazu.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+          }
+          await wait(200);
+          log('after ' + kinds[q][1] + ': ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday());
+          click($('#screen-done .btn--gold')); await wait(300);
+        }
+        log('done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
     },
     flow: function () {
       withMon(arg || 's', async function () {

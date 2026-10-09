@@ -30,6 +30,13 @@ T.SHAPES.forEach(function (s) {
   add(s.adj + ' おもちゃは どれ？'); add('そう！ ' + s.name + 'だね！'); add('それは ' + s.name + 'だね。'); add(s.name + 'は どれかな？');
   base.forEach(function (c) { add(c.name + ' ' + s.adj + ' おもちゃは どれ？'); add('そう！ ' + c.name + ' ' + s.name + 'だね！'); add('それは ' + c.say + 'の ' + s.name + 'だね。'); add(c.name + ' ' + s.name + 'は どれかな？'); });
 });
+/* ---- ねんちょう（v0.1.11）：あわせる・わける・すうじ。文は 短く 区切って ある ので 何回も 作って 文を 集める ---- */
+for (let n = 1; n <= 20; n++) add(T.read(n));          // タッチで かぞえる「いち、に、さん」
+for (let i = 0; i < 40000; i++) {
+  const t = i % 2 ? T.sum() : T.numeral();
+  [t.line, t.ok].forEach(add);
+  for (let v = 1; v <= 20; v++) { add(t.wrong1(v)); add(t.wrong2(v)); }
+}
 /* ---- 画面の 声（js/ui/*.js の say・名前は 外した 形） ---- */
 [
   'おはよう！ きょうは なにを する？', 'こんにちは！ なにを する？', 'こんばんは！ なにを する？',

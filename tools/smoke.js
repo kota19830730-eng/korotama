@@ -187,5 +187,40 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(!bad, 'ごはん：かごに ほかの 食べもの（s 1しゅるい2こ／m 2しゅるい3こ／l 3しゅるい4こ）・ほしい ものは n＋1 こ');
 })();
 
+/* ---- ねんちょう（k・v0.1.11）：あわせる・わける・すうじを よむ ---- */
+(function () {
+  let bad = [], modes = {};
+  for (let i = 0; i < 2000; i++) {
+    const s = MQ.tasks.count('k'), n = MQ.tasks.shop('k'), p = MQ.tasks.shape('k');
+    [s, n].forEach(function (t) {
+      modes[t.mode] = 1;
+      const max = t.mode === 'hear' ? 20 : 10;
+      if (t.choices.indexOf(t.ans) < 0 || new Set(t.choices).size !== t.choices.length || t.choices.some(function (v) { return v < 1 || v > max; })) bad.push('choices ' + t.mode);
+      if (t.choices.length !== (t.mode === 'hear' ? 4 : 3)) bad.push('choices len ' + t.mode);
+      if (KANJI.test(t.line + t.ok + t.wrong1(t.choices[0]) + t.wrong2(t.choices[0]))) bad.push('kanji ' + t.mode);
+    });
+    if (s.kind !== 'sum' || n.kind !== 'numeral') bad.push('kind');
+    if (s.mode === 'add' && (s.a + s.b !== s.ans || s.ans > 10 || s.foodA === s.foodB)) bad.push('add');
+    if (s.mode === 'take' && (s.n - s.k !== s.ans || s.ans < 1 || s.k < 1)) bad.push('take');
+    if (n.mode === 'see' && (n.ans < 3 || n.ans > 10)) bad.push('see');
+    if (p.options.length !== 6 || p.options.filter(function (o) { return o.ok; }).length !== 1 || !p.color) bad.push('shape k');
+  }
+  ok(!bad.length && modes.add && modes.take && modes.hear && modes.see, 'ねんちょう：あわせる（10まで）・わける（のこり 1いじょう）・すうじ（ふだに 答えが 1まい）・形 5つ＋色' + (bad.length ? '：' + bad.slice(0, 4).join(' / ') : ''));
+  ok(MQ.tasks.read(14) === 'じゅうよん' && MQ.tasks.read(20) === 'にじゅう' && MQ.tasks.numeral('hear').wrong2 && /いちと よんって かくよ/.test((function () { let t; do { t = MQ.tasks.numeral('hear'); } while (t.ans !== 14); return t.wrong2(4); })()), 'ねんちょう：数字の 読みと 2けたの 書き方「じゅうよんは、いちと よんって かくよ」');
+  ok(MQ.save.STAGES.k === 'ねんちょう', 'きろく：段階 k（ねんちょう）');
+  ok(scripts.indexOf('js/ui/kazu.js') > scripts.indexOf('js/ui/shop.js') && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./js/ui/kazu.js') > 0, 'kazu.js を 読む（index・sw）');
+  // ねんちょうの 声の 文が ぜんぶ 録音の 一覧に ある
+  const keys = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/voice/lines.json'), 'utf8')).map(function (l) { return l.key; }));
+  const miss = {};
+  for (let i = 0; i < 3000; i++) {
+    const t = i % 2 ? MQ.tasks.sum() : MQ.tasks.numeral();
+    const all = [t.line, t.ok];
+    t.choices.forEach(function (v) { all.push(t.wrong1(v), t.wrong2(v)); });
+    for (let c = 1; c <= 10; c++) all.push(MQ.tasks.read(c));
+    all.join('|').replace(/([。！？!?])/g, '$1|').split('|').map(function (x) { return x.trim().replace(/[ 　]+/g, ''); }).filter(Boolean).forEach(function (k) { if (!keys.has(k) && k !== '。') miss[k] = 1; });
+  }
+  ok(!Object.keys(miss).length, 'ねんちょうの 声の 文は ぜんぶ 録音の 一覧に ある' + (Object.keys(miss).length ? '：' + Object.keys(miss).slice(0, 5).join(' / ') : ''));
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

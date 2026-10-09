@@ -247,3 +247,29 @@ input { font-family: inherit; }
 /* ふきだしの 絵（v0.1.10）：多い ときは 折り返す（10こで はみ出して 字も 切れて いた） */
 .balloon > div { min-width: 0; }
 .balloon .pics { display: flex; flex-wrap: wrap; gap: 0; margin-top: 2px; }
+
+/* ---- ねんちょう：かずの ふだ・タッチで かぞえる（v0.1.11・kazu.js） ---- */
+.cnt { position: relative; }
+.cnt__n { position: absolute; right: -4px; top: -6px; min-width: 24px; height: 24px; border-radius: 12px; background: #2c4a7a; color: #fffdf7; font-size: 15px; line-height: 24px; text-align: center; display: none; }
+.cnt.is-on .cnt__n { display: block; animation: platePop .3s ease-out 1; }
+.cnt.is-eaten { opacity: .22; filter: grayscale(1); transition: opacity .5s, filter .5s; }
+.tray2 { gap: 14px; padding: 14px 16px; }
+.tray2 .grp { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-content: center; max-width: 166px; min-height: 64px; box-sizing: border-box; padding: 8px; border-radius: 26px; background: #f1e6cd; box-shadow: inset 0 -4px 0 #e6d7b6; }
+.tray2 .item { width: 46px; height: 50px; }
+.tray2 .item .food { transform: scale(.8); }
+.plate.is-many .cnt { width: 46px; height: 46px; }
+.plate.is-many .cnt .food { transform: scale(.75); }
+.tray5 { display: grid; grid-template-columns: repeat(5, 56px); gap: 6px 8px; min-height: 0; }
+.tray5 .cnt { width: 56px; height: 64px; }
+.tray5 .thing { transform: scale(.62); }
+.numcards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.numcards--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.numcard { min-height: 92px; border: 0; border-radius: 20px; background: var(--card); box-shadow: 0 5px 0 var(--line); font-size: 54px; line-height: 1; color: #2c4a7a; display: flex; align-items: center; justify-content: center; padding: 0; }
+.numcards--4 .numcard { font-size: 42px; min-height: 84px; }
+.numcard:active { transform: translateY(3px); }
+.numcard.is-shake { animation: shake .4s ease-in-out 1; }
+.numcard.is-no { opacity: .45; }
+.numcard.is-ok { background: #e6f2d9; box-shadow: 0 5px 0 var(--green2); color: #3d7a2a; }
+.numcards--box .numcard { background: var(--c); box-shadow: inset -8px -8px 0 var(--d), 0 5px 0 #c9955a; color: #fffdf7; border-radius: 14px; }
+.numcards--box .numcard span { background: rgba(255, 253, 247, .95); color: #2f2a26; border-radius: 10px; padding: 4px 6px; min-width: 52px; }
+.numcards--box .numcard.is-ok { box-shadow: 0 0 0 5px var(--green2), 0 5px 0 #c9955a; }

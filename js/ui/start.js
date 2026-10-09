@@ -86,8 +86,10 @@ MQ.ui = MQ.ui || {};
       let vkind = MQ.save.settings().voiceKind || 'zunda';
       const name = h('input', { class: 'field', type: 'text', maxlength: '8', placeholder: 'お子さんの 名前（なくても OK）', value: kid.name || '' });
       const segs = {};
+      const STAGE_NOTE = { s: 'ちいさい：数は 3まで・色 3つ・形 2つ。お皿に くぼみ（数えやすくする印）あり。', m: 'なかくらい：数は 5まで・色 4つ・形 3つ。お皿に くぼみ あり。', l: 'おおきい：数は 10まで・色 5つ・形 4つ＋色。くぼみ なし（自分で「あげる」）。', k: 'ねんちょう：ごはん＝あわせる・わける（ぜんぶで いくつ？ のこりは？）・おみせ＝数字を 読む（1〜20）。小学校の たし算・ひき算の 手まえです。' };
+      const stageNote = h('p', { class: 'note', style: { marginTop: '8px' }, text: STAGE_NOTE[stage] || STAGE_NOTE.s });
       function segRow(items, cur, onPick) {
-        const row = h('div', { class: 'seg' + (items.length === 2 ? ' seg--2' : '') });
+        const row = h('div', { class: 'seg' + (items.length === 2 || items.length === 4 ? ' seg--2' : '') });
         items.forEach(function (it) {
           const b = h('button', { class: 'seg__b' + (it.id === cur ? ' is-on' : ''), type: 'button' }, [h('span', { text: it.name }), it.sub ? h('small', { text: it.sub }) : null]);
           b.onclick = function () { MQ.sfx.tap(); row.querySelectorAll('.seg__b').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on'); onPick(it.id); };
@@ -101,8 +103,8 @@ MQ.ui = MQ.ui || {};
           h('h1', { class: 'pp__title', text: 'さいしょに 決めること' }),
           h('p', { class: 'note', text: 'ここは おうちの人の 画面です。あとから 右上の かぎを 長おしして 変えられます。' }),
           h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの 段階' }),
-            segRow([{ id: 's', name: 'ちいさい', sub: '3〜4さい' }, { id: 'm', name: 'なかくらい', sub: '4〜5さい' }, { id: 'l', name: 'おおきい', sub: '5〜6さい' }], stage, function (v) { stage = v; }),
-            h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ちいさい：数は 3まで・色 3つ・形 2つ。お皿に くぼみ（数えやすくする印）あり。' })]),
+            segRow([{ id: 's', name: 'ちいさい', sub: '3〜4さい' }, { id: 'm', name: 'なかくらい', sub: '4〜5さい' }, { id: 'l', name: 'おおきい', sub: '5〜6さい' }, { id: 'k', name: 'ねんちょう', sub: '6さい・数字' }], stage, function (v) { stage = v; stageNote.textContent = STAGE_NOTE[v]; }),
+            stageNote]),
           h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '声' }),
             segRow([{ id: 'zunda', name: 'ずんだもん', sub: '録音した 声' }, { id: 'device', name: '端末の 声', sub: '高さ・はやさを 変えられる' }], vkind, function (v) { vkind = v; MQ.save.setSetting('voiceKind', v); MQ.voice.setKind(v); }),
             segRow([{ id: 'normal', name: 'ふつうの 声' }, { id: 'high', name: '高めの 声' }], pitch, function (v) { pitch = v; MQ.save.setSetting('pitch', v); MQ.voice.setPitch(v); }),

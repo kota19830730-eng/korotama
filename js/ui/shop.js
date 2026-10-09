@@ -26,7 +26,10 @@ MQ.ui.shop = (function () {
       h('i', { style: { left: '30px', top: '130px', width: '84px', height: '8px', borderRadius: '50%', background: 'rgba(60,70,40,.22)' } })
     ]);
   }
-  function open() { round = 0; next(); }
+  function open() {
+    if (MQ.save.kid() && MQ.save.kid().stage === 'k') { MQ.ui.kazu.open('color'); return; }   // ねんちょう＝すうじを よむ（kazu.js）
+    round = 0; next();
+  }
   function next() {
     const kid = MQ.save.kid();
     task = MQ.tasks.shop(kid.stage);
@@ -88,5 +91,5 @@ MQ.ui.shop = (function () {
       box.appendChild(h('div', { class: 'bslot' + (i < placed ? ' is-full' : '') }, [i < placed ? MQ.ui.thingNode(task.thing.id, task.want) : null]));
     }
   }
-  return { open: open, next: next, state: function () { return { round: round, task: task, placed: placed }; } };
+  return { customer: customerNode, open: open, next: next, state: function () { return { round: round, task: task, placed: placed }; } };
 })();

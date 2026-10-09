@@ -9,7 +9,7 @@ MQ.ui.parent = (function () {
   const h = MQ.util.h;
 
   function seg(items, cur, onPick, two) {
-    const row = h('div', { class: 'seg' + (two ? ' seg--2' : '') });
+    const row = h('div', { class: 'seg' + (two || items.length === 4 ? ' seg--2' : '') });
     items.forEach(function (it) {
       const b = h('button', { class: 'seg__b' + (it.id === cur ? ' is-on' : ''), type: 'button' }, [h('span', { text: it.name }), it.sub ? h('small', { text: it.sub }) : null]);
       b.onclick = function () { MQ.sfx.tap(); row.querySelectorAll('.seg__b').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on'); onPick(it.id); };
@@ -60,8 +60,8 @@ MQ.ui.parent = (function () {
           h('button', { class: 'btn', type: 'button', text: hasMon ? '子どもの 画面へ' : 'もどる', onclick: function () { MQ.sfx.tap(); if (hasMon) MQ.ui.home.open(); else MQ.ui.start.open(); } })
         ]),
         kid ? h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの 段階' }),
-          seg([{ id: 's', name: 'ちいさい', sub: '3〜4さい' }, { id: 'm', name: 'なかくらい', sub: '4〜5さい' }, { id: 'l', name: 'おおきい', sub: '5〜6さい' }], kid.stage, function (v) { MQ.save.update(function (d) { d.kid.stage = v; }); }),
-          h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ちいさい：数 3まで・色 3つ・形 2つ（お皿に くぼみ）／なかくらい：数 5まで・色 4つ・形 3つ／おおきい：数 10まで・色 5つ・形 4つ＋色（くぼみ なし・自分で「あげる」）' })]) : null,
+          seg([{ id: 's', name: 'ちいさい', sub: '3〜4さい' }, { id: 'm', name: 'なかくらい', sub: '4〜5さい' }, { id: 'l', name: 'おおきい', sub: '5〜6さい' }, { id: 'k', name: 'ねんちょう', sub: '6さい・数字' }], kid.stage, function (v) { MQ.save.update(function (d) { d.kid.stage = v; }); }),
+          h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ちいさい：数 3まで・色 3つ・形 2つ（お皿に くぼみ）／なかくらい：数 5まで・色 4つ・形 3つ／おおきい：数 10まで・色 5つ・形 4つ＋色（くぼみ なし・自分で「あげる」）／ねんちょう：ごはん＝あわせる・わける（ぜんぶで いくつ？ のこりは？）・おみせ＝数字を 読む（1〜20）・形 5つ＋色' })]) : null,
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '声と 字幕' }),
           h('div', { class: 'kv', style: { marginBottom: '6px' } }, [h('span', { text: '声の しゅるい' })]),
           seg([{ id: 'zunda', name: 'ずんだもん' }, { id: 'device', name: '端末の 声' }], st.voiceKind || 'zunda', function (v) { MQ.save.setSetting('voiceKind', v); MQ.voice.setKind(v); }, true),
