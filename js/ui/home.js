@@ -41,8 +41,21 @@ MQ.ui = MQ.ui || {};
   };
   /* </lines> */
   const TAPS = ['happy', 'jump', 'spin', 'shy', 'yawn'];
+  // 家の 横の ポスト（おてつだいの おてがみ・v0.2.2）。waiting＝ふうとうが のぞく＋旗が 上がる／done＝旗が おりて はなまる
+  function postSvg(done) {
+    return '<svg viewBox="0 0 48 64">' +
+      '<rect x="21" y="34" width="6" height="28" rx="2" fill="#a07249"/>' +
+      '<ellipse cx="24" cy="62" rx="10" ry="2.5" fill="rgba(60,40,20,.18)"/>' +
+      (done ? '<rect x="38" y="20" width="3" height="16" rx="1.5" fill="#8c6a4a"/><rect x="38" y="30" width="9" height="6" rx="1.5" fill="#f2b544"/>'
+            : '<rect x="38" y="6" width="3" height="30" rx="1.5" fill="#8c6a4a"/><path d="M41 6h7l-2 4 2 4h-7z" fill="#f2b544"/>') +
+      '<path d="M6 18a18 12 0 0 1 36 0v18H6z" fill="#e0493a"/>' +
+      '<path d="M6 30h36v6H6z" fill="#c4392c"/>' +
+      '<rect x="12" y="20" width="24" height="4" rx="2" fill="#7a2a22"/>' +
+      (done ? '<g transform="translate(12 13) scale(.5)" fill="none" stroke="#ffe08a" stroke-width="5" stroke-linecap="round"><path d="M24 7c9 0 16 6 16 15s-7 16-16 16S8 32 8 23c0-8 6-14 14-14"/></g>'
+            : '<g transform="rotate(-8 24 14)"><rect x="13" y="9" width="22" height="14" rx="2" fill="#fffdf7" stroke="#e3d6bd" stroke-width="1.2"/><path d="M13.5 10l10.5 7 10.5-7" stroke="#d2765c" stroke-width="1.6" fill="none"/><path d="M24 19.5c-2-1.4-3.2-2.3-3.2-3.5a1.6 1.6 0 0 1 3.2-.6 1.6 1.6 0 0 1 3.2.6c0 1.2-1.2 2.1-3.2 3.5z" fill="#e0493a"/></g><rect x="12" y="20" width="24" height="4" rx="2" fill="#7a2a22" opacity=".55"/>') +
+      '</svg>';
+  }
   const GARDEN_AT = [[4, -62], [64, -54], [186, -58]];   // おにわの かざりの 場所（ばめんの 下からの たかさ）
-  const HANAMARU = '<svg viewBox="0 0 48 48"><g fill="none" stroke="#e0493a" stroke-width="3.2" stroke-linecap="round"><path d="M24 7c9 0 16 6 16 15s-7 16-16 16S8 32 8 23c0-8 6-14 14-14 7 0 12 5 12 12s-5 11-11 11-9-4-9-9 4-8 8-8"/></g><path d="M10 40c4 2 6 6 6 6M38 40c-4 2-6 6-6 6" stroke="#7fb069" stroke-width="3" stroke-linecap="round" fill="none"/></svg>';
   const IDLE = { look: 20000, yawn: 35000, sleep: 50000 };   // ほっといた 時間（ms）
 
   let idleT = [];
@@ -80,9 +93,10 @@ MQ.ui = MQ.ui || {};
         friend.onclick = function (e) { e.stopPropagation(); MQ.sfx.jump(); friend.classList.remove('is-hop'); void friend.offsetWidth; friend.classList.add('is-hop'); sayIfFree(MQ.util.pick(LINES.friend)); };
         scene.appendChild(friend);
       }
-      /* ---- D（v0.2）：おてつだいの おてがみ（きょう まだ なら ふうとう が ゆれる・できたら はなまる） ---- */
+      /* ---- D（v0.2）：おてつだいの おてがみ。v0.2.2：家の 横の ポスト（ユーザー「目立つ ところに ありすぎて 邪魔」）。
+         きょう まだ なら ふうとうが ポストから のぞいて 旗が 上がる（ゆらさない）・できたら 旗を おろして はなまる ---- */
       const helped = MQ.chores.doneToday(kid);
-      const letter = h('button', { class: 'letter' + (helped ? ' is-done' : ''), type: 'button', 'aria-label': helped ? 'はなまる' : 'おてがみ', style: { left: '124px', top: (SH - 204) + 'px' }, html: helped ? HANAMARU : MQ.ui.SVG.letter });
+      const letter = h('button', { class: 'letter' + (helped ? ' is-done' : ''), type: 'button', 'aria-label': helped ? 'はなまる' : 'おてがみ', style: { left: '92px', top: (SH - 158) + 'px' }, html: postSvg(helped) });
       letter.onclick = function (e) { e.stopPropagation(); MQ.sfx.tap(); MQ.ui.stopSpeak(); clearIdle(); if (helped) { sayIfFree('きょうの おてつだい、ありがとう！'); return; } MQ.ui.otetsudai.open(); };
       scene.appendChild(letter);
 

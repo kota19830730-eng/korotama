@@ -207,7 +207,7 @@
       const im = new Image(); im.onload = function () { MQ.ui.draw.fromImage(im, false); finish(); }; im.src = fakeDrawing();
     },
     egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
-    home: function () { withMon(arg || 's', function () { MQ.ui.home.open(); setTimeout(finish, 400); }); },
+    home: function () { withMon(arg || 's', function () { if (Q[2] === 'helped') MQ.save.update(function (d) { d.kid.help[MQ.save.today()] = 'shoes'; }); MQ.ui.home.open(); setTimeout(function () { const L = MQ.ui.home._t.letter, r = L.getBoundingClientRect(); log('letter: ' + L.getAttribute('aria-label') + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); finish(); }, 400); }); },   // #home[:段階[:helped]]（helped＝きょうの おてつだい ずみ＝ポストに はなまる）
     // 鍵の 長おし（v0.1.18）：touch＝touchstart→1.6秒→touchend で おうちの人の 画面／tap＝短く はなす→トースト／mouse＝pointer（マウス）／shot＝押して いる 途中を 撮る
     hold: function () { withMon('s', function () { MQ.ui.home.open(); setTimeout(function () {
       const b = $('#screen-home .rbtn--lock');
