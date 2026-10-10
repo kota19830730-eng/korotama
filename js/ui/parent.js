@@ -59,6 +59,16 @@ MQ.ui.parent = (function () {
           h('h1', { class: 'pp__title', text: 'おうちの人の 画面' }),
           h('button', { class: 'btn', type: 'button', text: hasMon ? '子どもの 画面へ' : 'もどる', onclick: function () { MQ.sfx.tap(); if (hasMon) MQ.ui.home.open(); else MQ.ui.start.open(); } })
         ]),
+        hasMon ? h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '生きもの（キャラクター）を かえる' }),
+          h('div', { class: 'row', style: { gap: '12px', alignItems: 'center', marginBottom: '8px' } }, [
+            MQ.blocks.imgBox(kid.mon.png, { size: 72 }),
+            h('div', { class: 'note', style: { margin: '0' }, text: 'いまは「' + (kid.mon.name || 'たまごちゃん') + '」。とちゅうで いつでも かえられます。' })
+          ]),
+          h('div', { class: 'col', style: { gap: '8px' } }, [
+            h('button', { class: 'btn btn--clay btn--wide', type: 'button', text: 'キャラクターから えらびなおす', onclick: function () { MQ.sfx.tap(); MQ.ui.draw.openPresets('cute'); } }),
+            h('button', { class: 'btn btn--wide', type: 'button', text: 'お子さんの 絵に かえる', onclick: function () { MQ.sfx.tap(); MQ.ui.draw.open(); } })
+          ]),
+          h('p', { class: 'note', style: { marginTop: '8px' }, text: 'スタンプ・きろく・成長の 段階は そのまま 引きつぎます。新しい 生きものは たまごから もう一度 うまれます。' })]) : null,
         kid ? h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの 段階' }),
           seg([{ id: 's', name: 'ちいさい', sub: '3〜4さい' }, { id: 'm', name: 'なかくらい', sub: '4〜5さい' }, { id: 'l', name: 'おおきい', sub: '5〜6さい' }, { id: 'k', name: 'ねんちょう', sub: '6さい・数字' }], kid.stage, function (v) { MQ.save.update(function (d) { d.kid.stage = v; }); }),
           h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ちいさい：数 3まで・色 3つ・形 2つ（お皿に くぼみ）／なかくらい：数 5まで・色 4つ・形 3つ／おおきい：数 10まで・色 5つ・形 4つ＋色（くぼみ なし・自分で「あげる」）／ねんちょう：ごはん＝あわせる・わける（ぜんぶで いくつ？ のこりは？）・おみせ＝数字を 読む（1〜20）・形 5つ＋色' })]) : null,
@@ -92,7 +102,7 @@ MQ.ui.parent = (function () {
           ])]) : null,
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'そのほか' }),
           h('div', { class: 'col', style: { gap: '8px' } }, [
-            h('button', { class: 'btn btn--wide', type: 'button', text: hasMon ? '絵を とりなおす（生きものが かわります）' : '絵を とる', onclick: function () { MQ.sfx.tap(); if (!kid) MQ.save.newKid({}); MQ.ui.draw.open(); } }),
+            hasMon ? null : h('button', { class: 'btn btn--wide', type: 'button', text: '絵を とる', onclick: function () { MQ.sfx.tap(); if (!kid) MQ.save.newKid({}); MQ.ui.draw.open(); } }),
             h('button', { class: 'btn btn--wide', type: 'button', text: 'きろくを ファイルに 保存', onclick: function () { MQ.sfx.tap(); saveFile(MQ.save.exportText(), fileName().replace('.json', '-all.json'), 'ころたまの きろく'); } }),
             h('button', { class: 'btn btn--wide', type: 'button', text: 'ファイルから もどす', onclick: function () {
               MQ.sfx.tap();

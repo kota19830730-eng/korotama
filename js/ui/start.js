@@ -228,7 +228,8 @@ MQ.ui = MQ.ui || {};
         h('h1', { class: 'pp__title', text: 'キャラクターを えらぶ' }),
         h('p', { class: 'note', text: 'お子さんに「どれが いい？」と きいて、タップしてください。' }),
         tabs, grid,
-        h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: 'もどる', onclick: function () { MQ.sfx.tap(); MQ.ui.draw.open(); } })
+        (MQ.save.kid() && MQ.save.kid().mon) ? h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: 'いまの ままで よい（もどる）', onclick: function () { MQ.sfx.tap(); MQ.ui.parent.open(); } })
+          : h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: 'もどる', onclick: function () { MQ.sfx.tap(); MQ.ui.draw.open(); } })
       ])])
     ]);
     MQ.ui.mount('screen-draw', page);
