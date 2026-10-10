@@ -13,7 +13,7 @@ const ctx = { window: null, console: console, document: undefined }; ctx.window 
 const T = ctx.MQ.tasks, X = ctx.MQ.text;
 const num = T.num;
 const out = [];
-function add(s) { String(s).replace(/([。！？!?])/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) { if (out.indexOf(t) < 0) out.push(t); }); }
+function add(s) { if (/^#[0-9a-f]{6}$/i.test(String(s).trim())) return; String(s).replace(/([。！？!?])/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) { if (out.indexOf(t) < 0) out.push(t); }); }   // 色の コード（pick(['#…'])）は 声では ない
 
 /* ---- もんだい（tasks.js の 型を ぜんぶ） ---- */
 for (let n = 1; n <= 10; n++) {
@@ -75,11 +75,17 @@ for (let i = 0; i < 40000; i++) {
 ].forEach(add);
 for (let n = 1; n <= 5; n++) add('できた！ スタンプ ' + num(n) + 'め！ うれしいよ！');
 /* js/ui/*.js の say('…') の 文字列も ひろう（手で 書き忘れた ぶん） */
-['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/kazu.js', 'js/ui/kurabe.js', 'js/ui/moji.js', 'js/ui/tokei.js'].forEach(function (f) {
+['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/kazu.js', 'js/ui/kurabe.js', 'js/ui/moji.js', 'js/ui/tokei.js', 'js/ui/common.js'].forEach(function (f) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
   (src.match(/say\('([^']+)'/g) || []).forEach(function (m) { add(m.slice(5, -1)); });
   (src.match(/pick\(\[([^\]]+)\]/g) || []).forEach(function (m) { (m.match(/'([^']+)'/g) || []).forEach(function (q) { add(q.slice(1, -1)); }); });
 });
+/* home.js の <lines> … </lines> の 中（キャラクターの ひとこと・v0.1.16）と common.js の 背景の ひとこと */
+(function () {
+  const src = fs.readFileSync(path.join(ROOT, 'js/ui/home.js'), 'utf8');
+  const i = src.indexOf('<lines>'), j = src.indexOf('</lines>');
+  if (i >= 0 && j > i) (src.slice(i, j).match(/'([^']+)'/g) || []).forEach(function (q) { add(q.slice(1, -1)); });
+})();
 const V = (function () { const c = { window: null, console: console }; c.window = c; c.MQ = ctx.MQ; vm.createContext(c); vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/core/voice.js'), 'utf8'), c); return c.MQ.voice; })();
 function spoken(s) { let o = X._up(X._up(V.clockRead(s), 6), 6); return V.kanaRead(o.replace(/[ 　]+/g, '')); }
 const list = out.map(function (k) { return { key: k.replace(/[ 　]+/g, ''), text: spoken(k) }; });

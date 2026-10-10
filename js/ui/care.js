@@ -40,10 +40,9 @@ MQ.ui.care = (function () {
     paint();
     const kid = MQ.save.kid();
     mon.addEventListener('click', function () {
-      MQ.sfx.tap();
       if (busy) return;
-      if (!task.slots) judge();            // おおきい：生きものを タップ ＝ あげる
-      else mon.mood('happy');
+      if (!task.slots) { MQ.sfx.tap(); judge(); }   // おおきい：生きものを タップ ＝ あげる
+      else MQ.ui.quietTap(mon);   // もんだい中は うなずく/首を かしげる だけ（C・v0.1.16）
     });
     const page = h('div', { class: 'page' }, [
       MQ.ui.topBar({ home: true, replay: function () { bl.say(task.line, null, foodPics(task.n)); } }),

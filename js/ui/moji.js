@@ -106,7 +106,7 @@ MQ.ui.moji = (function () {
     const mon = MQ.ui.monNode(130);
     const bl = MQ.ui.balloon('');
     els = { mon: mon, bl: bl };
-    mon.addEventListener('click', function () { MQ.sfx.tap(); mon.mood('happy'); });
+    mon.addEventListener('click', function () { MQ.ui.quietTap(mon); });   // もんだい中は うなずく/首を かしげる だけ（C・v0.1.16）
     const show = stageNode();
     const page = h('div', { class: 'page' }, [
       MQ.ui.topBar({ home: true, replay: function () { bl.say(task.line); } }),

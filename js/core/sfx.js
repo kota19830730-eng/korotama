@@ -147,6 +147,29 @@ MQ.sfx = (function () {
     },
     rare:    function () { [784, 988, 1175, 1568, 1976, 2349].forEach(function (f, i) { bell(f * 1.5, i * 0.06, 0.12, 0.9); }); },
     shutter: function () { noise(0.05, 0.25, 0, 4000); wood(1568, 0.04, 0.1); },
+    /* ---- タップの 反応の 音（v0.1.16・ユーザー決定「背景にも 音」）。どれも カリンバの 音色の まま 小さく・みじかく ---- */
+    sun:     function () { [1047, 1319, 1568].forEach(function (f, i) { bell(f, i * 0.1, 0.1, 0.9); }); },                   // おひさま：上がる 3音
+    moon:    function () { bell(1568, 0, 0.08, 1.2); bell(2093, 0.12, 0.06, 1.4); },                                           // おつきさま：すんだ 2音
+    rain:    function () { for (let i = 0; i < 7; i++) noise(0.04, 0.05, i * 0.11 + Math.random() * 0.04, 5000); },           // あめ：ぱらぱら
+    rainbow: function () { [1047, 1175, 1319, 1568, 1760, 2093, 2349].forEach(function (f, i) { bell(f, 0.1 + i * 0.07, 0.09, 1.0); }); },   // にじ：7色の 上がる 音
+    rustle:  function () { noise(0.18, 0.06, 0, 2600); noise(0.14, 0.05, 0.22, 3200); },                                      // 木：さらさら
+    bird:    function () {                                                                                                     // ことり：みじかい 上がる 音 2〜3回
+      const c = context(); if (!c || !enabled) return;
+      const k = 2 + Math.floor(Math.random() * 2), base = 2400 + Math.random() * 800, t0 = c.currentTime + 0.05;
+      for (let i = 0; i < k; i++) { const t = t0 + i * 0.15; osc(base, t, 0.05, 0.12, 'sine', base * 1.3, 0.01); }
+    },
+    knock:   function () { wood(330, 0, 0.12); wood(330, 0.16, 0.12); },                                                       // いえ：とんとん
+    door:    function () { wood(262, 0, 0.1); bell(1319, 0.2, 0.07, 0.6); },                                                   // ドア：きい
+    pop:     function () { bell(1760, 0, 0.09, 0.5); },                                                                        // おはな：ぽん
+    flutter: function () { bell(2093, 0, 0.05, 0.3); bell(2349, 0.09, 0.05, 0.3); bell(2093, 0.18, 0.04, 0.3); },             // ちょうちょ
+    shoot:   function () { [2349, 2093, 1760, 1568, 1319].forEach(function (f, i) { bell(f, i * 0.06, 0.08, 0.8); }); },      // ながれぼし：下がる 音
+    heart:   function () { bell(1319, 0, 0.08, 0.9); bell(1568, 0.14, 0.08, 1.0); },                                           // なでなで
+    tickle:  function () { [1568, 1760, 1568, 1976, 1760].forEach(function (f, i) { wood(f, i * 0.07, 0.07); }); },           // くすぐったい
+    jump:    function () { bell(784, 0, 0.09, 0.4); bell(1568, 0.12, 0.1, 0.7); },                                             // ぴょん
+    spin:    function () { [1047, 1319, 1568, 2093].forEach(function (f, i) { wood(f, i * 0.09, 0.07); }); },                  // くるりん
+    yawn:    function () { const c = context(); if (!c || !enabled) return; osc(440, c.currentTime, 0.04, 0.9, 'sine', 330, 0.3); },   // あくび：ふわぁ
+    snore:   function () { const c = context(); if (!c || !enabled) return; osc(196, c.currentTime, 0.05, 0.7, 'sine', 165, 0.3); },   // すやすや
+    wake:    function () { bell(1047, 0, 0.08, 0.3); bell(1568, 0.08, 0.1, 0.6); },                                            // おきた
     /* まなびモンスターの 名前も のこして おく（よばれても 落ちない） */
     key: function () { wood(1200, 0, 0.1); }, appear: function () { bell(1047, 0, 0.1, 0.6); }, hit: function () { wood(440, 0, 0.14); }
   };

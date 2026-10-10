@@ -149,7 +149,7 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(lines.length >= 300, '声の 文の 一覧 ' + lines.length + '（tools/voice/lines.json）');
   // 画面の say('…') の 文（名前なし）が ぜんぶ 一覧に ある
   let miss = [];
-  ['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js'].forEach(function (p) {
+  ['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/common.js'].forEach(function (p) {
     const src = fs.readFileSync(path.join(ROOT, p), 'utf8');
     (src.match(/say\('([^']+)'/g) || []).forEach(function (m) {
       m.slice(5, -1).replace(/([。！？!?])/g, '$1|').split('|').map(function (x) { return x.trim().replace(/[ 　]+/g, ''); }).filter(Boolean).forEach(function (k) { if (!keys.has(k)) miss.push(k); });
@@ -327,6 +327,44 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(/MQ\.bgm\.forScreen\(id\)/.test(cm) && (cm.match(/MQ\.bgm\.duck\(/g) || []).length >= 3, '画面が かわると 曲が かわる・声の あいだは 小さく（duck）');
   ['tap', 'correct', 'coin', 'clear', 'rare', 'shutter', 'unlock', 'setEnabled'].forEach(function (k) { if (typeof MQ.sfx[k] !== 'function') { fails++; console.log('FAIL sfx.' + k); } });
   ok(!/'square'|'sawtooth'/.test(fs.readFileSync(path.join(ROOT, 'js/core/sfx.js'), 'utf8')), '効果音：ピコピコの 波（square）は つかわない（絵本の 音）');
+})();
+
+/* ---- タップの 反応（v0.1.16・A＋B＋C＋D） ---- */
+(function () {
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+  const cm = fs.readFileSync(path.join(ROOT, 'js/ui/common.js'), 'utf8');
+  const hm = fs.readFileSync(path.join(ROOT, 'js/ui/home.js'), 'utf8');
+  // A：MOODS の 名前 ぜんぶに css の 動き（.mon.is-<名前> と keyframes）が ある
+  const mm = /const MOODS = \{([^}]+)\}/.exec(cm);
+  const moods = mm ? mm[1].match(/(\w+):/g).map(function (k) { return k.slice(0, -1); }) : [];
+  const noCss = moods.filter(function (k) { return css.indexOf('.mon.is-' + k + ' .bxbox') < 0; });
+  ok(moods.length >= 12 && !noCss.length, 'キャラクターの 動き ' + moods.length + 'しゅるい ぜんぶに css が ある' + (noCss.length ? '：' + noCss.join(',') : ''));
+  ok(/\.mon\.is-sleep \.bxbox/.test(css) && /@keyframes zzUp/.test(css) && /wrap\.sleep = /.test(cm) && /wrap\.wake = /.test(cm), 'うたた寝（sleep／wake・zzz）');
+  ['happy', 'jump', 'spin', 'shy', 'yawn', 'tickle', 'pat', 'sleep', 'wake'].forEach(function (k) { if (hm.indexOf(k + ': [') < 0) { fails++; console.log('FAIL home LINES ' + k); } });
+  ok(/IDLE = \{ look: 20000, yawn: 35000, sleep: 50000 \}/.test(hm), 'ほっとくと きょろきょろ 20秒 → あくび 35秒 → うたた寝 50秒');
+  // B：背景の 反応 6つ と 音
+  ['sun', 'moon', 'cloud', 'tree', 'house', 'hill', 'sky'].forEach(function (k) { if (!(new RegExp('^\\s+' + k + ': function', 'm')).test(cm)) { fails++; console.log('FAIL scene react ' + k); } });
+  ['sun', 'moon', 'rain', 'rainbow', 'rustle', 'bird', 'knock', 'door', 'pop', 'flutter', 'shoot', 'heart', 'tickle', 'jump', 'spin', 'yawn', 'snore', 'wake'].forEach(function (k) { if (typeof MQ.sfx[k] !== 'function') { fails++; console.log('FAIL sfx.' + k); } });
+  ok(/\.rainbow/.test(css) && /\.drop/.test(css) && /\.fleaf/.test(css) && /\.bird/.test(css) && /\.smoke/.test(css) && /\.flower/.test(css) && /\.butterfly/.test(css) && /\.shoot/.test(css) && /\.scene\.is-night/.test(css), '背景の 反応の 絵（雨・にじ・葉・ことり・けむり・花・ちょうちょ・ながれぼし・夜）');
+  ok(/scene__tap/.test(cm) && /tapBtn\(186, -2, 76, 76/.test(cm) && /tapBtn\(296, H - 262, 90, 110/.test(cm) && /tapBtn\(6, H - 190, 100, 100/.test(cm), '背景の 押す 場所は 見えない ボタン（64px いじょう）');
+  ok(/const SH = 252;/.test(hm) && !/left: '14px', top: '36px', width: '200px'/.test(hm), 'おうちの 字幕は ばめんの 下（雲・雨・けむりを かくさない）');
+  ok(/MQ\.ui\.isSpeaking/.test(cm) && /if \(!MQ\.ui\.isSpeaking\(\)\) bl\.say\(t\)/.test(hm), '背景の ひとことは 読んで いる 最中は 出さない');
+  ok(/にじが でた/.test(cm) && !/にじだ！/.test(cm), '「にじだ」は 声が「2時だ」に なる ので 書かない');
+  // C：もんだいの 画面は うなずく／首を かしげる だけ（背景は 反応しない）
+  ['care', 'play', 'kazu', 'kurabe', 'moji', 'tokei'].forEach(function (k) {
+    const src = fs.readFileSync(path.join(ROOT, 'js/ui/' + k + '.js'), 'utf8');
+    if (src.indexOf('MQ.ui.quietTap(mon)') < 0) { fails++; console.log('FAIL quietTap ' + k); }
+    if (/sceneNode\([^)]*live/.test(src)) { fails++; console.log('FAIL live scene in ' + k); }
+  });
+  ok(/quietN\+\+ % 2 === 0 \? 'nod' : 'tilt'/.test(cm), 'もんだい中の タップ＝うなずく／首を かしげる を こうたい');
+  ok(!/sceneNode\(380, \{[^}]*live/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'たまごの ばめんは 押せない（おうち だけ）');
+  // D：スタンプで ふえる かざり
+  ok(/decor: MQ\.save\.stampsTotal\(\)/.test(hm), 'おうちの かざりは スタンプの 合計で 決まる');
+  ok(/Math\.floor\(total \/ 2\)/.test(cm) && /total >= 6/.test(cm) && /total >= 12/.test(cm) && /total >= 15/.test(cm), 'かざり＝2こ ごとに 花・6こ／12こ で ちょうちょ・15こ で 旗');
+  // 動かすのは transform と opacity と filter だけ（軽く）：新しい keyframes に left／top／width を 入れない
+  const kf = css.slice(css.indexOf('タップの 反応（v0.1.16'));
+  const badKf = (kf.match(/@keyframes \w+ \{[^}]*(\{[^}]*\})+[^}]*\}/g) || []).filter(function (k) { return /\b(left|top|width|height|margin)\s*:/.test(k); });
+  ok(!badKf.length, '反応の keyframes は transform／opacity だけ' + (badKf.length ? '：' + badKf.length : ''));
 })();
 
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');

@@ -168,6 +168,44 @@
     },
     egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
     home: function () { withMon(arg || 's', function () { MQ.ui.home.open(); setTimeout(finish, 400); }); },
+    /* タップの 反応（v0.1.16）：#react:<name>[:night][:<stamps>]
+       name＝happy|jump|spin|shy|yawn|tickle|pat|sleep|wake|look（キャラクター）／sun|moon|cloud|rainbow|tree|bird|house|hill|butterfly|sky（背景）／decor（かざりだけ）／none
+       night＝夜に する・stamps＝スタンプの 合計（かざり）。写真は 反応の とちゅうで 止めて 撮る（freeze） */
+    react: function () {
+      withMon('s', function () {
+        const night = Q[2] === 'night' || Q[3] === 'night';
+        const total = Number(Q[2]) || Number(Q[3]) || 0;
+        for (let i = 0; i < total; i++) MQ.save.update(function (d) { d.kid.stamps['2026-02-' + ('0' + (1 + i % 28)).slice(-2)] = (d.kid.stamps['2026-02-' + ('0' + (1 + i % 28)).slice(-2)] || 0) + 1; });
+        MQ.ui.home.open({ night: night });
+        const T = MQ.ui.home._t, sc = T.scene;
+        log('home: night=' + sc.night + ' live=' + sc.classList.contains('is-live') + ' taps=' + Object.keys(sc.taps).join(',') + ' decor=' + JSON.stringify(sc.decorCount) + ' want=' + JSON.stringify(MQ.ui.decorOf(MQ.save.stampsTotal())));
+        setTimeout(function () {
+          const name = arg || 'none';
+          // 反応の とちゅうで 止めて 撮る：ここから 先の setTimeout を おぼえて、撮る ときに ぜんぶ 消す（消す タイマーで 絵が もどる ため）
+          const ids = [], st0 = window.setTimeout; window.setTimeout = function (f, ms) { const id = st0(f, ms); ids.push(id); return id; };
+          const kinds = { happy: 1, jump: 1, spin: 1, shy: 1, yawn: 1, tickle: 1, pat: 1, wake: 1, look: 1 };
+          if (kinds[name]) { if (name === 'wake') T.sleep(); T.react(name); }
+          else if (name === 'sleep') T.sleep();
+          else if (name === 'idle') { MQ.ui.home.IDLE.look = 30; MQ.ui.home.IDLE.yawn = 60; MQ.ui.home.IDLE.sleep = 90; T.idle(); }
+          else if (name === 'tap3') { T.onTap(); T.onTap(); T.onTap(); }
+          else if (name === 'rainbow') { sc.react('cloud'); sc.react('cloud'); sc.react('cloud'); }
+          else if (name === 'bird') { sc.react('tree'); sc.react('tree'); }
+          else if (name === 'butterfly') { sc.react('hill', 150, 200); sc.react('hill', 120, 230); }
+          else if (name === 'tapbtn') { click(sc.taps.sun); click(sc.taps.cloud); click(sc.taps.tree); click(sc.taps.house); }
+          else if (name !== 'none' && name !== 'decor') sc.react(name, name === 'hill' ? 140 : undefined, name === 'hill' ? 210 : undefined);
+          const ms = Number(Q[4]) || (name === 'rainbow' ? 1400 : name === 'idle' ? 140 : 450);
+          setTimeout(function () {
+            log('react ' + name + ': mon=' + T.mon.className + ' fx=' + sc.fx.children.length + ' flowers=' + sc.querySelectorAll('.flower').length + ' butterflies=' + sc.querySelectorAll('.butterfly').length + ' flag=' + !!sc.querySelector('.scene__flag') + ' zz=' + sc.querySelectorAll('.mon__zz').length + ' hearts=' + sc.querySelectorAll('.heart').length + ' rainbow=' + !!sc.querySelector('.rainbow') + ' bird=' + !!sc.querySelector('.bird') + ' win=' + sc.parts.win.classList.contains('is-on') + ' counts=' + JSON.stringify(sc.counts) + ' said=' + said.slice(-2).join(' / '));
+            // 止めて 撮る
+            ids.forEach(function (id) { clearTimeout(id); }); window.setTimeout = st0;
+            // virtual-time では animation の 時計が 進まない（0% の 絵に なる）→ 止めたい 時間を マイナスの delay で 入れて 止める
+            const at = (ms / 1000).toFixed(2);
+            [sc, T.mon].forEach(function (root) { Array.prototype.slice.call(root.querySelectorAll('*')).concat([root]).forEach(function (el) { try { const an = getComputedStyle(el).animationName; if (an && an !== 'none') { el.style.animationDelay = '-' + at + 's'; el.style.animationPlayState = 'paused'; } } catch (e) { /* なし */ } }); });
+            finish();
+          }, ms);
+        }, 320);
+      });
+    },
     care: function () { if (Q[2] === 'max') { const c0 = MQ.tasks.count; MQ.tasks.count = function (st) { let t; do { t = c0(st); } while (t.n !== MQ.tasks.LIMIT[st].n); return t; }; } withMon(arg || 's', function () { MQ.ui.care.open(); setTimeout(function () { const st = MQ.ui.care.state(); log('care: ' + st.task.line + ' n=' + st.task.n + ' slots=' + st.task.slots); if (Q[2] === 'half') { click($('#screen-care .basket .item')); } if (Q[3] === 'fill') { const nm = st.task.food.name; for (let i = 0; i < st.task.n; i++) click($('#screen-care .basket .item').filter(function (x) { return x.getAttribute('aria-label') === nm; })[0]); } finish(); }, 400); }); },
     shop: function () { withMon(arg || 's', function () { MQ.ui.shop.open(); setTimeout(function () { const st = MQ.ui.shop.state(); log('shop: ' + st.task.line); if (Q[2] === 'half' && st.task.n > 1) { const want = st.task.want; const b = $$('#screen-shop .shelf .item').filter(function (x) { return x.getAttribute('aria-label').indexOf(want.say) === 0; })[0]; click(b); } finish(); }, 400); }); },
     play: function () { withMon(arg || 's', function () { MQ.ui.play.open(); setTimeout(function () { log('play: ' + MQ.ui.play.state().task.line); finish(); }, 400); }); },
@@ -341,8 +379,12 @@
     flow: function () {
       withMon(arg || 's', async function () {
         MQ.ui.home.open(); await wait(200);
+        // おうち：背景と キャラクターを たたく（v0.1.16）
+        (function () { const T = MQ.ui.home._t; click(T.scene.taps.sun); click(T.scene.taps.cloud); click(T.scene.taps.tree); click(T.scene.taps.house); T.scene.react('hill', 140, 210); T.onTap(); T.onTap(); T.onTap(); log('home taps: counts=' + JSON.stringify(T.scene.counts) + ' mon=' + T.mon.className + ' fx=' + T.scene.fx.children.length); })();
+        await wait(100);
         // ごはん：3回 正解
         click($('#screen-home .big--gold')); await wait(300);
+        click($('#screen-care .mon')); log('care mon tap (C): ' + $('#screen-care .mon').className);
         for (let r = 0; r < 3; r++) {
           const st = MQ.ui.care.state();
           const n = st.task.n;

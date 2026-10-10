@@ -22,7 +22,7 @@ MQ.ui.play = (function () {
     const mon = MQ.ui.monNode(130);
     const bl = MQ.ui.balloon('');
     els = { mon: mon, bl: bl };
-    mon.addEventListener('click', function () { MQ.sfx.tap(); mon.mood('happy'); });
+    mon.addEventListener('click', function () { MQ.ui.quietTap(mon); });   // もんだい中は うなずく/首を かしげる だけ（C・v0.1.16）
     const toys = h('div', { class: 'toys' + (task.options.length >= 5 ? ' toys--many' : '') });
     task.options.forEach(function (o) {
       const b = h('button', { class: 'toy', type: 'button', 'aria-label': (o.color ? o.color.say + 'の ' : '') + o.shape.name }, [MQ.ui.shapeNode(o.shape.id, o.color)]);

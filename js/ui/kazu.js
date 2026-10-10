@@ -135,7 +135,7 @@ MQ.ui.kazu = (function () {
     let mon = null, top;
     if (kind === 'count') {
       mon = MQ.ui.monNode(130);
-      mon.addEventListener('click', function () { MQ.sfx.tap(); mon.mood('happy'); });
+      mon.addEventListener('click', function () { MQ.ui.quietTap(mon); });   // もんだい中は うなずく/首を かしげる だけ（C・v0.1.16）
       top = [h('div', { class: 'field2' }, [
         h('div', { class: 'scene__hill', style: { left: '-60px', top: '130px', width: '300px', height: '160px', background: 'var(--grass)' } }),
         h('div', { class: 'scene__hill', style: { left: '190px', top: '140px', width: '300px', height: '160px', background: 'var(--grass2)' } }),
