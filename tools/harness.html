@@ -89,6 +89,7 @@
 <script src="../js/ui/otetsudai.js"></script>
 <script src="../js/ui/ohanashi.js"></script>
 <script src="../js/ui/print.js"></script>
+<script src="../js/ui/install.js"></script>
 <script src="../js/ui/feedback.js"></script>
 <script src="../js/ui/guide.js"></script>
 <script src="../js/ui/parent.js"></script>
@@ -224,6 +225,19 @@
       const r0 = MQ.ui.maneko.state().round; MQ.ui.maneko._start(); await wait(100);
       MQ.ui.home.open(); await wait(6000);
       log('bug maneko leave: screen=' + MQ.ui.current + ' round=' + MQ.ui.maneko.state().round + (MQ.ui.current === 'screen-home' && MQ.ui.maneko.state().round === r0 ? ' OK' : ' NG')); if (MQ.ui.current !== 'screen-home') errors++;
+      finish();
+    }); },
+    // #install[:parent|:click]：Android の「ホーム画面に入れますか？」（にせの beforeinstallprompt・2026-10-11）
+    install: function () { withMon('s', async function () {
+      let prompted = 0;
+      const UAS = { ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1', ipad: 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1', line: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari Line/14.0.0', chrome: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/129.0 Mobile/15E148 Safari/604.1' };
+      if (UAS[Q[1]]) { MQ.ui.install._ua(UAS[Q[1]]); MQ.ui.home.open(); await wait(1200); const d = $('#stage .ins'); log('install ' + Q[1] + ' ask=' + !!d + ' steps=' + (d ? d.querySelectorAll('.ins__step').length : 0) + ' text=' + (d ? d.querySelector('.ins__step').textContent.slice(0, 30) : '')); if (!d) errors++; finish(); return; }
+      MQ.ui.install._fake({ preventDefault: function () {}, prompt: function () { prompted++; }, userChoice: Promise.resolve({ outcome: 'accepted' }) });
+      if (Q[1] === 'parent') { MQ.ui.parent.open(); await wait(400); const b = $$('#screen-parent button').filter(function (x) { return /ホーム画面に入れる/.test(x.textContent); })[0]; log('install parent button=' + !!b); if (!b) errors++; finish(); return; }
+      MQ.ui.home.open(); await wait(1200);
+      const dlg = $('#stage .gd[aria-label="ホーム画面に入れる"]');
+      log('install ask=' + !!dlg); if (!dlg) errors++;
+      if (Q[1] === 'click' && dlg) { click(dlg.querySelector('.btn--gold')); await wait(300); log('install prompted=' + prompted + ' installed=' + !!MQ.save.settings().installed + ' due=' + MQ.ui.install.due()); if (prompted !== 1) errors++; }
       finish();
     }); },
     home: function () { withMon(arg || 's', function () { if (Q[2] === 'helped') MQ.save.update(function (d) { d.kid.help[MQ.save.today()] = 'shoes'; }); MQ.ui.home.open(); setTimeout(function () { const L = MQ.ui.home._t.letter, r = L.getBoundingClientRect(); log('letter: ' + L.getAttribute('aria-label') + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); finish(); }, 400); }); },   // #home[:段階[:helped]]（helped＝きょうの おてつだい ずみ＝ポストに はなまる）

@@ -56,6 +56,7 @@ MQ.ui.parent = (function () {
     return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'ホーム画面に入れる（アプリのように使う）' }),
       line(standalone ? 'いまはホーム画面のアイコンから開いています。このまま使えます。'
         : 'App Store からのインストールは不要です。ブラウザの機能で、ホーム画面にアイコンを置いてアプリのように使えます（画面が広くなり、オフラインでも遊べます）。'),
+      (ios && !standalone && MQ.ui.install) ? h('button', { class: 'btn btn--gold btn--wide', type: 'button', style: { margin: '10px 0 4px' }, text: 'ホーム画面に入れる手順を見る', onclick: function () { MQ.sfx.tap(); MQ.ui.install.showIos(); } }) : null,
       sub('iPhone・iPad' + (ios && !standalone ? '（この端末）' : '')),
       line('1. このページを Safari で開く（LINE などアプリの中のブラウザではできません）'),
       line('2. 共有ボタン（四角から上向きの矢印）を押す。iPhone は画面の下、iPad は右上にあります'),
@@ -63,8 +64,10 @@ MQ.ui.parent = (function () {
       line('4. これからはホーム画面の「ころたま」のアイコンから開く'),
       line('注意：Safari のタブとアイコンでは記録が別々です。Safari で遊んだ記録を移すときは、Safari で下の「きろくを ファイルに 保存」→ アイコンから開いて「ファイルから もどす」を押してください。', true),
       line('声や音楽が出ないときは、本体の消音（マナーモード）を切ってください。', true),
+      (MQ.ui.install && MQ.ui.install.can()) ? h('button', { class: 'btn btn--gold btn--wide', type: 'button', style: { margin: '10px 0 4px' }, text: 'この端末のホーム画面に入れる', onclick: function () { MQ.sfx.tap(); MQ.ui.install.prompt(function (ok) { if (ok) MQ.ui.toast('ホーム画面に入れました。これからはアイコンから開いてください'); MQ.ui.parent.open(); }); } }) : null,
       sub('Android（Chrome）' + (/Android/.test(ua) && !standalone ? '（この端末）' : '')),
-      line('右上の「︙」→「アプリをインストール」または「ホーム画面に追加」を押す'),
+      line('右上の「︙」→「アプリをインストール」または「ホーム画面に追加」を押す（上の黄色いボタンが出ているときは、それを押すだけで入ります）'),
+      line('LINE やメールのアプリの中で開いたときは入れられません。右上のメニューから「Chrome で開く」を選んでください。', true),
       line('新しい版を出したときは自動で切り替わります。入れ直す必要はありません。', true)
     ]);
   }
