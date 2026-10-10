@@ -16,9 +16,9 @@ MQ.ui = MQ.ui || {};
 (function () {
   const h = MQ.util.h;
   const FORM = {
-    url: '',      // ころたま用の Google フォーム（viewform の URL）。からの あいだは お願いを 出さない
-    age: '',      // 「お子さんの年齢」の entry.＊＊＊（わかれば。段階から 入れて 開く）
-    info: ''      // 「アプリの情報」の entry.＊＊＊（わかれば。段階・スタンプ・端末を 入れて 開く）
+    url: 'https://docs.google.com/forms/d/e/1FAIpQLSczx3U1IJTHqQjjisfz2MTd6IWr3Yjws0fboV6SxOPTkR74Zg/viewform',   // ころたま 感想フォーム（2026-10-10・Claude in Chrome が 作った）
+    age: 'entry.1337722854',   // 質問1「お子さんの年齢」（選択肢は 3〜4歳／4〜5歳／5〜6歳／6歳（年長）／その他）
+    info: 'entry.148355667'    // 質問6「アプリの情報」
   };
   const AGE = { s: '3〜4歳', m: '4〜5歳', l: '5〜6歳', k: '6歳（年長）' };
 
