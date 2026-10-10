@@ -453,6 +453,8 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   })();
   ['s', 'm', 'l', 'k'].forEach(function (s) { for (let i = 0; i < 30; i++) { const m = MQ.find.mission(s); if (!m || !m.line) { ok(false, 'さがす mission ' + s); return; } } });
   voiced(MQ.find.lines(), 'さがす');
+  // さがすは いろと かたちだけ（2026-10-10：どの 家にも ある もの）
+  ok(Object.keys(MQ.find.PLAN).every(function (k) { return MQ.find.PLAN[k].every(function (p) { return /^c:|^j:(round|square|redround|yellowround|bluesquare|greensquare)$/.test(p); }); }), 'さがす：おだいは いろと かたちだけ');
   // A かいた たべもの：かずの もんだいに まざる
   MQ.tasks.setExtraFoods([{ png: 'data:x' }]);
   let mine = 0; for (let i = 0; i < 300; i++) { const c = MQ.tasks.count('s'); if (c.food.id === 'my0') mine++; if (c.food.id === 'my0' && !MQ.tasks.foodById('my0')) { ok(false, 'foodById my0'); break; } }

@@ -2,7 +2,8 @@
    本物さがし（ころたま v0.2・C）。DOM を 知らない。
    生きものが「あかい ものを もってきて！」→ お子さんが 部屋から さがして カメラに 見せる（か おうちの人に 見せる）。
    いろの おだいは 写真の どこかに その 色が あれば OK（v0.2.1・ゆかの 色が 大きくても よい）。なければ まんなかの 色の 名前を 教える（ばつなし）。
-   かたち・ながさ・かずの おだいは おうちの人が ○。
+   かたちの おだい（いろ×かたちも）は おうちの人が ○。
+   おだいは いろと かたちだけ（ユーザー決定 2026-10-10「リンゴとか その時に 家に ない 場合が ある」）＝どの 家にも かならず ある ものだけ。ながい・ふわふわ・おおきい・かず は やめた。
    知育：いろ・かたち・かずを くらしの 中で 見つける（画面の 中で おぼえた ことを 本物に つなげる）。
      mission(stage, avoid) → { id, type:'color'|'judge', color?, line, ok, pic }
      classify(rgba, w, h)  → { id, share, ranks:[{id,share}] } … まんなかの 色（いろの 名前）
@@ -21,18 +22,16 @@ MQ.find = (function () {
   const JUDGE = {
     round: M.judge('round', 'まるい ものを さがして、みせてね！', 'まるい ものだね！ ありがとう！', { type: 'shape', id: 'circle' }),
     square: M.judge('square', 'しかくい ものを さがして、みせてね！', 'しかくい ものだね！ ありがとう！', { type: 'shape', id: 'square' }),
-    long: M.judge('long', 'ながい ものを さがして、みせてね！', 'ながーい ものだね！ ありがとう！', { type: 'icon', id: 'long' }),
-    soft: M.judge('soft', 'ふわふわの ものを さがして、みせてね！', 'ふわふわ だね！ ありがとう！', { type: 'icon', id: 'soft' }),
-    big: M.judge('big', 'じぶんより おおきい ものを さがして、みせてね！', 'おおきいね！ ありがとう！', { type: 'icon', id: 'big' }),
-    two: M.judge('two', 'おなじ ものを ふたつ もってきて、みせてね！', 'ふたつ あったね！ ありがとう！', { type: 'num', id: 2 }),
-    three: M.judge('three', 'おなじ ものを みっつ もってきて、みせてね！', 'みっつ あったね！ ありがとう！', { type: 'num', id: 3 }),
-    redround: M.judge('redround', 'あかくて まるい ものを さがして、みせてね！', 'あかくて まるい！ よく みつけたね！', { type: 'shape', id: 'circle', color: 'red' })
+    redround: M.judge('redround', 'あかくて まるい ものを さがして、みせてね！', 'あかくて まるい！ よく みつけたね！', { type: 'shape', id: 'circle', color: 'red' }),
+    yellowround: M.judge('yellowround', 'きいろくて まるい ものを さがして、みせてね！', 'きいろくて まるい！ よく みつけたね！', { type: 'shape', id: 'circle', color: 'yellow' }),
+    bluesquare: M.judge('bluesquare', 'あおくて しかくい ものを さがして、みせてね！', 'あおくて しかくい！ よく みつけたね！', { type: 'shape', id: 'square', color: 'blue' }),
+    greensquare: M.judge('greensquare', 'みどりで しかくい ものを さがして、みせてね！', 'みどりで しかくい！ よく みつけたね！', { type: 'shape', id: 'square', color: 'green' })
   };
   const PLAN = {
     s: ['c:red', 'c:blue', 'c:yellow', 'c:green'],
     m: ['c:red', 'c:blue', 'c:yellow', 'c:green', 'c:pink', 'j:round', 'j:square'],
-    l: ['c:purple', 'c:pink', 'c:green', 'j:round', 'j:square', 'j:long', 'j:soft', 'j:big'],
-    k: ['j:two', 'j:three', 'j:redround', 'j:long', 'j:soft', 'c:purple', 'j:big']
+    l: ['c:purple', 'c:pink', 'c:green', 'c:blue', 'c:yellow', 'j:round', 'j:square', 'j:redround'],
+    k: ['j:redround', 'j:yellowround', 'j:bluesquare', 'j:greensquare', 'c:purple', 'c:pink', 'j:round', 'j:square']
   };
   function mission(stage, avoid) {
     const plan = PLAN[stage] || PLAN.s;
