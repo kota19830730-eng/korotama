@@ -82,6 +82,11 @@ MQ.ui = MQ.ui || {};
       let vkind = MQ.save.settings().voiceKind || 'zunda';
       const name = h('input', { class: 'field', type: 'text', maxlength: '8', placeholder: 'お子さんの 名前（なくても OK）', value: kid.name || '' });
       const segs = {};
+      // 誕生日（2026-10-10・ユーザー「初めてプレイする時に誕生日の設定」）
+      const bd = (kid.birthday || '').split('-');
+      const bM = h('select', { class: 'field field--s', 'aria-label': '月' }, [h('option', { value: '', text: '月' })].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return h('option', { value: ('0' + m).slice(-2), text: m + '月' }); })));
+      const bD = h('select', { class: 'field field--s', 'aria-label': '日' }, [h('option', { value: '', text: '日' })].concat(Array.from({ length: 31 }, function (x, i) { return h('option', { value: ('0' + (i + 1)).slice(-2), text: (i + 1) + '日' }); })));
+      bM.value = bd[0] || ''; bD.value = bd[1] || '';
       const STAGE_NOTE = { s: 'ちいさい：数は 3まで・色 3つ・形 2つ。お皿に くぼみ（数えやすくする印）あり。', m: 'なかくらい：数は 5まで・色 4つ・形 3つ。お皿に くぼみ あり。', l: 'おおきい：数は 10まで・色 5つ・形 4つ＋色。くぼみ なし（自分で「あげる」）。', k: 'ねんちょう：ごはん＝あわせる・わける（ぜんぶで いくつ？ のこりは？）・おみせ＝数字を 読む（1〜20）。小学校の たし算・ひき算の 手まえです。' };
       const stageNote = h('p', { class: 'note', style: { marginTop: '8px' }, text: STAGE_NOTE[stage] || STAGE_NOTE.s });
       function segRow(items, cur, onPick) {
@@ -110,11 +115,16 @@ MQ.ui = MQ.ui || {};
             h('div', { class: 'row', style: { marginTop: '10px' } }, [h('button', { class: 'btn', type: 'button', text: '声を ためす', onclick: function () { MQ.sfx.tap(); MQ.voice.setPitch(pitch); MQ.voice.setRate(rate); MQ.voice.setKind(vkind); MQ.voice.say('こんにちは！ わたしの こえ、きこえる？ いっしょに あそぼうね。', { pitch: pitch }); } })]),
             voiceNote]),
           h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの 名前' }), name]),
+          h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの誕生日（なくてもOK）' }),
+            h('div', { class: 'row', style: { gap: '8px' } }, [bM, bD]),
+            h('p', { class: 'note', style: { marginTop: '8px' }, text: '誕生日には、おうちの画面にケーキが出て、お祝いの歌が流れます。あとから変えられます。' })]),
           h('button', { class: 'btn btn--gold btn--big btn--wide', type: 'button', text: 'つぎへ：絵を とる', onclick: function () {
             MQ.sfx.tap();
             const cur = MQ.save.kid();
             if (cur) MQ.save.update(function (d) { d.kid.name = (name.value || '').trim(); d.kid.stage = stage; });
             else MQ.save.newKid({ name: (name.value || '').trim(), stage: stage });
+            const bv = bM.value && bD.value ? bM.value + '-' + bD.value : '';
+            MQ.save.update(function (d) { d.kid.birthday = bv; });
             MQ.ui.draw.open();
           } }),
           h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: 'もどる', onclick: function () { MQ.sfx.tap(); if (MQ.save.kid() && MQ.save.kid().mon) MQ.ui.parent.open(); else MQ.ui.start.open(); } })

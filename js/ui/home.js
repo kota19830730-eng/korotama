@@ -156,7 +156,7 @@ MQ.ui = MQ.ui || {};
       ]);
       MQ.ui.mount('screen-home', page);
       MQ.ui.show('screen-home');
-      setTimeout(function () {
+      const greet = function () {
         bl.say(greeting(), function () {
           // B（v0.2）：おうちの人の 声（1日 1回）。誕生日 → おはよう の じゅん
           const day = MQ.save.today();
@@ -164,7 +164,15 @@ MQ.ui = MQ.ui || {};
           if (new Date().getHours() < 11) MQ.family.once('morning', day);
         });
         if (se.birthday) { MQ.ui.confetti(scene, 30); try { MQ.bgm.play('birthday'); } catch (e) { /* なし */ } }
-      }, 250);
+        // はじめての 子：「ごはん」に ゆびの しるし（どこから はじめるか 見て わかる・さわると きえる）
+        if (MQ.save.stampsTotal() === 0 && !MQ.save.helpCount()) {
+          const it = page.querySelector('.bigs__it');
+          if (it && !it.querySelector('.finger')) { it.style.position = 'relative'; it.appendChild(h('div', { class: 'finger finger--home' })); }
+        }
+      };
+      // はじめての 案内（おうちの人むけ・1回だけ）。とじてから あいさつ
+      if (MQ.ui.guide && MQ.ui.guide.shouldShow() && !opts.noGuide) setTimeout(function () { MQ.ui.guide.open({ onClose: function () { setTimeout(greet, 200); } }); }, 300);
+      else setTimeout(greet, 250);
       // テスト用（harness）：反応を 外から 起こす
       MQ.ui.home._t = { mon: mon, scene: scene, bl: bl, react: react, onTap: onTap, sleep: function () { mon.sleep(); }, idle: armIdle, letter: letter, friend: friend, season: se };
     }

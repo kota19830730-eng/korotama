@@ -89,6 +89,7 @@
 <script src="../js/ui/otetsudai.js"></script>
 <script src="../js/ui/ohanashi.js"></script>
 <script src="../js/ui/print.js"></script>
+<script src="../js/ui/guide.js"></script>
 <script src="../js/ui/parent.js"></script>
 <script src="../js/ui/boot.js"></script>
 <script>
@@ -137,6 +138,7 @@
     localStorage.removeItem(MQ.save.KEY);
     MQ.save._set(null);
     MQ.save.newKid({ name: 'ゆう', stage: stage || 's' });
+    MQ.save.setSetting('guideSeen', Q[0] !== 'guide' && Q[0] !== 'guideflow');   // はじめての 案内は #guide だけで 出す
     const im = new Image();
     im.onload = function () {
       const t0 = performance.now();
@@ -568,6 +570,10 @@
       };
       im.src = cv.toDataURL('image/png');
     },
+    /* #guide[:<ページ 0〜4>]（はじめての 案内・2026-10-10）／#guideflow（さいごまで つぎへ → とじると あいさつ・ゆび）／#setupbd（はじめの 設定の 誕生日） */
+    guide: function () { withMon('s', function () { MQ.ui.home.open(); setTimeout(function () { const n = Number(arg) || 0; if (n) { MQ.ui.guide.close(true); MQ.ui.guide.open({ page: n }); } log('guide: open=' + MQ.ui.guide.isOpen() + ' page=' + MQ.ui.guide._i + ' pages=' + MQ.ui.guide.PAGES.length); finish(); }, 600); }); },
+    guideflow: function () { withMon('s', async function () { MQ.ui.home.open(); await wait(600); log('open=' + MQ.ui.guide.isOpen()); for (let k = 0; k < 4; k++) { click($$('.gd__nav .btn--gold')[0]); await wait(100); } log('page=' + MQ.ui.guide._i); click($$('.gd__end .btn--gold')[0]); await wait(800); log('closed=' + !MQ.ui.guide.isOpen() + ' seen=' + MQ.save.settings().guideSeen + ' finger=' + !!$('#screen-home .finger--home')); MQ.ui.home.open(); await wait(600); log('again open=' + MQ.ui.guide.isOpen()); finish(); }); },
+    setupbd: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.setup.open(); const s = $$('#screen-setup select'); s[0].value = '05'; s[1].value = '03'; click($$('#screen-setup .btn--gold')[0]); log('birthday=' + MQ.save.kid().birthday + ' screen=' + MQ.ui.current); const b = $('#screen-setup .page__body'); if (b) b.scrollTop = 9999; finish(); },
     flow: function () {
       withMon(arg || 's', async function () {
         MQ.ui.home.open(); await wait(200);

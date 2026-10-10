@@ -152,7 +152,8 @@ MQ.ui.parent = (function () {
         b('立てるおにんぎょう（工作）を印刷', function () { MQ.ui.print.open('craft'); }),
         b('がんばり賞状を印刷', function () { MQ.ui.print.open('award'); })
       ]),
-      h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ぬったぬりえを写真で取り込むと、その色の姿になります（スタンプや成長はそのまま）。' })]);
+      h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ぬったぬりえを写真で取り込むと、その色の姿になります（スタンプや成長はそのまま）。' }),
+      h('button', { class: 'btn btn--wide', type: 'button', style: { marginTop: '8px' }, text: '使い方の案内をもう一度見る', onclick: function () { MQ.sfx.tap(); MQ.ui.home.open({ noGuide: true }); MQ.ui.guide.open({}); } })]);
   }
   function open() {
     MQ.ui.stopSpeak();

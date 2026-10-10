@@ -184,3 +184,35 @@
 .crayons--many { display: grid; grid-template-columns: repeat(8, 42px); gap: 6px 4px; justify-content: center; width: 380px; }
 .crayons--many .crayon { width: 42px; height: 42px; }
 .crayons--many .crayon.is-on { transform: scale(1.15); }
+
+/* はじめての 案内（2026-10-10・おうちの人むけ 5ページ） */
+.gd { position: absolute; inset: 0; z-index: 60; background: rgba(60,45,30,.45); display: flex; align-items: center; justify-content: center; padding: 14px; box-sizing: border-box; }
+.gd__card { width: 100%; max-height: 100%; overflow-y: auto; box-sizing: border-box; background: #fffdf7; border-radius: 22px; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 0 rgba(120,90,60,.25); color: #3a3330; }
+.gd__top { display: flex; justify-content: space-between; align-items: center; min-height: 32px; }
+.gd__step { font-size: 13px; color: #8a7a68; font-weight: 700; }
+.gd__skip { border: 0; background: transparent; color: #8a7a68; font-size: 14px; font-family: inherit; padding: 6px 4px; }
+.gd__title { font-size: 22px; margin: 0; font-weight: 900; }
+.gd__body { display: flex; flex-direction: column; gap: 10px; }
+.gd__hero { display: flex; justify-content: center; padding: 6px 0 2px; }
+.gd__p { margin: 0; font-size: 15px; line-height: 1.75; font-weight: 500; }
+.gd__note { margin: 0; font-size: 13px; line-height: 1.6; color: #7a6652; background: #f6f0e2; border-radius: 12px; padding: 8px 10px; }
+.gd__list { display: flex; flex-direction: column; gap: 8px; }
+.gd__item { display: flex; gap: 12px; align-items: center; }
+.gd__ico { width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.gd__ico svg { width: 26px; height: 26px; display: block; }
+.gd__ico.pill--rose, .gd__ico.pill--sky, .gd__ico.pill--lime, .gd__ico.pill--night { border-radius: 14px; }
+.gd__ico--paper { background: #f3ead6; color: #c58f2d; }
+.gd__ico--paper svg { width: 30px; height: 30px; }
+.gd__it { display: flex; flex-direction: column; min-width: 0; }
+.gd__it b { font-size: 15px; }
+.gd__it span { font-size: 13px; line-height: 1.5; color: #6b5a48; }
+.gd__lock { display: flex; gap: 12px; align-items: center; }
+.gd__ul { margin: 0; padding-left: 1.2em; font-size: 14px; line-height: 1.8; }
+.gd__dots { display: flex; gap: 8px; justify-content: center; }
+.gd__dots i { width: 9px; height: 9px; border-radius: 50%; background: #e3d6bd; }
+.gd__dots i.is-on { background: #d2765c; }
+.gd__nav { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.gd__nav > .btn--big { min-width: 150px; }
+.gd__end { display: flex; flex-direction: column; gap: 8px; flex: 1; align-items: stretch; }
+.gd__end .btn { width: 100%; }
+.finger--home { left: 20px; top: 14px; }

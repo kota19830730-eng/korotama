@@ -476,5 +476,15 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(MQ.bgm.validate().length === 0 && MQ.bgm.SONGS.night && MQ.bgm.SONGS.birthday, 'おんがく：こもりうた・おたんじょうびの うた');
 })();
 
+/* ---- はじめての 案内（2026-10-10） ---- */
+(function () {
+  const g = fs.readFileSync(path.join(ROOT, 'js/ui/guide.js'), 'utf8');
+  ok(index.indexOf('js/ui/guide.js') >= 0 && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./js/ui/guide.js') >= 0 && harness.indexOf('js/ui/guide.js') >= 0, 'guide.js が index・sw・harness に ある');
+  ok(!/ずんだもん|VOICEVOX/.test(g), '案内は おうちの人むけ：ずんだもんの 名前を 出さない');
+  ok((g.match(/title: '/g) || []).length === 5, '案内は 5ページ');
+  ok(/guideSeen/.test(fs.readFileSync(path.join(ROOT, 'js/ui/guide.js'), 'utf8')) && /MQ.ui.guide.shouldShow()/.test(fs.readFileSync(path.join(ROOT, 'js/ui/home.js'), 'utf8')), 'はじめて おうちに 来た とき 1回だけ 出す');
+  ok(/d.kid.birthday = bv/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'はじめの 設定で 誕生日を 入れられる');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);
