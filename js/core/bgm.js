@@ -41,7 +41,15 @@ MQ.bgm = (function () {
   // できた！：あかるい ジングル（4はく）を 1回 → おうちの 曲を 小さく
   const DONE_R = 'c5/.5 e5/.5 g5/.5 c6/.5 e6/1.5 d6/.5  c6/.5 d6/.5 e6/.5 g6/.5 e6/2';
   const DONE_L = 'c4/2 g4/2  f4/2 c4/2';
+  // G（v0.2）：おたんじょうびの うた（Happy Birthday to You・作者の 権利は 切れて いる）を 1回 → おうちの 曲
+  const BDAY_R = 'g5/.75 g5/.25 a5 g5  c6 b5/2  g5/.75 g5/.25 a5 g5  d6 c6/2  g5/.75 g5/.25 g6 e6  c6 b5 a5  f6/.75 f6/.25 e6 c6  d6 c6/2';
+  const BDAY_L = 'c4/3  g3/3  g3/3  c4/3  c4/3  f3/3  c4/1.5 g3/1.5  c4/3';
+  // E（v0.2）：おやすみの おはなしの こもりうた（ブラームスの 子守歌ふう・ゆっくり 3はく）
+  const NIGHT_R = 'e5/.5 e5/.5 g5/2  e5/.5 e5/.5 g5/2  e5/.5 g5/.5 c6 b5  a5/2 g5  d5/.5 e5/.5 f5 d5  d5/.5 e5/.5 f5/2  d5/.5 f5/.5 b5/.5 a5/.5 g5  b5 c6/2';
+  const NIGHT_L = 'c4/3  c4/3  e4/3  f3/3  g3/3  g3/3  g3/3  c4/3';
   const SONGS = {
+    birthday: { bpm: 100, vol: 1.0, intro: [BDAY_R, BDAY_L], then: 'home', thenVol: 0.55, thenBpm: 84 },
+    night: { bpm: 66, vol: 0.8, loop: [NIGHT_R, NIGHT_L] },
     home: { bpm: 84, vol: 1.0, loop: [HOME_R, HOME_L] },
     done: { bpm: 104, vol: 1.0, intro: [DONE_R, DONE_L], then: 'home', thenVol: 0.55, thenBpm: 84 }
   };
@@ -176,7 +184,8 @@ MQ.bgm = (function () {
   }
   function stop() { desired = null; playing = null; fadeOutSeq(); stopAmb(); }
   const SCREEN = { 'screen-home': 'home', 'screen-egg': 'home', 'screen-start': 'home', 'screen-setup': null, 'screen-draw': null, 'screen-parent': null, 'screen-done': 'done',
-                   'screen-care': 'field', 'screen-shop': 'field', 'screen-play': 'field', 'screen-kurabe': 'field', 'screen-moji': 'field', 'screen-tokei': 'field' };
+                   'screen-care': 'field', 'screen-shop': 'field', 'screen-play': 'field', 'screen-kurabe': 'field', 'screen-moji': 'field', 'screen-tokei': 'field',
+                   'screen-kaku': 'home', 'screen-sagasu': 'field', 'screen-maneko': null, 'screen-help': 'home', 'screen-story': 'night', 'screen-album': null, 'screen-print': null };
   function forScreen(id) { if (id in SCREEN) { if (SCREEN[id]) play(SCREEN[id]); else stop(); } }
   function duck(on) {
     ducked = !!on;

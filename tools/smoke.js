@@ -387,5 +387,84 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(!badKf.length, '反応の keyframes は transform／opacity だけ' + (badKf.length ? '：' + badKf.length : ''));
 })();
 
+
+/* ---- v0.2 ワクワクの しかけ（2026-10-10・ユーザー決定「全て入れましょう」） ---- */
+(function () {
+  ok(MQ.family && MQ.chores && MQ.story && MQ.season && MQ.mane && MQ.find, 'v0.2 の core（family・chores・story・season・mane・find）が 読めた');
+  const keys = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/voice/lines.json'), 'utf8')).map(function (l) { return l.key; }));
+  const KJ = /[一-鿿]/;
+  function voiced(list, name) {
+    const sen = [];
+    list.forEach(function (s) { String(s).replace(/([。！？!?])/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) { sen.push(t.replace(/[ 　]+/g, '')); }); });
+    const miss = sen.filter(function (t) { return !keys.has(t); });
+    ok(!miss.length, name + ' の 声が 一覧に ある' + (miss.length ? '：' + miss.slice(0, 3).join(' / ') : '（' + sen.length + '）'));
+    ok(!sen.some(function (t) { return KJ.test(t); }), name + ' の 声の 文に かん字なし');
+  }
+  // D おてつだい：日づけで 1つ・つづけて 同じに ならない
+  const kid0 = { chores: null, help: {} };
+  let same = 0;
+  for (let d = 1; d < 28; d++) { const a = MQ.chores.today(kid0, '2026-11-' + ('0' + d).slice(-2)).id, b = MQ.chores.today(kid0, '2026-11-' + ('0' + (d + 1)).slice(-2)).id; if (a === b) same++; }
+  ok(same === 0, 'おてつだい：つぎの 日は ちがう ものに なる');
+  ok(MQ.chores.enabled({ chores: ['towel'] }).length === 1 && MQ.chores.enabled({ chores: [] }).length === 6, 'おてつだい：えらんだ もの／はじめの 6つ');
+  voiced(MQ.chores.lines(), 'おてつだい');
+  // E おはなし：じゅんばんの ことば・クイズ
+  const t = Date.now();
+  const st = MQ.story.build([{ k: 'moji', t: t - 50 }, { k: 'count', t: t - 90 }, { k: 'moji', t: t - 10 }, { k: 'find', t: t }], 2, function () { return 0.3; });
+  ok(st.kinds.join(',') === 'count,moji,find', 'おはなし：はじめて した じゅんに 並ぶ（同じ しゅるいは 1回）');
+  ok(/^はじめに、/.test(st.pages[1].text) && /^それから、/.test(st.pages[2].text) && /^さいごに、/.test(st.pages[3].text), 'おはなし：はじめに・それから・さいごに');
+  ok(st.quiz && st.quiz.answer === 'count' && st.quiz.options.indexOf('count') >= 0, 'おはなし：「さいしょに なにを した？」の こたえは さいしょの あそび');
+  ok(!MQ.story.build([], 0).quiz && MQ.story.build([], 0).pages.length === 2, 'おはなし：あそんで いない 日は クイズなし');
+  voiced(MQ.story.lines(), 'おはなし');
+  // G きせつ・行事・誕生日
+  ok(MQ.season.of(new Date('2026-04-10T10:00:00')).season === 'spring' && MQ.season.of(new Date('2026-12-24T10:00:00')).event === 'xmas' && MQ.season.of(new Date('2026-10-10T10:00:00')).event === null, 'きせつ：はる・クリスマス・ふつうの 日');
+  const bk = { birthday: '05-03', created: new Date('2025-07-07T10:00:00').getTime() };
+  ok(MQ.season.of(new Date('2026-05-03T10:00:00'), bk).birthday && MQ.season.of(new Date('2026-07-07T10:00:00'), bk).monBirthday && !MQ.season.of(new Date('2025-07-07T10:00:00'), bk).monBirthday, 'たんじょうび：お子さん／生きものの 1年め（その日 生まれた 年は なし）');
+  voiced(MQ.season.lines(), 'きせつ');
+  // B まねっこ
+  ['s', 'm', 'l', 'k'].forEach(function (s) { const w = MQ.mane.word(s); ok(w.say && w.line.indexOf(w.say) > 0, 'まねっこ ' + s + '：' + w.say); });
+  voiced(MQ.mane.lines(), 'まねっこ');
+  ok(MQ.family.PHRASES.length === 6 && !MQ.family.has('great'), 'おうちの人の 声：6つ・はじめは 空');
+  // C さがす：色を 読む
+  function img(hex, bg) {
+    const W = 40, H = 40, px = new Uint8ClampedArray(W * H * 4);
+    const c = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)], b = bg || [210, 205, 195];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4, inn = Math.hypot(x - 20, y - 20) < 12; const v = inn ? c : b; px[i] = v[0]; px[i + 1] = v[1]; px[i + 2] = v[2]; px[i + 3] = 255; }
+    return MQ.find.classify(px, W, H);
+  }
+  const want = { red: '#e0493a', blue: '#3c6fd0', yellow: '#f2c94c', green: '#5cb23a', pink: '#f08cb0', purple: '#8a5ac8' };
+  Object.keys(want).forEach(function (k) { const c = img(want[k]); ok(c.id === k, 'さがす：' + k + ' を 読む（' + c.id + '）'); });
+  ok(MQ.find.match({ type: 'color', color: 'red' }, img(want.red)) && !MQ.find.match({ type: 'color', color: 'blue' }, img(want.red)), 'さがす：あってる／ちがう');
+  ['s', 'm', 'l', 'k'].forEach(function (s) { for (let i = 0; i < 30; i++) { const m = MQ.find.mission(s); if (!m || !m.line) { ok(false, 'さがす mission ' + s); return; } } });
+  voiced(MQ.find.lines(), 'さがす');
+  // A かいた たべもの：かずの もんだいに まざる
+  MQ.tasks.setExtraFoods([{ png: 'data:x' }]);
+  let mine = 0; for (let i = 0; i < 300; i++) { const c = MQ.tasks.count('s'); if (c.food.id === 'my0') mine++; if (c.food.id === 'my0' && !MQ.tasks.foodById('my0')) { ok(false, 'foodById my0'); break; } }
+  ok(mine > 40 && mine < 200, 'かいた たべもの：ごはんの もんだいに ときどき 出る（' + mine + '/300）');
+  MQ.tasks.setExtraFoods([]);
+  voiced([MQ.tasks.MY_FOOD + 'を みっつ ちょうだい', 'それは ' + MQ.tasks.MY_FOOD + 'だね。'], 'かいた ごはん');
+  // きろく：新しい ところ・成長は おてつだいも 数える
+  store[MQ.save.KEY] = undefined; delete store[MQ.save.KEY]; MQ.save._set(null);
+  const k = MQ.save.newKid({ name: 'ゆう', stage: 's' });
+  ok(k.items && Array.isArray(k.items.foods) && Array.isArray(k.finds) && k.log && k.help && k.done.draw === 0 && k.done.help === 0, 'きろく：v0.2 の 入れもの');
+  MQ.save.stamp('count'); MQ.save.note('help');
+  ok(MQ.save.dayLog().map(function (e) { return e.k; }).join(',') === 'count,help', 'きろく：その日に した こと');
+  MQ.save.update(function (d) { for (let i = 0; i < 5; i++) d.kid.help['2026-09-0' + (i + 1)] = 'shoes'; });
+  ok(MQ.save.growPoints() === 6 && MQ.save.growth() === 2, '成長：スタンプ ＋ おてつだい で 数える（1＋5＝6 → 2だんかい）');
+  const old = { v: 1, kid: { name: 'a', stage: 's', stamps: {}, done: { count: 1, color: 0, shape: 0 } }, settings: {} };
+  store[MQ.save.KEY] = JSON.stringify(old); MQ.save._set(null);
+  const k2 = MQ.save.kid();
+  ok(k2.items && k2.items.hatOn === true && Array.isArray(k2.finds) && k2.done.story === 0, '古い きろくにも v0.2 の 入れものが できる');
+  // ui の 新しい 画面：声の 文に かん字なし・index と sw に 入って いる
+  ['js/ui/kaku.js', 'js/ui/sagasu.js', 'js/ui/maneko.js', 'js/ui/otetsudai.js', 'js/ui/ohanashi.js'].forEach(function (f) {
+    const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    const says = (src.match(/(?:say|sayIfFree)\('([^']+)'/g) || []).map(function (m) { return m.slice(m.indexOf("'") + 1, -1); });
+    ok(!says.some(function (s) { return KJ.test(s); }), f + ' の 声の 文に かん字なし');
+    ok(index.indexOf(f) >= 0 && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./' + f) >= 0, f + ' が index と sw に ある');
+  });
+  ok(index.indexOf('css/v02.css') >= 0 && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./css/v02.css') >= 0, 'css/v02.css が index と sw に ある');
+  ['screen-kaku', 'screen-sagasu', 'screen-maneko', 'screen-help', 'screen-story', 'screen-album', 'screen-print'].forEach(function (id) { ok(index.indexOf('id="' + id + '"') >= 0 && harness.indexOf('id="' + id + '"') >= 0, id + ' が index と harness に ある'); });
+  ok(MQ.bgm.validate().length === 0 && MQ.bgm.SONGS.night && MQ.bgm.SONGS.birthday, 'おんがく：こもりうた・おたんじょうびの うた');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

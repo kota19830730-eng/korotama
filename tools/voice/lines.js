@@ -9,7 +9,7 @@ const path = require('path');
 const vm = require('vm');
 const ROOT = path.join(__dirname, '..', '..');
 const ctx = { window: null, console: console, document: undefined }; ctx.window = ctx; vm.createContext(ctx);
-['js/core/util.js', 'js/core/tasks.js', 'js/content/kakusu.js', 'js/content/kotoba.js', 'js/core/text.js'].forEach(function (p) { vm.runInContext(fs.readFileSync(path.join(ROOT, p), 'utf8'), ctx, { filename: p }); });
+['js/core/util.js', 'js/core/tasks.js', 'js/core/chores.js', 'js/core/story.js', 'js/core/season.js', 'js/core/mane.js', 'js/core/find.js', 'js/content/kakusu.js', 'js/content/kotoba.js', 'js/core/text.js'].forEach(function (p) { vm.runInContext(fs.readFileSync(path.join(ROOT, p), 'utf8'), ctx, { filename: p }); });
 const T = ctx.MQ.tasks, X = ctx.MQ.text;
 const num = T.num;
 const out = [];
@@ -75,10 +75,18 @@ for (let i = 0; i < 40000; i++) {
 ].forEach(add);
 for (let n = 1; n <= 5; n++) add('できた！ スタンプ ' + num(n) + 'め！ うれしいよ！');
 /* js/ui/*.js の say('…') の 文字列も ひろう（手で 書き忘れた ぶん） */
-['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/kazu.js', 'js/ui/kurabe.js', 'js/ui/moji.js', 'js/ui/tokei.js', 'js/ui/common.js'].forEach(function (f) {
+['js/ui/care.js', 'js/ui/shop.js', 'js/ui/play.js', 'js/ui/home.js', 'js/ui/start.js', 'js/ui/kazu.js', 'js/ui/kurabe.js', 'js/ui/moji.js', 'js/ui/tokei.js', 'js/ui/common.js', 'js/ui/kaku.js', 'js/ui/sagasu.js', 'js/ui/maneko.js', 'js/ui/otetsudai.js', 'js/ui/ohanashi.js'].forEach(function (f) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
-  (src.match(/say\('([^']+)'/g) || []).forEach(function (m) { add(m.slice(5, -1)); });
+  (src.match(/(?:say|sayIfFree)\('([^']+)'/g) || []).forEach(function (m) { add(m.slice(m.indexOf("'") + 1, -1)); });
   (src.match(/pick\(\[([^\]]+)\]/g) || []).forEach(function (m) { (m.match(/'([^']+)'/g) || []).forEach(function (q) { add(q.slice(1, -1)); }); });
+});
+/* ---- v0.2 ワクワクの しかけ（2026-10-10）：core の lines() と <lines> の しるし ---- */
+['chores', 'story', 'season', 'mane', 'find'].forEach(function (k) { ctx.MQ[k].lines().forEach(add); });
+for (let n = 1; n <= 10; n++) add(T.MY_FOOD + 'を ' + num(n) + ' ちょうだい');   // A：かいた ごはん
+add('それは ' + T.MY_FOOD + 'だね。');
+['js/ui/kaku.js', 'js/ui/home.js'].forEach(function (f) {
+  const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+  src.split('<lines>').slice(1).forEach(function (part) { const j = part.indexOf('</lines>'); (part.slice(0, j).match(/'([^']+)'/g) || []).forEach(function (q) { const t = q.slice(1, -1); if (/[ぁ-んァ-ヶ]/.test(t)) add(t); }); });
 });
 /* home.js の <lines> … </lines> の 中（キャラクターの ひとこと・v0.1.16）と common.js の 背景の ひとこと */
 (function () {

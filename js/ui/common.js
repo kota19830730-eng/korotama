@@ -51,7 +51,16 @@ MQ.ui = MQ.ui || {};
     scale: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v17"/><path d="M8 20h8"/><path d="M5 6h14"/><path d="M5 6l-3 6a3 3 0 0 0 6 0z"/><path d="M19 6l-3 6a3 3 0 0 0 6 0z"/></svg>',
     moji: '<svg viewBox="0 0 24 24"><text x="12" y="19" text-anchor="middle" font-size="19" font-weight="700" fill="currentColor" font-family="sans-serif">あ</text></svg>',
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
-    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>'
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>',
+    /* v0.2 */
+    crayon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19l2-6 9-9 3 3-9 9z"/><path d="M7 13l4 4"/><path d="M14 6l3 3"/><path d="M3 21c2 0 3-1 4-2"/></svg>',
+    lens: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L21 21"/><path d="M7.5 8.5a3 3 0 0 1 3-2"/></svg>',
+    mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-1.5V19c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V4.5C17 4 14 4.5 12 6z"/><path d="M12 6v14.5"/><path d="M17 2.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="currentColor"/></svg>',
+    letter: '<svg viewBox="0 0 24 24" fill="#fffdf7" stroke="#c8705a" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7" fill="none"/><path d="M12 15.5c-1.5-1.2-2.6-2-2.6-3.1 0-.8.6-1.3 1.3-1.3.5 0 1 .3 1.3.8.3-.5.8-.8 1.3-.8.7 0 1.3.5 1.3 1.3 0 1.1-1.1 1.9-2.6 3.1z" fill="#e0493a" stroke="none"/></svg>',
+    camera2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="8"/></svg>',
+    print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>'
   };
   MQ.ui.icon = function (name, cls) { return h('span', { class: 'ico' + (cls ? ' ' + cls : ''), html: SVG[name] || '' }); };
   MQ.ui.SVG = SVG;
@@ -111,7 +120,18 @@ MQ.ui = MQ.ui || {};
     size = size || 160;
     const src = png || MQ.save.monPng();
     const wrap = h('div', { class: 'mon', style: { width: size + 'px', height: size + 'px' } });
-    if (src) wrap.appendChild(MQ.blocks.imgBox(src, { size: size, alt: '' }));
+    if (src) {
+      const bx = MQ.blocks.imgBox(src, { size: size, alt: '' });
+      wrap.appendChild(bx);
+      // A（v0.2）：かいた ぼうしを かぶる（体と いっしょに うごく ように 絵の 中に 入れる）
+      const kid0 = MQ.save.kid();
+      const hat = !png && kid0 && kid0.items && kid0.items.hat && kid0.items.hatOn !== false ? kid0.items.hat : null;
+      if (hat && hat.png) {
+        bx.style.position = 'relative';
+        bx.appendChild(h('img', { class: 'mon__hat', src: hat.png, alt: '', style: { width: Math.round(size * 0.58) + 'px', left: Math.round(size * 0.21) + 'px', top: Math.round(-size * 0.2) + 'px' } }));
+        wrap.hasHat = true;
+      }
+    }
     wrap.appendChild(h('div', { class: 'mon__shadow' }));
     let moodT = null;
     wrap.mood = function (m, ms) {
@@ -197,7 +217,13 @@ MQ.ui = MQ.ui || {};
   };
 
   /* ---- もの ---- */
-  MQ.ui.foodNode = function (id, small) { return h('div', { class: 'food food--' + id + (small ? ' food--small' : '') }); };
+  MQ.ui.foodNode = function (id, small) {
+    if (/^my/.test(id)) {   // A（v0.2）：かいた たべもの
+      const f = MQ.tasks.foodById(id);
+      return h('div', { class: 'food food--my' + (small ? ' food--small' : '') }, [f && f.png ? h('img', { src: f.png, alt: '' }) : null]);
+    }
+    return h('div', { class: 'food food--' + id + (small ? ' food--small' : '') });
+  };
   MQ.ui.thingNode = function (thingId, color) {
     return h('div', { class: 'thing thing--' + thingId, style: { '--c': color.hex, '--d': color.dark } }, [h('i', { class: 't1' }), h('i', { class: 't2' }), h('i', { class: 't3' })]);
   };
@@ -351,8 +377,37 @@ MQ.ui = MQ.ui || {};
       sc.decorCount = { flowers: n, butterflies: (total >= 6 ? 1 : 0) + (total >= 12 ? 1 : 0), flag: total >= 15 };
     };
     if (opts.decor != null) sc.decorate(opts.decor);
+    /* G（v0.2）：きせつの かざり（はる＝さくら／なつ＝ひまわり／あき＝もみじ／ふゆ＝ゆき）＋ 行事・誕生日の かざり（さわると 声で 教える） */
+    if (opts.season) {
+      const se = opts.season;
+      sc.classList.add('is-' + se.season);
+      const fall = { spring: 'petal', autumn: 'mleaf', winter: 'snow' }[se.season];
+      if (fall) for (let i = 0; i < (se.season === 'winter' ? 12 : 7); i++) sc.insertBefore(h('i', { class: 'fall fall--' + fall, style: { left: Math.round(10 + (i * 53) % 380) + 'px', animationDelay: (-i * 1.3) + 's', animationDuration: (7 + (i % 3) * 1.6) + 's' } }), fx);
+      if (se.season === 'summer') [[118, -112], [148, -98]].forEach(function (p) { sc.insertBefore(h('i', { class: 'sunflower', style: { left: p[0] + 'px', top: (H + p[1]) + 'px' } }, [h('i', { class: 'sf-stem' }), h('i', { class: 'sf-head' })]), fx); });
+      let told = false;
+      sc.addEventListener('click', function () { if (told || !opts.live) return; told = true; setTimeout(function () { say(se.seasonInfo.tell); }, 1600); }, true);
+      const ev = se.birthday ? 'birthday' : se.event;
+      if (ev && EVENT_SVG[ev]) {
+        const b = h('button', { class: 'evsticker', type: 'button', 'aria-label': ev, html: EVENT_SVG[ev], style: { left: '256px', top: '6px' } });   // そらの 右（おひさまと 木の あいだ）
+        b.onclick = function (e) { e.stopPropagation(); MQ.sfx.rainbow(); b.classList.remove('is-boing'); void b.offsetWidth; b.classList.add('is-boing'); say(se.birthday ? 'おたんじょうび おめでとう！ ろうそくを ふーって してね。' : se.eventInfo.tell); if (se.birthday) { try { MQ.bgm.play('birthday'); } catch (x) { /* なし */ } } };
+        sc.appendChild(b);
+        sc.eventBtn = b;
+      }
+    }
     return sc;
   };
+  /* ---- G（v0.2）：行事の かざり（絵本ふうの SVG・黒い ふちなし） ---- */
+  const EVENT_SVG = {
+    newyear: '<svg viewBox="0 0 60 60"><path d="M20 22l4-14 4 14z" fill="#7fb069"/><path d="M28 18l4-14 4 14z" fill="#6cc24a"/><path d="M36 24l4-12 4 12z" fill="#7fb069"/><rect x="20" y="22" width="8" height="22" fill="#9ccf7c"/><rect x="28" y="18" width="8" height="26" fill="#86c26a"/><rect x="36" y="24" width="8" height="20" fill="#9ccf7c"/><ellipse cx="18" cy="44" rx="8" ry="6" fill="#4e9a35"/><ellipse cx="46" cy="44" rx="8" ry="6" fill="#4e9a35"/><rect x="14" y="42" width="36" height="14" rx="3" fill="#d9b06a"/><path d="M14 47h36M14 51h36" stroke="#b98c45" stroke-width="1.6"/></svg>',
+    setsubun: '<svg viewBox="0 0 60 60"><path d="M10 26h40l-4 26H14z" fill="#d9b06a"/><path d="M10 26h40" stroke="#b98c45" stroke-width="3"/><g fill="#f3e2b6"><circle cx="22" cy="24" r="4"/><circle cx="30" cy="22" r="4"/><circle cx="38" cy="24" r="4"/><circle cx="26" cy="18" r="4"/><circle cx="34" cy="18" r="4"/></g><g fill="#e8d199"><circle cx="48" cy="54" r="3"/><circle cx="8" cy="52" r="3"/></g></svg>',
+    hina: '<svg viewBox="0 0 60 60"><path d="M6 54l10-26h12l8 26z" fill="#4f7fd9"/><circle cx="22" cy="20" r="8" fill="#fbe3cf"/><path d="M14 18c2-8 14-8 16 0" fill="#3a3330"/><path d="M28 54l8-24h12l8 24z" fill="#e0493a"/><circle cx="42" cy="22" r="8" fill="#fbe3cf"/><path d="M34 20c2-8 14-8 16 0" fill="#3a3330"/><rect x="38" y="10" width="8" height="4" rx="1" fill="#f2b544"/><g fill="#3a3330"><circle cx="19" cy="21" r="1.2"/><circle cx="25" cy="21" r="1.2"/><circle cx="39" cy="23" r="1.2"/><circle cx="45" cy="23" r="1.2"/></g><rect x="4" y="54" width="54" height="5" rx="2" fill="#d2765c"/></svg>',
+    kodomo: '<svg viewBox="0 0 60 60"><rect x="8" y="4" width="3" height="54" rx="1.5" fill="#b98c45"/><circle cx="9.5" cy="5" r="3" fill="#f2b544"/><path d="M11 12h34l8 6-8 6H11z" fill="#3a5fb0"/><circle cx="18" cy="18" r="3" fill="#fffdf7"/><circle cx="18" cy="18" r="1.4" fill="#3a3330"/><path d="M11 28h30l7 6-7 6H11z" fill="#e0493a"/><circle cx="17" cy="34" r="3" fill="#fffdf7"/><circle cx="17" cy="34" r="1.4" fill="#3a3330"/><path d="M26 15l4 3-4 3M34 15l4 3-4 3M25 31l4 3-4 3M33 31l4 3-4 3" stroke="rgba(255,255,255,.6)" stroke-width="1.6" fill="none"/></svg>',
+    tanabata: '<svg viewBox="0 0 60 60"><path d="M30 58V6" stroke="#6cc24a" stroke-width="3"/><path d="M30 14l-16 8M30 24l18 6M30 34l-18 6M30 44l14 4" stroke="#7fb069" stroke-width="2.2"/><g><rect x="10" y="22" width="5" height="12" fill="#f08cb0"/><rect x="45" y="30" width="5" height="12" fill="#f2c94c"/><rect x="9" y="40" width="5" height="12" fill="#4f7fd9"/><rect x="42" y="47" width="5" height="10" fill="#e0493a"/></g><path d="M44 6l1.6 3.4 3.6.4-2.7 2.5.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.7-2.5 3.6-.4z" fill="#f2b544"/></svg>',
+    halloween: '<svg viewBox="0 0 60 60"><path d="M30 14c0-6 4-8 8-8" stroke="#5b8a49" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="30" cy="36" rx="24" ry="19" fill="#f49a2e"/><path d="M22 18c-4 8-4 28 0 36M38 18c4 8 4 28 0 36" stroke="#d9773a" stroke-width="2" fill="none"/><path d="M18 30l6-5 2 6zM42 30l-6-5-2 6z" fill="#7a3e12"/><path d="M18 40c6 6 18 6 24 0l-4 2-2-3-3 3-3-3-3 3-3-3-2 3z" fill="#7a3e12"/></svg>',
+    xmas: '<svg viewBox="0 0 60 60"><path d="M30 6l14 18h-6l12 14h-8l10 12H8l10-12h-8l12-14h-6z" fill="#4e9a35"/><rect x="26" y="50" width="8" height="8" fill="#9c6b3c"/><path d="M30 1l2 4.5 4.8.4-3.6 3.2 1 4.8L30 11.4 25.8 14l1-4.8-3.6-3.2 4.8-.4z" fill="#f2b544"/><g><circle cx="24" cy="30" r="2.6" fill="#e0493a"/><circle cx="36" cy="38" r="2.6" fill="#4f7fd9"/><circle cx="20" cy="44" r="2.6" fill="#f2c94c"/><circle cx="40" cy="47" r="2.6" fill="#e0493a"/></g><rect x="44" y="48" width="14" height="10" rx="1" fill="#e0493a"/><path d="M51 48v10M44 53h14" stroke="#f2c94c" stroke-width="2"/></svg>',
+    birthday: '<svg viewBox="0 0 60 60"><rect x="8" y="30" width="44" height="24" rx="4" fill="#fbe3cf"/><path d="M8 36c4 4 8-2 11 2s7-2 11 2 7-2 11 2 7-2 11 0v-6H8z" fill="#f08cb0"/><rect x="8" y="50" width="44" height="4" fill="#e9b9c9"/><g fill="#e0493a"><circle cx="18" cy="44" r="2"/><circle cx="30" cy="46" r="2"/><circle cx="42" cy="44" r="2"/></g><g><rect x="17" y="18" width="3" height="12" fill="#4f7fd9"/><rect x="28.5" y="16" width="3" height="14" fill="#f2c94c"/><rect x="40" y="18" width="3" height="12" fill="#7fb069"/></g><g fill="#f49a2e"><path d="M18.5 11c2 3 2 5 0 6-2-1-2-3 0-6z"/><path d="M30 9c2 3 2 5 0 6-2-1-2-3 0-6z"/><path d="M41.5 11c2 3 2 5 0 6-2-1-2-3 0-6z"/></g></svg>'
+  };
+  MQ.ui.EVENT_SVG = EVENT_SVG;
   MQ.ui.decorOf = function (total) { total = total || 0; return { flowers: Math.min(FLOWER_AT.length, Math.floor(total / 2)), butterflies: (total >= 6 ? 1 : 0) + (total >= 12 ? 1 : 0), flag: total >= 15 }; };
 
   /* ---- かみふぶき ---- */
@@ -370,6 +425,7 @@ MQ.ui = MQ.ui || {};
     const before = MQ.save.growth();
     MQ.save.stamp(kind);
     const after = MQ.save.growth();
+    if (after > before) MQ.save.markGrew(after);
     MQ.ui.done.open({ grew: after > before });
   };
 })();

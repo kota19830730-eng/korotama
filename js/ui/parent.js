@@ -69,6 +69,91 @@ MQ.ui.parent = (function () {
     ]);
   }
 
+  /* ---- v0.2 ワクワクの しかけ（2026-10-10・ユーザー決定「全て入れましょう」）。大人の 文章で 書く ---- */
+  /* B：おうちの人の声 */
+  function familyCard() {
+    const rows = h('div', { class: 'col', style: { gap: '8px' } });
+    let cur = null;
+    function paint() {
+      rows.innerHTML = '';
+      MQ.family.PHRASES.forEach(function (p) {
+        const has = MQ.family.has(p.id);
+        const recBtn = h('button', { class: 'btn fam__b' + (cur && cur.id === p.id ? ' is-rec' : ''), type: 'button', text: cur && cur.id === p.id ? '止める' : (has ? '録り直す' : '録音') });
+        recBtn.onclick = function () {
+          MQ.sfx.tap();
+          if (cur && cur.id === p.id) { cur.rec.stop(); return; }
+          if (cur) return;
+          if (!MQ.family.micOk()) { MQ.ui.toast('この端末ではマイクが使えません', 2600); return; }
+          MQ.ui.stopSpeak(); try { MQ.bgm.stop(); } catch (e) { /* なし */ }
+          cur = { id: p.id };
+          cur.rec = MQ.family.record({
+            max: MQ.family.MAX_MS,
+            onStart: function () { paint(); },
+            onDone: function (r) { const id = cur.id; cur = null; MQ.family.save(id, r.blob, function (ok) { MQ.ui.toast(ok ? '保存しました' : '保存できませんでした（端末の空きが足りません）', 2400); paint(); }, r.ms); },
+            onError: function () { cur = null; MQ.ui.toast('マイクを使えませんでした。ブラウザの設定でマイクを許可してください', 3200); paint(); }
+          });
+          paint();
+        };
+        rows.appendChild(h('div', { class: 'fam' }, [
+          h('div', { class: 'fam__l' }, [h('b', { text: p.label + (has ? '　✓' : '') }), h('small', { text: p.where + '。例：' + p.ex })]),
+          h('div', { class: 'row', style: { gap: '6px' } }, [
+            recBtn,
+            has ? h('button', { class: 'btn fam__b', type: 'button', text: '聞く', onclick: function () { MQ.sfx.tap(); MQ.family.play(p.id); } }) : null,
+            has ? h('button', { class: 'btn fam__b', type: 'button', style: { color: '#a4533e' }, text: '消す', onclick: function () { MQ.sfx.tap(); MQ.family.remove(p.id); paint(); } }) : null
+          ])
+        ]));
+      });
+    }
+    paint();
+    return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'おうちの人の声' }),
+      h('p', { class: 'note', text: 'ご家族の声を録音すると、「できた！」や朝のあいさつ、おやすみのおはなしで流れます（1つ6秒まで）。おじいちゃん・おばあちゃんの声もどうぞ。録音はこの端末の中だけに保存され、外には送りません。' }),
+      rows]);
+  }
+  /* D：おてつだい */
+  function choreCard(kid) {
+    const on = MQ.chores.enabled(kid).map(function (c) { return c.id; });
+    const box = h('div', { class: 'chips' });
+    MQ.chores.LIST.forEach(function (c) {
+      const b = h('button', { class: 'chip' + (on.indexOf(c.id) >= 0 ? ' is-on' : ''), type: 'button', text: c.label });
+      b.onclick = function () {
+        MQ.sfx.tap();
+        const i = on.indexOf(c.id);
+        if (i >= 0) { if (on.length <= 1) { MQ.ui.toast('1つ以上選んでください'); return; } on.splice(i, 1); } else on.push(c.id);
+        b.classList.toggle('is-on', on.indexOf(c.id) >= 0);
+        MQ.save.update(function (d) { d.kid.chores = on.slice(); });
+      };
+      box.appendChild(b);
+    });
+    const t = MQ.chores.today(kid);
+    return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'おてつだい' }),
+      h('p', { class: 'note', text: 'おうちの画面の封筒を押すと、キャラクターが1日1つおてつだいを頼みます。できたらボタンを長押しして「はなまる」をあげてください（姿の成長にも数えます）。頼むおてつだいを選べます。' }),
+      box,
+      h('p', { class: 'note', style: { marginTop: '8px' }, text: '今日のおてつだい：' + t.label + (MQ.chores.doneToday(kid) ? '（できました）' : '') + '　これまで：' + MQ.save.helpCount() + '回' })]);
+  }
+  /* G：誕生日 */
+  function birthdayCard(kid) {
+    const cur = (kid.birthday || '').split('-');
+    const mSel = h('select', { class: 'field field--s' }, [h('option', { value: '', text: '月' })].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return h('option', { value: ('0' + m).slice(-2), text: m + '月' }); })));
+    const dSel = h('select', { class: 'field field--s' }, [h('option', { value: '', text: '日' })].concat(Array.from({ length: 31 }, function (x, i) { return h('option', { value: ('0' + (i + 1)).slice(-2), text: (i + 1) + '日' }); })));
+    mSel.value = cur[0] || ''; dSel.value = cur[1] || '';
+    const saveB = function () { const v = mSel.value && dSel.value ? mSel.value + '-' + dSel.value : ''; MQ.save.update(function (d) { d.kid.birthday = v; }); };
+    mSel.onchange = saveB; dSel.onchange = saveB;
+    return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの誕生日' }),
+      h('div', { class: 'row', style: { gap: '8px' } }, [mSel, dSel]),
+      h('p', { class: 'note', style: { marginTop: '8px' }, text: '誕生日には、おうちの画面にケーキが出て、お祝いの歌が流れます。季節（春の桜・夏のひまわり・秋の紅葉・冬の雪）や行事（お正月・節分・ひなまつり・こどもの日・七夕・ハロウィン・クリスマス）の飾りも自動で出て、さわると由来をやさしく話します。キャラクターが生まれた日も毎年お祝いします。' })]);
+  }
+  /* F・H：紙で遊ぶ・アルバム */
+  function paperCard() {
+    const b = function (t, fn) { return h('button', { class: 'btn btn--wide', type: 'button', text: t, onclick: function () { MQ.sfx.tap(); fn(); } }); };
+    return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '成長アルバム・紙で遊ぶ' }),
+      h('div', { class: 'col', style: { gap: '8px' } }, [
+        b('成長アルバムを見る', function () { MQ.ui.album.open(); }),
+        b('ぬりえを印刷', function () { MQ.ui.print.open('nurie'); }),
+        b('立てるおにんぎょう（工作）を印刷', function () { MQ.ui.print.open('craft'); }),
+        b('がんばり賞状を印刷', function () { MQ.ui.print.open('award'); })
+      ]),
+      h('p', { class: 'note', style: { marginTop: '8px' }, text: 'ぬったぬりえを写真で取り込むと、その色の姿になります（スタンプや成長はそのまま）。' })]);
+  }
   function open() {
     MQ.ui.stopSpeak();
     const kid = MQ.save.kid();
@@ -122,8 +207,17 @@ MQ.ui.parent = (function () {
             h('div', { class: 'kv' }, [h('span', { text: 'あそぶ（かたち）' }), h('b', { text: done.shape + ' 回' })]),
             h('div', { class: 'kv' }, [h('span', { text: 'くらべっこ（くらべる・じゅんばん）' }), h('b', { text: (done.compare || 0) + ' 回' })]),
             h('div', { class: 'kv' }, [h('span', { text: 'もじ（ひらがな）' }), h('b', { text: (done.moji || 0) + ' 回' })]),
-            h('div', { class: 'kv' }, [h('span', { text: 'とけい（あさ・ひる・よる／時計）' }), h('b', { text: (done.tokei || 0) + ' 回' })])
+            h('div', { class: 'kv' }, [h('span', { text: 'とけい（あさ・ひる・よる／時計）' }), h('b', { text: (done.tokei || 0) + ' 回' })]),
+            h('div', { class: 'kv' }, [h('span', { text: 'おえかき（描いたものが出てくる）' }), h('b', { text: (done.draw || 0) + ' 回' })]),
+            h('div', { class: 'kv' }, [h('span', { text: 'さがす（本物の色・形を探す）' }), h('b', { text: (done.find || 0) + ' 回' })]),
+            h('div', { class: 'kv' }, [h('span', { text: 'まねっこ（ことばを言う）' }), h('b', { text: (done.mane || 0) + ' 回' })]),
+            h('div', { class: 'kv' }, [h('span', { text: 'おはなし（一日のふりかえり）' }), h('b', { text: (done.story || 0) + ' 回' })]),
+            h('div', { class: 'kv' }, [h('span', { text: 'おてつだい' }), h('b', { text: (done.help || 0) + ' 回' })])
           ])]) : null,
+        kid && kid.mon ? familyCard() : null,
+        kid && kid.mon ? choreCard(kid) : null,
+        kid && kid.mon ? birthdayCard(kid) : null,
+        kid && kid.mon ? paperCard() : null,
         installCard(),
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'そのほか' }),
           h('div', { class: 'col', style: { gap: '8px' } }, [

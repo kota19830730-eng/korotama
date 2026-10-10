@@ -17,6 +17,7 @@ MQ.ui.care = (function () {
   function open() {
     if (MQ.save.kid() && MQ.save.kid().stage === 'k') { MQ.ui.kazu.open('count'); return; }   // ねんちょう＝あわせる・わける（kazu.js）
     round = 0;
+    try { MQ.tasks.setExtraFoods((MQ.save.kid().items || {}).foods); } catch (e) { /* なし */ }   // A（v0.2）：かいた たべもの
     next();
   }
   function next() {

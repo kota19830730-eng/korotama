@@ -6,6 +6,7 @@
 <title>ころたま harness</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/v02.css">
 <style>#log { position: fixed; left: 0; bottom: 0; z-index: 999; max-width: 100px; max-height: 60px; overflow: hidden; font-size: 1px; color: transparent; background: transparent; margin: 0; pointer-events: none; }</style>
 </head>
 <body>
@@ -38,6 +39,13 @@
   <section id="screen-moji" class="screen"></section>
   <section id="screen-tokei" class="screen"></section>
   <section id="screen-done" class="screen"></section>
+  <section id="screen-kaku" class="screen"></section>
+  <section id="screen-sagasu" class="screen"></section>
+  <section id="screen-maneko" class="screen"></section>
+  <section id="screen-help" class="screen"></section>
+  <section id="screen-story" class="screen"></section>
+  <section id="screen-album" class="screen"></section>
+  <section id="screen-print" class="screen"></section>
   <section id="screen-parent" class="screen"></section>
   <div id="toast" class="toast"></div>
 </div>
@@ -57,6 +65,12 @@
 <script src="../js/core/cutout.js"></script>
 <script src="../js/core/subject.js"></script>
 <script src="../js/core/tasks.js"></script>
+<script src="../js/core/family.js"></script>
+<script src="../js/core/chores.js"></script>
+<script src="../js/core/story.js"></script>
+<script src="../js/core/season.js"></script>
+<script src="../js/core/mane.js"></script>
+<script src="../js/core/find.js"></script>
 <script src="../js/content/charart.js"></script>
 <script src="../js/content/presets.js"></script>
 <script src="../js/ui/common.js"></script>
@@ -69,6 +83,12 @@
 <script src="../js/ui/kurabe.js"></script>
 <script src="../js/ui/moji.js"></script>
 <script src="../js/ui/tokei.js"></script>
+<script src="../js/ui/kaku.js"></script>
+<script src="../js/ui/sagasu.js"></script>
+<script src="../js/ui/maneko.js"></script>
+<script src="../js/ui/otetsudai.js"></script>
+<script src="../js/ui/ohanashi.js"></script>
+<script src="../js/ui/print.js"></script>
 <script src="../js/ui/parent.js"></script>
 <script src="../js/ui/boot.js"></script>
 <script>
@@ -139,6 +159,22 @@
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function finish() { log('=== エラー: ' + errors + ' ==='); log('said: ' + said.length); }
 
+  /* v0.2：かいた ものの にせもの（たべもの＝あかい まる・ぼうし＝あおい さんかく・ともだち＝ピンクの まる・おにわ＝きいろい はな） */
+  function fakePng(kind, cb) {
+    const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; const g = cv.getContext('2d');
+    g.lineWidth = 8; g.strokeStyle = '#3a3330';
+    if (kind === 'hat') { g.fillStyle = '#4f7fd9'; g.beginPath(); g.moveTo(100, 20); g.lineTo(170, 150); g.lineTo(30, 150); g.closePath(); g.fill(); g.stroke(); g.fillStyle = '#f2c94c'; g.fillRect(20, 150, 160, 24); g.strokeRect(20, 150, 160, 24); }
+    else if (kind === 'friend') { g.fillStyle = '#f08cb0'; g.beginPath(); g.ellipse(100, 110, 70, 64, 0, 0, 7); g.fill(); g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.arc(78, 100, 14, 0, 7); g.arc(122, 100, 14, 0, 7); g.fill(); g.fillStyle = '#222'; g.beginPath(); g.arc(80, 102, 6, 0, 7); g.arc(124, 102, 6, 0, 7); g.fill(); }
+    else if (kind === 'garden') { g.fillStyle = '#6cc24a'; g.fillRect(94, 100, 12, 90); g.fillStyle = '#f2c94c'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(100 + Math.cos(i) * 40, 70 + Math.sin(i) * 40, 24, 0, 7); g.fill(); } g.fillStyle = '#e0493a'; g.beginPath(); g.arc(100, 70, 22, 0, 7); g.fill(); }
+    else { g.fillStyle = '#e0493a'; g.beginPath(); g.arc(100, 110, 70, 0, 7); g.fill(); g.stroke(); g.fillStyle = '#6cc24a'; g.fillRect(96, 20, 14, 30); }
+    cb(cv.toDataURL('image/png'));
+  }
+  function fakeItems(cb) {
+    fakePng('food', function (f) { fakePng('hat', function (hh) { fakePng('friend', function (fr) { fakePng('garden', function (gd) {
+      MQ.save.update(function (d) { const it = d.kid.items; it.foods = [{ png: f, at: Date.now() - 5e6 }]; it.hat = { png: hh, at: Date.now() - 4e6 }; it.friend = { png: fr, at: Date.now() - 3e6 }; it.garden = [{ png: gd, at: Date.now() - 2e6 }, { png: f, at: Date.now() - 1e6 }]; d.kid.finds = [{ png: f, what: 'あかい もの', at: Date.now() }]; });
+      cb();
+    }); }); }); });
+  }
   MQ.stage.fit();
   const run = {
     start: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.start.open(); finish(); },
@@ -374,6 +410,120 @@
         }
         await wait(200);
         log('after tokei: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
+    },
+    /* ---- v0.2 ワクワクの しかけ ----
+       #wk[:<日づけ YYYY-MM-DD>][:night|:bday]（おうち：かいた もの・季節・おてがみ ぜんぶ）／#kaku／#kakupad:<food|hat|friend|garden>／#kakuplace:<kind>[:<止める ms>|:go]
+       #sagasu:<s|m|l|k>[:ok|:<色>]／#maneko:<s|m|l|k>[:rec]／#help[:done]／#story[:quiz|:end|:none]／#print:<nurie|craft|award|album>／#album／#parentv2[:top|:paper]
+       #wkflow（さがす・まねっこ・おえかき・おてつだい・おはなし を 通す） */
+    wk: function () {
+      withMon('s', function () {
+        if (arg) MQ.season.setNow(arg + 'T10:00:00');
+        fakeItems(function () {
+          if (Q[2] === 'bday') MQ.save.update(function (d) { d.kid.birthday = MQ.season.md(MQ.season.now()); });
+          MQ.ui.home.open({ night: Q[2] === 'night' });
+          const T = MQ.ui.home._t;
+          log('wk: season=' + T.season.season + ' event=' + T.season.event + ' bday=' + T.season.birthday + ' letter=' + !!T.letter + ' friend=' + !!T.friend + ' hat=' + !!T.mon.hasHat + ' garden=' + $$('#screen-home .garden').length + ' sticker=' + !!T.scene.eventBtn + ' pills=' + $$('#screen-home .pill').length);
+          const r = $('#screen-home .page').getBoundingClientRect(), last = $('#screen-home .pills').getBoundingClientRect();
+          log('fit: pills.bottom=' + Math.round(last.bottom) + ' page.bottom=' + Math.round(r.bottom) + (last.bottom <= r.bottom + 1 ? ' OK' : ' NG'));
+          setTimeout(finish, 400);
+        });
+      });
+    },
+    kaku: function () { withMon('s', function () { MQ.ui.kaku.open(); setTimeout(finish, 300); }); },
+    kakupad: function () { withMon('s', function () { MQ.ui.kaku.pad(arg || 'food'); const P = MQ.ui.kaku._pad, g = P.ctx; g.fillStyle = '#e0493a'; g.beginPath(); g.arc(320, 340, 150, 0, 7); g.fill(); g.fillStyle = '#6cc24a'; g.fillRect(310, 150, 30, 60); P.mark(); setTimeout(finish, 300); }); },
+    kakuplace: function () {
+      withMon('s', function () {
+        fakePng(arg || 'food', function (png) {
+          const ids = [], st0 = window.setTimeout;
+          if (Q[2] !== 'go') window.setTimeout = function (f, ms) { const id = st0(f, ms); ids.push(id); return id; };
+          MQ.ui.kaku.place(arg || 'food', png);
+          st0(function () {
+            const it = MQ.save.kid().items;
+            log('kakuplace ' + (arg || 'food') + ': items=' + JSON.stringify({ foods: it.foods.length, hat: !!it.hat, friend: !!it.friend, garden: it.garden.length }));
+            if (Q[2] !== 'go') { ids.forEach(function (id) { clearTimeout(id); }); window.setTimeout = st0; finish(); return; }
+            st0(function () { log('after: ' + MQ.ui.current + ' done.draw=' + MQ.save.kid().done.draw); finish(); }, 9000);
+          }, Number(Q[2]) || 2200);
+        });
+      });
+    },
+    sagasu: function () {
+      withMon(arg || 's', function () {
+        MQ.ui.sagasu.open();
+        setTimeout(function () {
+          const m = MQ.ui.sagasu.state().mission;
+          log('sagasu: ' + m.key + ' ' + m.line);
+          if (Q[2] && m.type === 'color') {
+            const want = Q[2] === 'ok' ? m.color : Q[2];
+            const hex = { red: '#e0493a', blue: '#3c6fd0', yellow: '#f2c94c', green: '#5cb23a', pink: '#f08cb0', purple: '#8a5ac8' }[want] || '#888';
+            const cv = document.createElement('canvas'); cv.width = 200; cv.height = 150; const g = cv.getContext('2d'); g.fillStyle = '#d8d2c4'; g.fillRect(0, 0, 200, 150); g.fillStyle = hex; g.beginPath(); g.arc(100, 75, 50, 0, 7); g.fill();
+            const im = new Image(); im.onload = function () { MQ.ui.sagasu.judgeImage(im); log('classify: ' + (MQ.ui.sagasu._last && MQ.ui.sagasu._last.id) + ' want=' + want + ' target=' + m.color); setTimeout(function () { log('after round=' + MQ.ui.sagasu.state().round); finish(); }, 600); }; im.src = cv.toDataURL();
+          } else finish();
+        }, 400);
+      });
+    },
+    maneko: function () {
+      withMon(arg || 's', function () {
+        MQ.family.setFakeMic({ blob: function () { return new Blob([new Uint8Array(100)], { type: 'audio/webm' }); } });
+        MQ.ui.maneko.open();
+        setTimeout(function () {
+          log('maneko: ' + MQ.ui.maneko.state().word.line);
+          if (Q[2] === 'rec') { MQ.ui.maneko._start(); setTimeout(function () { log('rec=' + MQ.ui.maneko.state().rec + ' class=' + $('#screen-maneko .mn__mic').className); finish(); }, 300); } else finish();
+        }, 400);
+      });
+    },
+    help: function () { withMon('s', function () { if (arg === 'done') MQ.save.update(function (d) { d.kid.help[MQ.save.today()] = 'shoes'; }); MQ.ui.otetsudai.open(); setTimeout(function () { log('help: ' + MQ.chores.today(MQ.save.kid()).id + ' done=' + MQ.chores.doneToday(MQ.save.kid())); finish(); }, 400); }); },
+    story: function () {
+      withMon('s', function () {
+        const t = Date.now();
+        const log0 = arg === 'none' ? [] : [{ k: 'count', t: t - 9000 }, { k: 'draw', t: t - 8000 }, { k: 'moji', t: t - 7000 }, { k: 'find', t: t - 6000 }];
+        if (arg !== 'none') { MQ.save.stamp('count'); MQ.save.stamp('moji'); }
+        MQ.ui.ohanashi.open({ log: log0 });
+        const st = MQ.ui.ohanashi.state();
+        log('story: ' + st.story.pages.map(function (p) { return p.text; }).join(' / ') + ' quiz=' + (st.story.quiz && st.story.quiz.options.join(',')));
+        setTimeout(function () { const s2 = MQ.ui.ohanashi.state(); log('at i=' + s2.i + ' asked=' + !!s2.asked + ' done=' + !!s2.done + ' quizBtns=' + $$('#screen-story .st__opt').length); finish(); }, arg === 'quiz' ? 6000 : arg === 'end' ? 12000 : 1500);
+      });
+    },
+    print: function () { withMon('s', function () { MQ.save.stamp('count'); fakeItems(function () { MQ.ui.print.open(arg || 'nurie'); setTimeout(function () { log('print ' + (arg || 'nurie') + ': sheet=' + !!MQ.ui.print._sheet); finish(); }, 1500); }); }); },
+    album: function () { withMon('s', function () { MQ.save.stamp('count'); MQ.save.markGrew(2); fakeItems(function () { MQ.save.update(function (d) { d.kid.help['2026-10-01'] = 'shoes'; }); MQ.ui.album.open(); log('album: entries=' + $$('#screen-album .al__e').length); setTimeout(finish, 300); }); }); },
+    parentv2: function () {
+      withMon('m', function () {
+        MQ.family._setRaw('great', 'data:audio/webm;base64,AAAA', 2000);
+        MQ.ui.parent.open();
+        const titles = $$('#screen-parent .card__title');
+        log('cards: ' + titles.map(function (x) { return x.textContent; }).join(' | '));
+        const body = $('#screen-parent .page__body');
+        const want = arg === 'paper' ? /アルバム/ : arg === 'chore' ? /おてつだい/ : /おうちの人の声/;
+        const t = titles.filter(function (x) { return want.test(x.textContent); })[0];
+        if (t && arg !== 'top') body.scrollTop = t.parentNode.offsetTop - 10;
+        finish();
+      });
+    },
+    wkflow: function () {
+      withMon('s', async function () {
+        MQ.family.setFakeMic({ blob: function () { return new Blob([new Uint8Array(100)], { type: 'audio/webm' }); } });
+        MQ.ui.sagasu.open(); await wait(300);
+        for (let r = 0; r < 3; r++) { MQ.ui.sagasu.found(); await wait(500); }
+        log('find: ' + MQ.ui.current + ' done.find=' + MQ.save.kid().done.find);
+        MQ.ui.maneko.open(); await wait(400);
+        for (let r = 0; r < 3; r++) { const r0 = MQ.ui.maneko.state().round; MQ.ui.maneko._start(); await wait(700); MQ.ui.maneko._stop(); for (let k = 0; k < 40 && MQ.ui.current === 'screen-maneko' && MQ.ui.maneko.state().round === r0; k++) await wait(250); await wait(300); }
+        log('mane: ' + MQ.ui.current + ' done.mane=' + MQ.save.kid().done.mane);
+        await new Promise(function (res) { fakePng('hat', function (png) { MQ.ui.kaku.place('hat', png); res(); }); });
+        await wait(5000);
+        log('draw: ' + MQ.ui.current + ' done.draw=' + MQ.save.kid().done.draw + ' hat=' + !!MQ.save.kid().items.hat);
+        MQ.ui.home.open(); await wait(300);
+        click(MQ.ui.home._t.letter); await wait(400);
+        log('help screen: ' + MQ.ui.current);
+        $('#screen-help .btn--gold').dispatchEvent(new PointerEvent('pointerdown')); await wait(1300);
+        await wait(1500);
+        log('help: done=' + MQ.chores.doneToday(MQ.save.kid()) + ' helpCount=' + MQ.save.helpCount() + ' screen=' + MQ.ui.current);
+        MQ.ui.ohanashi.open(); await wait(9000);
+        const st = MQ.ui.ohanashi.state();
+        log('story kinds=' + st.story.kinds.join(',') + ' asked=' + !!st.asked);
+        if (st.story.quiz) { const i = st.story.quiz.options.indexOf(st.story.quiz.answer); click($$('#screen-story .st__opt')[i]); await wait(4000); }
+        log('story done=' + !!MQ.ui.ohanashi.state().done + ' done.story=' + MQ.save.kid().done.story);
+        log('log today: ' + MQ.save.dayLog().map(function (e) { return e.k; }).join(','));
         finish();
       });
     },

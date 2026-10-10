@@ -3,13 +3,13 @@
    ファイルを 変えたら CACHE_NAME を 上げる。ファイルを ふやしたら FILES にも。
    install は cache: 'reload'（GitHub Pages の 10分 キャッシュで 古い ファイルが 入るのを ふせぐ＝まなびモンスター v12.9.1 の 教訓）
    --------------------------------------------------------- */
-const CACHE_NAME = 'manabi-tamago-v21';   // 名前は ころたま に なったが キャッシュ名の 頭は そのまま
+const CACHE_NAME = 'manabi-tamago-v22';   // 名前は ころたま に なったが キャッシュ名の 頭は そのまま
 const FONT_CACHE = 'manabi-tamago-fonts-v1';
 const FILES = [
-  './', './index.html', './manifest.webmanifest', './css/style.css',
-  './js/core/util.js', './js/core/stage.js', './js/core/blocks.js', './js/core/sfx.js', './js/core/bgm.js', './js/core/save.js', './js/core/voice.js', './js/content/kakusu.js', './js/content/kotoba.js', './js/core/text.js', './js/core/trace.js', './js/core/cutout.js', './js/core/subject.js', './js/core/tasks.js',
+  './', './index.html', './manifest.webmanifest', './css/style.css', './css/v02.css',
+  './js/core/util.js', './js/core/stage.js', './js/core/blocks.js', './js/core/sfx.js', './js/core/bgm.js', './js/core/save.js', './js/core/voice.js', './js/content/kakusu.js', './js/content/kotoba.js', './js/core/text.js', './js/core/trace.js', './js/core/cutout.js', './js/core/subject.js', './js/core/tasks.js', './js/core/family.js', './js/core/chores.js', './js/core/story.js', './js/core/season.js', './js/core/mane.js', './js/core/find.js',
   './js/content/charart.js', './js/content/presets.js',
-  './js/ui/common.js', './js/ui/start.js', './js/ui/home.js', './js/ui/care.js', './js/ui/shop.js', './js/ui/play.js', './js/ui/kazu.js', './js/ui/kurabe.js', './js/ui/moji.js', './js/ui/tokei.js', './js/ui/parent.js', './js/ui/boot.js',
+  './js/ui/common.js', './js/ui/start.js', './js/ui/home.js', './js/ui/care.js', './js/ui/shop.js', './js/ui/play.js', './js/ui/kazu.js', './js/ui/kurabe.js', './js/ui/moji.js', './js/ui/tokei.js', './js/ui/kaku.js', './js/ui/sagasu.js', './js/ui/maneko.js', './js/ui/otetsudai.js', './js/ui/ohanashi.js', './js/ui/print.js', './js/ui/parent.js', './js/ui/boot.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 

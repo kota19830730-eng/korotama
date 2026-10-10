@@ -16,6 +16,8 @@ MQ.ui = MQ.ui || {};
   const h = MQ.util.h;
 
   function greeting() {
+    const se = MQ.season.of(MQ.season.now(), MQ.save.kid());
+    if (se.greet) return se.greet;   // G（v0.2）：誕生日・行事の 日
     const hr = new Date().getHours();
     const kid = MQ.save.kid();
     const nm = kid && kid.name ? kid.name + 'ちゃん、' : '';
@@ -34,10 +36,13 @@ MQ.ui = MQ.ui || {};
     tickle: ['くすぐったい！', 'あはは！ くすぐったいよ！'],
     pat: ['なでなで きもちいい！', 'もっと なでて！'],
     sleep: ['すやすや…'],
-    wake: ['はっ！ おきたよ！', 'ふぁ… おはよう！']
+    wake: ['はっ！ おきたよ！', 'ふぁ… おはよう！'],
+    friend: ['こんにちは！ あそぼう！', 'ぼくも ここに すんでるよ！', 'いっしょに あそぼうね！']   // A（v0.2）：かいた ともだち
   };
   /* </lines> */
   const TAPS = ['happy', 'jump', 'spin', 'shy', 'yawn'];
+  const GARDEN_AT = [[4, -62], [64, -54], [186, -58]];   // おにわの かざりの 場所（ばめんの 下からの たかさ）
+  const HANAMARU = '<svg viewBox="0 0 48 48"><g fill="none" stroke="#e0493a" stroke-width="3.2" stroke-linecap="round"><path d="M24 7c9 0 16 6 16 15s-7 16-16 16S8 32 8 23c0-8 6-14 14-14 7 0 12 5 12 12s-5 11-11 11-9-4-9-9 4-8 8-8"/></g><path d="M10 40c4 2 6 6 6 6M38 40c-4 2-6 6-6 6" stroke="#7fb069" stroke-width="3" stroke-linecap="round" fill="none"/></svg>';
   const IDLE = { look: 20000, yawn: 35000, sleep: 50000 };   // ほっといた 時間（ms）
 
   let idleT = [];
@@ -55,10 +60,30 @@ MQ.ui = MQ.ui || {};
       const bl = MQ.ui.balloon('');
       // 背景の ひとこと：読んで いる 最中は 出さない（たたくたびに 声が 切れると うるさい）
       const sayIfFree = function (t) { if (!MQ.ui.isSpeaking()) bl.say(t); };
-      const scene = MQ.ui.sceneNode(SH, { live: true, night: opts.night, decor: MQ.save.stampsTotal(), say: sayIfFree });
+      const se = MQ.season.of(MQ.season.now(), kid);
+      const scene = MQ.ui.sceneNode(SH, { live: true, night: opts.night, decor: MQ.save.stampsTotal(), say: sayIfFree, season: se });
       const mon = MQ.ui.monNode(160);
       const monBox = h('div', { style: { position: 'absolute', left: '226px', top: (SH - 166) + 'px' } }, [mon]);
       scene.appendChild(monBox);
+      /* ---- A（v0.2）：かいた ともだち・おにわの かざり ---- */
+      const items = kid.items || {};
+      (items.garden || []).slice(0, 3).forEach(function (g, i) {
+        const pos = GARDEN_AT[i];
+        const it = h('button', { class: 'garden', type: 'button', 'aria-label': 'おにわの かざり', style: { left: pos[0] + 'px', top: (SH + pos[1]) + 'px' } }, [h('img', { src: g.png, alt: '' })]);
+        it.onclick = function (e) { e.stopPropagation(); MQ.sfx.pop(); it.classList.remove('is-boing'); void it.offsetWidth; it.classList.add('is-boing'); sayIfFree(MQ.util.pick(['きみが かいた かざりだね！', 'すてきな かざり！'])); };
+        scene.appendChild(it);
+      });
+      let friend = null;
+      if (items.friend && items.friend.png) {
+        friend = h('button', { class: 'friend', type: 'button', 'aria-label': 'おともだち', style: { left: '128px', top: (SH - 112) + 'px' } }, [h('img', { src: items.friend.png, alt: '' })]);
+        friend.onclick = function (e) { e.stopPropagation(); MQ.sfx.jump(); friend.classList.remove('is-hop'); void friend.offsetWidth; friend.classList.add('is-hop'); sayIfFree(MQ.util.pick(LINES.friend)); };
+        scene.appendChild(friend);
+      }
+      /* ---- D（v0.2）：おてつだいの おてがみ（きょう まだ なら ふうとう が ゆれる・できたら はなまる） ---- */
+      const helped = MQ.chores.doneToday(kid);
+      const letter = h('button', { class: 'letter' + (helped ? ' is-done' : ''), type: 'button', 'aria-label': helped ? 'はなまる' : 'おてがみ', style: { left: '124px', top: (SH - 204) + 'px' }, html: helped ? HANAMARU : MQ.ui.SVG.letter });
+      letter.onclick = function (e) { e.stopPropagation(); MQ.sfx.tap(); MQ.ui.stopSpeak(); clearIdle(); if (helped) { sayIfFree('きょうの おてつだい、ありがとう！'); return; } MQ.ui.otetsudai.open(); };
+      scene.appendChild(letter);
 
       /* ---- A：キャラクターの 反応 ---- */
       let taps = [], last = '';
@@ -68,7 +93,7 @@ MQ.ui = MQ.ui || {};
         if (mon.isAsleep()) { kind = 'wake'; }
         mon.mood(kind);
         if (kind === 'shy') mon.blush();
-        if (kind === 'pat') mon.hearts(5);
+        if (kind === 'pat') { mon.hearts(5); if (MQ.family.has('love') && Math.random() < 0.5) { bl.say(MQ.util.pick(LINES.pat)); setTimeout(function () { MQ.family.play('love'); }, 1200); return kind; } }
         const sf = { jump: 'jump', spin: 'spin', tickle: 'tickle', pat: 'heart', yawn: 'yawn', wake: 'wake' }[kind];
         if (sf && MQ.sfx[sf]) MQ.sfx[sf](); else MQ.sfx.tap();
         bl.say(line || MQ.util.pick(LINES[kind] || LINES.happy));
@@ -118,14 +143,30 @@ MQ.ui = MQ.ui || {};
           ].map(function (it) {   // 3つずつ 2段（v0.1.13 で 5つに なった）
             return h('div', { class: 'bigs__it' }, [h('button', { class: 'big ' + it[0], type: 'button', 'aria-label': it[1], html: MQ.ui.SVG[it[2]], style: { color: it[3] }, onclick: go(it[4]) }), h('span', { text: it[1] })]);
           })),
-          MQ.ui.hintBox('おひさま・くも・き・いえ・おかも さわると うごきます')
+          /* v0.2：おえかき（A）・さがしもの（C）・まねっこ（B）・おはなし（E） */
+          h('div', { class: 'pills' }, [
+            ['pill--rose', 'おえかき', 'crayon', function () { MQ.ui.kaku.open(); }],
+            ['pill--sky', 'さがす', 'lens', function () { MQ.ui.sagasu.open(); }],
+            ['pill--lime', 'まねっこ', 'mic', function () { MQ.ui.maneko.open(); }],
+            ['pill--night', 'おはなし', 'book', function () { MQ.ui.ohanashi.open(); }]
+          ].map(function (it) {
+            return h('button', { class: 'pill ' + it[0], type: 'button', 'aria-label': it[1], onclick: go(it[3]) }, [h('span', { class: 'pill__ico', html: MQ.ui.SVG[it[2]] }), h('span', { class: 'pill__tx', text: it[1] })]);
+          }))
         ])
       ]);
       MQ.ui.mount('screen-home', page);
       MQ.ui.show('screen-home');
-      setTimeout(function () { bl.say(greeting()); }, 250);
+      setTimeout(function () {
+        bl.say(greeting(), function () {
+          // B（v0.2）：おうちの人の 声（1日 1回）。誕生日 → おはよう の じゅん
+          const day = MQ.save.today();
+          if (se.birthday && MQ.family.once('birthday', day)) return;
+          if (new Date().getHours() < 11) MQ.family.once('morning', day);
+        });
+        if (se.birthday) { MQ.ui.confetti(scene, 30); try { MQ.bgm.play('birthday'); } catch (e) { /* なし */ } }
+      }, 250);
       // テスト用（harness）：反応を 外から 起こす
-      MQ.ui.home._t = { mon: mon, scene: scene, bl: bl, react: react, onTap: onTap, sleep: function () { mon.sleep(); }, idle: armIdle };
+      MQ.ui.home._t = { mon: mon, scene: scene, bl: bl, react: react, onTap: onTap, sleep: function () { mon.sleep(); }, idle: armIdle, letter: letter, friend: friend, season: se };
     }
   };
 

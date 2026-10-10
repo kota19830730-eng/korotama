@@ -1,0 +1,106 @@
+/* ---------------------------------------------------------
+   ことばの まねっこ（ころたま v0.2・B の 子ども がわ）
+   生きもの「『いちご』って いってみて！」（絵を 見せる）→ 大きな マイクを おして 言う（声の 大きさで 輪が ひろがる）→
+   生きものが その 声を 高く して まねっこ（ぴょんと はねる）→ ほめる。3つで できた！
+   はんていは しない（ばつなし）。マイクが つかえない 端末は「いっしょに いってみよう」で おうちの人が ○。
+     MQ.ui.maneko.open()
+   --------------------------------------------------------- */
+window.MQ = window.MQ || {};
+MQ.ui = MQ.ui || {};
+
+(function () {
+  const h = MQ.util.h;
+  let round = 0, w = null, used = [], els = {}, rec = null, busy = false, raf = 0;
+
+  function picOf(p) {
+    if (p.type === 'food') return MQ.ui.foodNode(p.id);
+    const col = MQ.tasks.COLORS.filter(function (c) { return c.id === (p.color || 'red'); })[0] || MQ.tasks.COLORS[0];
+    if (p.type === 'thing') return MQ.ui.thingNode(p.id, col);
+    if (p.type === 'shape') return MQ.ui.shapeNode(p.id, col);
+    return h('div', { class: 'mn__greet', html: GREET[p.id] || '' });
+  }
+  // あいさつの 絵（ありがとう＝ハート・こんにちは＝手を ふる・いただきます＝手を あわせる・おやすみ＝つき）
+  const GREET = {
+    thanks: '<svg viewBox="0 0 64 64"><path d="M32 54C18 44 8 36 8 24a11 11 0 0 1 24-6 11 11 0 0 1 24 6c0 12-10 20-24 30z" fill="#f08cb0"/></svg>',
+    hello: '<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="#f2c94c"/><circle cx="24" cy="28" r="3" fill="#3a3330"/><circle cx="40" cy="28" r="3" fill="#3a3330"/><path d="M22 38q10 8 20 0" stroke="#3a3330" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M52 10l4-4M56 18h5M50 4V0" stroke="#e0493a" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    itadakimasu: '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="50" rx="22" ry="6" fill="#d2765c"/><path d="M12 44h40a20 20 0 0 1-40 0z" fill="#fffdf7"/><path d="M20 38c4-6 20-6 24 0" fill="#fffdf7" stroke="#e3d6bd" stroke-width="2"/><path d="M22 14c2-4 6-4 6 0M34 14c2-4 6-4 6 0" stroke="#b98c45" stroke-width="2" fill="none"/></svg>',
+    oyasumi: '<svg viewBox="0 0 64 64"><path d="M40 8a24 24 0 1 0 16 36A20 20 0 0 1 40 8z" fill="#f2c94c"/><path d="M48 14l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" fill="#f2b544"/></svg>'
+  };
+
+  function open() { round = 0; used = []; next(); }
+  function next() {
+    w = MQ.mane.word(MQ.save.kid().stage, used);
+    used.push(w.say);
+    busy = false;
+    render();
+    setTimeout(function () { els.bl.say(w.line + ' マイクを おして、いってみてね。'); }, 250);
+  }
+  function render() {
+    const mon = MQ.ui.monNode(130);
+    mon.addEventListener('click', function () { if (busy) return; MQ.ui.quietTap(mon); });
+    const bl = MQ.ui.balloon('');
+    const ring = h('i', { class: 'mn__ring' });
+    const mic = h('button', { class: 'mn__mic', type: 'button', 'aria-label': 'マイク', html: MQ.ui.SVG.mic }, []);
+    mic.insertBefore(ring, mic.firstChild);
+    mic.onclick = function () { if (busy) return; if (rec) stopRec(); else startRec(); };
+    const say = h('button', { class: 'btn btn--wide mn__ok', type: 'button', text: 'マイクなしで：言えた！（おうちの人）' });
+    MQ.ui.hold(say, 700, function () { if (busy) return; praise(null); });
+    els = { mon: mon, bl: bl, mic: mic, ring: ring };
+    const page = h('div', { class: 'page' }, [
+      MQ.ui.topBar({ home: true, replay: function () { bl.say(w.line); } }),
+      h('div', { class: 'field2' }, [
+        h('div', { class: 'scene__hill', style: { left: '-60px', top: '130px', width: '300px', height: '160px', background: 'var(--grass)' } }),
+        h('div', { class: 'scene__hill', style: { left: '190px', top: '140px', width: '300px', height: '160px', background: 'var(--grass2)' } }),
+        h('div', { style: { position: 'absolute', left: '28px', top: '40px' } }, [mon]),
+        h('div', { class: 'mn__pic', style: { position: 'absolute', left: '226px', top: '44px' } }, [picOf(w.pic)])
+      ]),
+      h('div', { class: 'wrap col', style: { gap: '12px', paddingTop: '6px', alignItems: 'center' } }, [
+        bl,
+        mic,
+        h('div', { class: 'dots3' }, [0, 1, 2].map(function (i) { return h('i', { class: i < round ? 'is-on' : '' }); })),
+        say,
+        MQ.ui.hintBox('マイクを おして 言うと、生きものが 高い 声で まねっこ します（声は 保存しません）。うまく 言えなくても ほめて あげてください')
+      ])
+    ]);
+    MQ.ui.mount('screen-maneko', page);
+    MQ.ui.show('screen-maneko');
+  }
+  function startRec() {
+    MQ.ui.stopSpeak(); MQ.sfx.tap();
+    if (!MQ.family.micOk()) { els.bl.say('マイクが つかえないみたい。いっしょに いってみよう！ ' + w.say + '！'); return; }
+    els.mic.classList.add('is-rec');
+    els.mon.mood('tilt', 3000);
+    rec = MQ.family.record({
+      max: 3500,
+      onStart: function () { loop(); },
+      onDone: function (r) { endLoop(); rec = null; els.mic.classList.remove('is-rec'); if (r.ms < 400) { els.bl.say('もっと おおきな こえで いってみて！'); return; } echo(r.blob); },
+      onError: function () { endLoop(); rec = null; els.mic.classList.remove('is-rec'); els.bl.say('マイクが つかえないみたい。いっしょに いってみよう！ ' + w.say + '！'); }
+    });
+  }
+  function stopRec() { if (rec) rec.stop(); }
+  function loop() {
+    const r = rec; if (!r) return;
+    const lv = r.level();
+    els.ring.style.transform = 'scale(' + (1 + lv * 0.8).toFixed(2) + ')';
+    raf = requestAnimationFrame(loop);
+  }
+  function endLoop() { cancelAnimationFrame(raf); els.ring.style.transform = ''; }
+  function echo(blob) {
+    busy = true;
+    els.bl.say('まねっこ するよ！', function () {
+      els.mon.mood('jump', 1400);
+      MQ.family.playBlob(blob, { rate: 1.35, onend: function () { praise(blob); } });
+    });
+  }
+  function praise() {
+    busy = true;
+    MQ.sfx.correct();
+    els.mon.mood('happy');
+    els.bl.say(MQ.util.pick(MQ.mane.PRAISE), function () {
+      round++;
+      if (round >= MQ.tasks.ROUNDS) MQ.ui.finish('mane');
+      else next();
+    });
+  }
+  MQ.ui.maneko = { open: open, state: function () { return { round: round, word: w, rec: !!rec }; }, _start: startRec, _stop: stopRec };
+})();

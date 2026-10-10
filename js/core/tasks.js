@@ -42,11 +42,15 @@ MQ.tasks = (function () {
      まぜる しゅるい／こ数：ちいさい 1しゅるい 2こ／なかくらい 2しゅるい 3こ／おおきい 3しゅるい 4こ。ほしい 食べものは n＋1 こ（ちょうど だけに しない）。
      basket＝食べものの id の ならび（まぜて ある） */
   const MIX = { s: { kinds: 1, n: 2 }, m: { kinds: 2, n: 3 }, l: { kinds: 3, n: 4 }, k: { kinds: 3, n: 4 } };
+  /* A（v0.2）：お子さんが かいた たべもの。ある ときは 3回に 1回 くらい それを ほしがる（名前は「かいた ごはん」） */
+  let EXTRA = [];
+  function setExtraFoods(list) { EXTRA = (list || []).filter(function (x) { return x && x.png; }).map(function (x, i) { return { id: 'my' + i, name: MY_FOOD, png: x.png }; }); }
+  const MY_FOOD = 'かいた ごはん';
   function count(stage) {
     if (stage === 'k') return sum();
     const L = lim(stage);
     const n = U.randInt(1, L.n);
-    const food = U.pick(FOODS);
+    const food = EXTRA.length && Math.random() < 0.35 ? U.pick(EXTRA) : U.pick(FOODS);
     const mx = MIX[stage] || MIX.s;
     const others = U.sample(FOODS.filter(function (f) { return f !== food; }), mx.kinds);
     const want = n + 1;
@@ -407,5 +411,5 @@ MQ.tasks = (function () {
     };
     return base;
   }
-  return { clock: clock, CLOCK_MODES: CLOCK_MODES, DAY: DAY, JI: JI, jiName: jiName, hira: hira, HIRA_MODES: HIRA_MODES, WORDS: WORDS, LOOK: LOOK, compare: compare, CMP_MODES: CMP_MODES, ORD: ORD, sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.filter(function (f) { return f.id === id; })[0] || null; }, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
+  return { clock: clock, CLOCK_MODES: CLOCK_MODES, DAY: DAY, JI: JI, jiName: jiName, hira: hira, HIRA_MODES: HIRA_MODES, WORDS: WORDS, LOOK: LOOK, compare: compare, CMP_MODES: CMP_MODES, ORD: ORD, sum: sum, numeral: numeral, read: read, READ: READ, MIX: MIX, foodById: function (id) { return FOODS.concat(EXTRA).filter(function (f) { return f.id === id; })[0] || null; }, setExtraFoods: setExtraFoods, MY_FOOD: MY_FOOD, count: count, shop: shop, shape: shape, num: num, FOODS: FOODS, COLORS: COLORS, THINGS: THINGS, SHAPES: SHAPES, LIMIT: LIMIT, ROUNDS: 3 };
 })();
