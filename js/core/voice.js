@@ -79,7 +79,18 @@ MQ.voice = (function () {
   function clockRead(s) { return String(s).replace(JI_RE, function (m, pre, n, han) { return pre + JI_NUM[n] + '時' + (han ? '半' : ''); }); }
   /* 字の 名前を 読む とき（もじ v0.1.13）：「は」「へ」や 1字だけの 文は 助詞と まちがえて「わ」「え」と 読まれる → カタカナに する */
   function kata(t) { return t.replace(/[ぁ-ゖ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) + 0x60); }); }
+  /* VOICEVOX の 読みまちがい（2026-10-10 に 1660文を audio_query で しらべた）：
+     「それは さん」→ハサン・「はりが はち」→ワチ のように、助詞（は・が・と）の すぐ あとの 数の ことばと「はち」を まちがえる → その ときだけ 数字に する。
+     「黄色は」→ おうしょく → ひらがなに */
+  const NUMW = { じゅうきゅう: 19, じゅうはち: 18, じゅうなな: 17, じゅうろく: 16, じゅうご: 15, じゅうよん: 14, じゅうさん: 13, じゅうに: 12, じゅういち: 11, にじゅう: 20, じゅう: 10, きゅう: 9, はち: 8, なな: 7, ろく: 6, ご: 5, よん: 4, さん: 3, に: 2, いち: 1 };
+  const NUM_RE = new RegExp('([はがと])(' + Object.keys(NUMW).join('|') + ')(?=[のとだ、。！？!?]|$)', 'g');
+  const HACHI_RE = /(^|[はがとの、])(じゅう)?はち(?=[のとだ、。！？!?]|$)/g;   // 「はちの 箱」→ わちの 箱
+  function numRead(s) {
+    return s.replace(NUM_RE, function (m, pre, w) { return pre + NUMW[w]; }).replace(HACHI_RE, function (m, pre, j) { return pre + (j ? 18 : 8); })
+      .replace(/黄色(?=[はがをのもとだ])/g, 'きいろ');
+  }
   function kanaRead(s) {
+    s = numRead(s);
     s = s.replace(/「([ぁ-ゖ]{1,4})」/g, function (m, t) { return '「' + kata(t) + '」'; });
     if (/^[ぁ-ゖ][。！？!?]?$/.test(s)) s = kata(s);
     return s;
@@ -123,7 +134,8 @@ MQ.voice = (function () {
     // 録音した 声（ずんだもん）：文ごとに bank に あれば mp3、無い 文だけ 端末の 声
     if (kind === 'zunda' && hasBank() && audioCtx()) {
       const raw = stripNames(String(text)).replace(/([。！？!?])/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean);
-      const rateK = (RATE[rate] || RATE.slow) >= 0.9 ? 1.0 : 0.94;
+      // 録音は そのままの 速さで 鳴らす（0.94倍に すると 声が 半音 ひくく こもって 聞こえた・2026-10-10）。ゆっくりは 録音の speedScale で
+      const rateK = 1.0;
       let i = 0;
       const next = function () {
         if (i >= raw.length) { if (opts.onend) opts.onend(); return; }
@@ -170,5 +182,5 @@ MQ.voice = (function () {
   init();
   loadBank();
   if (typeof document !== 'undefined') ['touchend', 'click', 'keydown', 'pointerdown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
-  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, kanaRead: kanaRead, clockRead: clockRead, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b) { bank = b; }, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
+  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, kanaRead: kanaRead, numRead: numRead, unlock: unlock, clockRead: clockRead, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b) { bank = b; }, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
 })();

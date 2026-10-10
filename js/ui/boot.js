@@ -2,7 +2,8 @@
    起動（ころたま）
    --------------------------------------------------------- */
 (function () {
-  function unlock() { try { MQ.sfx.unlock(); MQ.bgm.wake(); } catch (e) { /* なし */ } }
+  // 声（ずんだもん）の AudioContext も ここで 起こす（iPad は タップの 中でしか ひらかない・タイマーから 出る さいしょの 声が 出なかった）
+  function unlock() { try { MQ.sfx.unlock(); MQ.bgm.wake(); if (MQ.voice.unlock) MQ.voice.unlock(); } catch (e) { /* なし */ } }
   ['touchend', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
 
   function start() {
