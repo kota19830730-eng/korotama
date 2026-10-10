@@ -540,6 +540,34 @@
         finish();
       });
     },
+    /* #crayons（2026-10-10）：15色 ぜんぶで かいた 絵を 切りぬいて、どの 色も のこるか（紙と まちがわれないか）を 見る */
+    crayons: function () {
+      MQ.save.newKid({ name: 'ゆう', stage: 's' });
+      const cv = document.createElement('canvas'); cv.width = 640; cv.height = 640;
+      const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 640, 640);
+      g.lineCap = 'round'; g.lineWidth = 22;
+      MQ.ui.CRAYONS.forEach(function (c, i) { const y = 70 + i * 34; g.strokeStyle = c[0]; g.beginPath(); g.moveTo(90, y); g.lineTo(550, y); g.stroke(); });
+      const im = new Image();
+      im.onload = function () {
+        const res = MQ.cutout.fromImage(im, { x: 0, y: 0, w: 1, h: 1 });
+        const out = document.createElement('canvas'); out.width = 256; out.height = 256;
+        const show = function (src, x) { return new Promise(function (r) { const i2 = new Image(); i2.onload = function () { const o = document.createElement('canvas'); o.width = i2.width; o.height = i2.height; const og = o.getContext('2d'); og.drawImage(i2, 0, 0); r({ img: i2, ctx: og, w: i2.width, h: i2.height }); }; i2.src = src; }); };
+        show(res.raw.png).then(function (R) {
+          // 色ごとの 線の 高さで 横に しらべ、すきとおって いない 点が あるか
+          const d = R.ctx.getImageData(0, 0, R.w, R.h).data;
+          // まんなかの 列を 上から 見て、絵の ある 帯（＝線）が いくつ あるか（15本 あれば どの 色も のこった）
+          let bands = 0, inb = false; const cx = Math.round(R.w / 2);
+          for (let y = 0; y < R.h; y++) { const on = d[(y * R.w + cx) * 4 + 3] > 120; if (on && !inb) bands++; inb = on; }
+          const miss = bands === MQ.ui.CRAYONS.length ? [] : ['bands=' + bands];
+          log('crayons: drawn=' + res.drawn + ' colors=' + MQ.ui.CRAYONS.length + ' missing=' + (miss.join(',') || 'none'));
+          const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:0;top:0;background:#cbb;padding:8px;display:flex;gap:8px;z-index:50';
+          [cv.toDataURL(), res.raw.png, res.soft.png].forEach(function (src) { const e = document.createElement('img'); e.src = src; e.style.cssText = 'width:240px;height:240px;object-fit:contain;background:#fff'; box.appendChild(e); });
+          document.body.appendChild(box);
+          finish();
+        });
+      };
+      im.src = cv.toDataURL('image/png');
+    },
     flow: function () {
       withMon(arg || 's', async function () {
         MQ.ui.home.open(); await wait(200);

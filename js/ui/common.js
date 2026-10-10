@@ -62,6 +62,8 @@ MQ.ui = MQ.ui || {};
     ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="8"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>'
   };
+  /* クレヨンの 色（指で かく 画面・2026-10-10 ユーザー「使える色の種類増やして。少なすぎる」→ 5〜6色 から 15色＋けしゴム） */
+  MQ.ui.CRAYONS = [['#3a3330', 'くろ'], ['#8a8580', 'はいいろ'], ['#8a5a2b', 'ちゃいろ'], ['#e0493a', 'あか'], ['#f08cb0', 'ピンク'], ['#f49a2e', 'オレンジ'], ['#f2b48a', 'はだいろ'], ['#f2c94c', 'きいろ'], ['#a5d64a', 'きみどり'], ['#4fa83a', 'みどり'], ['#5cc1e6', 'みずいろ'], ['#3f6fd6', 'あお'], ['#2a3f8f', 'こん'], ['#9a5ac8', 'むらさき'], ['#d4a52c', 'きんいろ']];
   MQ.ui.icon = function (name, cls) { return h('span', { class: 'ico' + (cls ? ' ' + cls : ''), html: SVG[name] || '' }); };
   MQ.ui.SVG = SVG;
 

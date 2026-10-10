@@ -175,3 +175,12 @@
 }
 .mn__pic { width: 120px; }
 #screen-maneko .balloon, #screen-sagasu .balloon { width: 100%; }
+
+/* 指で かく キャンバスを 大きく（2026-10-10・ユーザー「キャンバスが小さい。大きくしてほしい」）：320 → 画面の 幅いっぱい 380（左右の 余白を 10px に） */
+.wrap.draw { padding-left: 10px; padding-right: 10px; }
+.draw__cv { width: 380px; height: 380px; box-sizing: border-box; }
+.draw > .row { width: 380px !important; }
+/* クレヨン 15色＋けしゴム を 8つずつ 2段（1つ 42px・3さいの 指でも 押せる 大きさ） */
+.crayons--many { display: grid; grid-template-columns: repeat(8, 42px); gap: 6px 4px; justify-content: center; width: 380px; }
+.crayons--many .crayon { width: 42px; height: 42px; }
+.crayons--many .crayon.is-on { transform: scale(1.15); }

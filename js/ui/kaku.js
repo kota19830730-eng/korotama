@@ -46,9 +46,9 @@ MQ.ui = MQ.ui || {};
     const g = cv.getContext('2d');
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, S, S);
     g.lineCap = 'round'; g.lineJoin = 'round';
-    const COLS = [['#3a3330', 'くろ'], ['#e0493a', 'あか'], ['#f49a2e', 'オレンジ'], ['#f2c94c', 'きいろ'], ['#6cc24a', 'みどり'], ['#4f7fd9', 'あお']];
+    const COLS = MQ.ui.CRAYONS;
     let col = COLS[0][0], width = 22, drawing = false, last = null, strokes = 0;
-    const crayons = h('div', { class: 'crayons crayons--7' });
+    const crayons = h('div', { class: 'crayons crayons--many' });
     COLS.forEach(function (c, i) {
       const b = h('button', { class: 'crayon' + (i === 0 ? ' is-on' : ''), type: 'button', 'aria-label': c[1], style: { background: c[0] } });
       b.onclick = function () { MQ.sfx.tap(); col = c[0]; width = 22; crayons.querySelectorAll('.crayon').forEach(function (x) { x.classList.remove('is-on'); }); b.classList.add('is-on'); };
@@ -111,7 +111,7 @@ MQ.ui = MQ.ui || {};
       MQ.ui.topBar({ home: true, replay: function () { bl.say(k.ask); } }),
       h('div', { class: 'page__body' }, [h('div', { class: 'wrap draw' }, [
         bl, P.canvas, P.crayons,
-        h('div', { class: 'row', style: { width: '320px' } }, [
+        h('div', { class: 'row', style: { width: '380px' } }, [
           h('button', { class: 'btn', type: 'button', text: 'ぜんぶ けす', onclick: function () { MQ.sfx.tap(); P.clear(); } }),
           h('button', { class: 'btn btn--gold btn--big', type: 'button', text: 'できた！', style: { flex: '1' }, onclick: function () {
             MQ.sfx.tap();
