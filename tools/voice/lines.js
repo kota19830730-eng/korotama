@@ -85,7 +85,10 @@ for (let n = 1; n <= 5; n++) add('できた！ スタンプ ' + num(n) + 'め！
 /* ---- v0.2 ワクワクの しかけ（2026-10-10）：core の lines() と <lines> の しるし ---- */
 ['chores', 'story', 'season', 'mane', 'find'].forEach(function (k) { ctx.MQ[k].lines().forEach(add); });
 /* ---- v0.3（2026-10-11）：何が できたか（A1）・まよった ときの 手助け（A2）・おやすみ（C1）---- */
-(function (C) { Object.keys(C.LEARN).forEach(function (k) { Object.keys(C.LEARN[k]).forEach(function (s) { add(C.LEARN[k][s]); }); }); Object.keys(C.NUDGE).forEach(function (k) { add(C.NUDGE[k]); }); Object.keys(C.REST).forEach(function (k) { add(C.REST[k]); }); })(ctx.MQ.coach);
+(function (C) { Object.keys(C.LEARN).forEach(function (k) { Object.keys(C.LEARN[k]).forEach(function (s) { add(C.LEARN[k][s]); }); }); Object.keys(C.NUDGE).forEach(function (k) { add(C.NUDGE[k]); }); Object.keys(C.REST).forEach(function (k) { add(C.REST[k]); });
+  const E = C.EGG; [E.full, E.garden, E.five, E.regrow, E.out].forEach(add); Object.keys(E.gift).forEach(function (k) { add(E.gift[k]); });
+  for (let n = 1; n <= 5; n++) add('たまご ' + num(n) + 'め！');   // v0.4：できた！の たまご
+})(ctx.MQ.coach);
 for (let n = 1; n <= 10; n++) add(T.MY_FOOD + 'を ' + num(n) + ' ちょうだい');   // A：かいた ごはん
 add('それは ' + T.MY_FOOD + 'だね。');
 ['js/ui/kaku.js', 'js/ui/home.js'].forEach(function (f) {

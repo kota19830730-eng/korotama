@@ -78,6 +78,15 @@ MQ.coach = (function () {
     return remainMs(now);
   }
 
-  return { LEARN: LEARN, PARENT: PARENT, learned: learned, parentText: parentText, NUDGE: NUDGE, NUDGE_MS: NUDGE_MS,
+  /* v0.4（2026-10-11）：たまごの スタンプ・成長は たまごから */
+  const EGG = {
+    full: 'きょうの たまごは もう いっぱい！',
+    gift: { flower: 'たまごから おはなが でて きた！', butterfly: 'たまごから ちょうちょが でて きた！', flag: 'たまごから はたが でて きた！' },
+    garden: 'おにわに かざったよ。',
+    five: 'きょうの たまご、ぜんぶ そろったね！ ころころ！',
+    regrow: 'あれれ？ たまごに なっちゃった！ とんとん して みて！',
+    out: 'ぱかっ！ でて きた！'
+  };
+  return { EGG: EGG, LEARN: LEARN, PARENT: PARENT, learned: learned, parentText: parentText, NUDGE: NUDGE, NUDGE_MS: NUDGE_MS,
            LIMITS: LIMITS, EXTEND_MIN: EXTEND_MIN, REST: REST, limitMs: limitMs, playedMs: playedMs, addPlay: addPlay, remainMs: remainMs, tired: tired, soon: soon, extend: extend };
 })();

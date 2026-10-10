@@ -37,10 +37,11 @@ MQ.ui = MQ.ui || {};
     pat: ['なでなで きもちいい！', 'もっと なでて！'],
     sleep: ['すやすや…'],
     wake: ['はっ！ おきたよ！', 'ふぁ… おはよう！'],
+    roll: ['ころころ！', 'ころころ たのしいね！'],
     friend: ['こんにちは！ あそぼう！', 'ぼくも ここに すんでるよ！', 'いっしょに あそぼうね！']   // A（v0.2）：かいた ともだち
   };
   /* </lines> */
-  const TAPS = ['happy', 'jump', 'spin', 'shy', 'yawn'];
+  const TAPS = ['happy', 'jump', 'spin', 'roll', 'shy', 'yawn'];   // v0.4：roll＝ころころ（ころたまの「ころ」）
   // 家の 横の ポスト（おてつだいの おてがみ・v0.2.2）。waiting＝ふうとうが のぞく＋旗が 上がる／done＝旗が おりて はなまる
   function postSvg(done) {
     return '<svg viewBox="0 0 48 64">' +
@@ -113,7 +114,7 @@ MQ.ui = MQ.ui || {};
         mon.mood(kind);
         if (kind === 'shy') mon.blush();
         if (kind === 'pat') { mon.hearts(5); if (MQ.family.has('love') && Math.random() < 0.5) { bl.say(MQ.util.pick(LINES.pat)); setTimeout(function () { if (here('screen-home', mon)) MQ.family.play('love'); }, 1200); return kind; } }
-        const sf = { jump: 'jump', spin: 'spin', tickle: 'tickle', pat: 'heart', yawn: 'yawn', wake: 'wake' }[kind];
+        const sf = { jump: 'jump', spin: 'spin', roll: 'spin', tickle: 'tickle', pat: 'heart', yawn: 'yawn', wake: 'wake' }[kind];
         if (sf && MQ.sfx[sf]) MQ.sfx[sf](); else MQ.sfx.tap();
         bl.say(line || MQ.util.pick(LINES[kind] || LINES.happy));
         return kind;
@@ -212,7 +213,7 @@ MQ.ui = MQ.ui || {};
       const learnP = opts.kind ? MQ.coach.parentText(opts.kind, stg) : '';
       const after = MQ.coach.tired() ? ' ' + MQ.coach.REST.tired : MQ.coach.soon() ? ' ' + MQ.coach.REST.soon : '';   // C1
       const mon = MQ.ui.monNode(180);
-      const stamps = MQ.ui.stampRow();
+      const stamps = MQ.ui.stampRow({ roll: !opts.full });
       const bl = MQ.ui.balloon('');
       const box = h('div', { class: 'wrap done', style: { position: 'relative', paddingTop: '36px' } }, [
         h('p', { class: 'done__big', text: opts.grew ? 'おおきく なった！' : 'できた！' }),
@@ -220,20 +221,36 @@ MQ.ui = MQ.ui || {};
         stamps,
         bl,
         h('button', { class: 'btn btn--gold btn--big btn--wide', type: 'button', text: 'おうちへ', onclick: function () { MQ.sfx.tap(); MQ.ui.home.open(); } }),
-        MQ.ui.hintBox((learnP ? 'きょうの れんしゅう：' + learnP + '。' : '') + 'スタンプは 1日 5こまで。' + (MQ.save.nextGrowAt() ? 'ぜんぶで ' + MQ.save.nextGrowAt() + 'こ で すがたが かわります（いま ' + MQ.save.stampsTotal() + 'こ）' : 'いちばん 大きな すがたに なりました') + '。スタンプが ふえると おうちの にわに はなや ちょうちょが ふえます')
+        MQ.ui.hintBox((learnP ? 'きょうの れんしゅう：' + learnP + '。' : '') + 'たまご（スタンプ）は 1日 5こまで。2こ ごとに たまごから おにわの かざりが 出てきます。' + (MQ.save.nextGrowAt() ? 'ぜんぶで ' + MQ.save.nextGrowAt() + 'こ で すがたが かわります（いま ' + MQ.save.stampsTotal() + 'こ）' : 'いちばん 大きな すがたに なりました') + '')
       ]);
       const page = h('div', { class: 'page' }, [box]);
       MQ.ui.mount('screen-done', page);
       MQ.ui.show('screen-done');
       MQ.sfx.clear();
-      mon.mood('happy', 1400);
+      mon.mood(opts.grew ? 'happy' : 'roll');   // v0.4：ころころ
       MQ.ui.confetti(box, 26);
       const n = MQ.save.stampsToday();
+      const E = MQ.coach.EGG;
+      // たまごが われて かざりが 出てくる（声は ほめた あと）
+      function giftShow() {
+        const c = stamps.crack(n - 1);
+        if (!c) return;
+        MQ.sfx.pop();
+        c.appendChild(h('div', { class: 'egg-s__gift', html: MQ.ui.giftSvg(opts.gift) }));
+      }
+      function tail() {
+        if (!here('screen-done', mon)) return;
+        if (n === 5 && !opts.full) { stamps.party(); mon.mood('roll'); MQ.ui.confetti(box, 30); bl.say(E.five); }
+      }
+      if (opts.gift && !opts.full) setTimeout(function () { if (here('screen-done', mon)) giftShow(); }, 1300);
       setTimeout(function () {
         if (!here('screen-done', mon)) return;
         // 名前は 声には 入れない（録音した 声（ずんだもん）に 名前は 無い ので、voice.js が 名前を 外して 読む）
         const L = learn ? ' ' + learn : '';
-        bl.say((opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！' + L + ' ありがとう！') : opts.full ? ('できた！' + L + ' きょうの スタンプは もう いっぱい！ ' + nm + 'も うれしいよ！') : ('できた！' + L + ' スタンプ ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！')) + after);   // full＝1日 5こを こえた（同じ「いつつめ」を くりかえさない）
+        bl.say((opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！' + L + ' ありがとう！') : opts.full ? ('できた！' + L + ' ' + E.full + ' ' + nm + 'も うれしいよ！') : ('できた！' + L + ' たまご ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！')) + after, function () {
+          if (!here('screen-done', mon)) return;
+          if (opts.gift && !opts.full) bl.say(E.gift[opts.gift] + ' ' + E.garden, tail); else tail();
+        });   // full＝1日 5こを こえた（同じ「いつつめ」を くりかえさない）
       }, 300);
     }
   };

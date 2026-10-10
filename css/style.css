@@ -477,3 +477,28 @@ input { font-family: inherit; }
 @keyframes shootGo { 0% { transform: rotate(25deg) translateX(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: rotate(25deg) translateX(-170px); opacity: 0; } }
 .scene.is-night .mon__shadow { background: rgba(10,15,40,.4); }
 @media (prefers-reduced-motion: reduce) { .scene *, .flower, .butterfly, .star { animation: none !important; } }
+
+/* ---- v0.4（2026-10-11）ころたまらしさ：スタンプは たまご・できた！で ころころ転がって くる・2こ ごとに われて 庭の かざり・5こで お祝い・生きものの ころころ ---- */
+.stamps--egg { gap: 6px; }
+.stamp.egg-s { width: 26px; height: 32px; border: 0; border-radius: 0; background: none; position: relative; overflow: visible; }
+.stamp.egg-s.is-on { background: none; animation: stampIn .5s cubic-bezier(.3,1.6,.6,1); }
+.stamp.egg-s svg { width: 26px; height: 32px; display: block; }
+.egg-s__crack { opacity: 0; transition: opacity .2s; }
+.stamp.egg-s.is-roll { animation: eggRoll 1.1s cubic-bezier(.3,1.25,.6,1) both; }
+.stamp.egg-s.is-crack { animation: eggWob .45s ease-in-out 2; }
+.stamp.egg-s.is-crack .egg-s__crack { opacity: 1; }
+.stamp.egg-s.is-party { animation: eggParty .7s ease-in-out 3 both; }
+.egg-s__gift { position: absolute; left: 50%; bottom: 70%; width: 46px; height: 46px; margin-left: -23px; animation: giftUp 1.4s cubic-bezier(.3,1.4,.6,1) forwards; pointer-events: none; }
+.egg-s__gift svg { width: 46px; height: 46px; display: block; }
+@keyframes eggRoll { 0% { transform: translateX(150px) rotate(540deg); opacity: 0; } 12% { opacity: 1; } 80% { transform: translateX(-4px) rotate(-12deg); } 100% { transform: translateX(0) rotate(0); } }
+@keyframes eggWob { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 75% { transform: rotate(14deg); } }
+@keyframes eggParty { 0%, 100% { transform: translateY(0) rotate(0); } 35% { transform: translateY(-16px) rotate(-180deg); } 70% { transform: translateY(0) rotate(-360deg); } }
+@keyframes giftUp { 0% { transform: translateY(16px) scale(.2); opacity: 0; } 40% { transform: translateY(-12px) scale(1.15); opacity: 1; } 100% { transform: translateY(-8px) scale(1); opacity: 1; } }
+.mon.is-roll .bxbox { animation: monRoll 1.4s ease-in-out 1; }
+@keyframes monRoll { 0% { transform: translateX(0) rotate(0); } 42% { transform: translateX(56px) rotate(360deg); } 56% { transform: translateX(56px) rotate(360deg); } 100% { transform: translateX(0) rotate(0); } }
+@media (prefers-reduced-motion: reduce) { .stamp.egg-s.is-roll, .stamp.egg-s.is-party, .mon.is-roll .bxbox { animation: none; } }
+.stamp.egg-s .egg-s__gift svg { width: 46px; height: 46px; }
+.done .stamps--egg { gap: 10px; }
+.done .stamp.egg-s, .done .stamp.egg-s > svg { width: 40px; height: 50px; }
+.done .egg-s__gift, .done .stamp.egg-s .egg-s__gift svg { width: 58px; height: 58px; }
+.done .egg-s__gift { margin-left: -29px; bottom: 80%; }

@@ -124,7 +124,7 @@ MQ.ui = MQ.ui || {};
   /* ---- 生きもの ----
      mood(名前, ms)：動き。名前と 長さは MOODS（css の keyframes と 1対1・smoke が 見る）。
      sleep()／wake()：うたた寝（zzz）と 起きる。hearts()：なでなでの ハート。blush()：てれる ほっぺ。 */
-  const MOODS = { happy: 1300, eat: 1500, sad: 700, jump: 900, spin: 1000, shy: 1200, yawn: 1700, tickle: 1200, nod: 1100, tilt: 1200, look: 2100, pat: 1300, wake: 800 };
+  const MOODS = { roll: 1500, happy: 1300, eat: 1500, sad: 700, jump: 900, spin: 1000, shy: 1200, yawn: 1700, tickle: 1200, nod: 1100, tilt: 1200, look: 2100, pat: 1300, wake: 800 };
   MQ.ui.MOODS = MOODS;
   MQ.ui.monNode = function (size, png) {
     size = size || 160;
@@ -226,13 +226,38 @@ MQ.ui = MQ.ui || {};
   };
 
   /* ---- 上の 段 ---- */
-  MQ.ui.stampRow = function () {
+  /* v0.4（2026-10-11 ユーザー「ころたまなんだー と 思われる 機能」→ 1＋2＋4）：スタンプは たまご。遊びの しゅるいで 色が かわる。
+     opts.roll＝さいごの たまごが ころころ 転がって くる（できた！）。row.crack(i)＝たまごが われる／row.party()＝5こ そろった お祝い */
+  const EGG_COL = { count: '#f2b544', color: '#d2765c', shape: '#7fb069', compare: '#6f8fd6', moji: '#f08cb0', tokei: '#4fb3a9', draw: '#e98a9b', find: '#6fb6e0', mane: '#a8c94c' };
+  MQ.ui.EGG_COL = EGG_COL;
+  const EGG_D = 'M12 1.5C18 1.5 22 11 22 18.5C22 25.5 17.5 29 12 29C6.5 29 2 25.5 2 18.5C2 11 6 1.5 12 1.5Z';
+  function eggSvg(col) {
+    if (!col) return '<svg viewBox="0 0 24 30"><path d="' + EGG_D + '" fill="none" stroke="#d9c8a6" stroke-width="2.2" stroke-dasharray="3.2 2.6"/></svg>';
+    return '<svg viewBox="0 0 24 30"><path d="' + EGG_D + '" fill="#fffdf7"/><path d="M17 6C20.5 10 22 15 22 18.5C22 25.5 17.5 29 12 29C16.5 26.5 19 22.5 19 17.5C19 13 18.4 9 17 6Z" fill="#ecdfc2"/>' +
+      '<circle cx="9" cy="12" r="3.2" fill="' + col + '"/><circle cx="15" cy="19" r="3.8" fill="' + col + '"/><circle cx="8.5" cy="23" r="2.2" fill="' + col + '"/>' +
+      '<path class="egg-s__crack" d="M3 15.5L7 13L10 16.5L13.5 13L16.5 16.5L21 14" fill="none" stroke="#4a3b32" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  MQ.ui.eggSvg = eggSvg;
+  MQ.ui.stampRow = function (opts) {
+    opts = opts || {};
     const n = MQ.save.stampsToday();
-    const row = h('div', { class: 'stamps' });
+    const kinds = MQ.save.eggsToday ? MQ.save.eggsToday() : [];
+    const row = h('div', { class: 'stamps stamps--egg', 'aria-label': 'きょうの たまご ' + n + 'こ' });
+    const cells = [];
     for (let i = 0; i < 5; i++) {
-      row.appendChild(h('div', { class: 'stamp' + (i < n ? ' is-on' : '') }, [i < n ? h('span', { class: 'ico', style: { color: '#fbf4e4', display: 'flex' }, html: SVG.star }) : null]));
+      const on = i < n;
+      const c = h('div', { class: 'stamp egg-s' + (on ? ' is-on' : '') + (on && opts.roll && i === n - 1 ? ' is-roll' : ''), html: eggSvg(on ? (EGG_COL[kinds[i]] || '#f2b544') : '') });
+      cells.push(c); row.appendChild(c);
     }
+    row.crack = function (i) { const c = cells[i]; if (!c) return null; c.classList.remove('is-roll'); c.classList.add('is-crack'); return c; };
+    row.party = function () { cells.forEach(function (c, i) { c.classList.remove('is-roll'); c.style.animationDelay = (i * 0.12) + 's'; c.classList.add('is-party'); }); };
     return row;
+  };
+  /* たまごから 出てくる 庭の かざり（花・ちょうちょ・旗） */
+  MQ.ui.giftSvg = function (kind) {
+    if (kind === 'butterfly') return '<svg viewBox="0 0 40 40"><ellipse cx="12" cy="15" rx="9" ry="10" fill="#f2b544"/><ellipse cx="28" cy="15" rx="9" ry="10" fill="#f2b544"/><ellipse cx="13" cy="28" rx="7" ry="7" fill="#f08cb0"/><ellipse cx="27" cy="28" rx="7" ry="7" fill="#f08cb0"/><rect x="18.5" y="9" width="3" height="24" rx="1.5" fill="#4a3b32"/></svg>';
+    if (kind === 'flag') return '<svg viewBox="0 0 40 40"><rect x="9" y="4" width="3" height="34" rx="1.5" fill="#8c6a4a"/><path d="M12 5h22l-5 7 5 7H12z" fill="#e0493a"/></svg>';
+    return '<svg viewBox="0 0 40 40"><rect x="18.5" y="20" width="3" height="18" fill="#5b8a49"/><path d="M21 30c4-6 9-6 11-5-2 5-7 7-11 5z" fill="#7fb069"/><g fill="#f08cb0"><circle cx="20" cy="9" r="6"/><circle cx="29" cy="15" r="6"/><circle cx="25" cy="25" r="6"/><circle cx="15" cy="25" r="6"/><circle cx="11" cy="15" r="6"/></g><circle cx="20" cy="17" r="5" fill="#f2c94c"/></svg>';
   };
   MQ.ui.topBar = function (opts) {
     opts = opts || {};
@@ -458,11 +483,16 @@ MQ.ui = MQ.ui || {};
   // 2026-10-10：2回 よばれても スタンプは 1つ（2回 タップ・録音の おわりが 2回 などの 保険）。できた！の 画面に いる あいだの 2回めは すてる
   MQ.ui.finish = function (kind, mon) {
     if (MQ.ui.current === 'screen-done') return;
-    const before = MQ.save.growth(), n0 = MQ.save.stampsToday();
+    const before = MQ.save.growth(), n0 = MQ.save.stampsToday(), d0 = MQ.ui.decorOf(MQ.save.stampsTotal());
     MQ.save.stamp(kind);
-    const after = MQ.save.growth();
+    const after = MQ.save.growth(), d1 = MQ.ui.decorOf(MQ.save.stampsTotal());
     if (after > before) MQ.save.markGrew(after);
-    MQ.ui.done.open({ grew: after > before, full: MQ.save.stampsToday() === n0, kind: kind });
+    // v0.4：2こ ごとに ふえる 庭の かざりは「たまごから 出てくる」
+    const gift = d1.flag && !d0.flag ? 'flag' : d1.butterflies > d0.butterflies ? 'butterfly' : d1.flowers > d0.flowers ? 'flower' : '';
+    const o = { grew: after > before, full: MQ.save.stampsToday() === n0, kind: kind, gift: gift };
+    // 2：すがたが かわる ときは たまごに もどって、とんとんで 大きく なって 出てくる
+    if (o.grew && MQ.ui.egg && MQ.ui.egg.regrow) { MQ.ui.egg.regrow(function () { MQ.ui.done.open(o); }); return; }
+    MQ.ui.done.open(o);
   };
 
   /* ---- A2 まよった ときの 手助け（v0.3・2026-10-11）----

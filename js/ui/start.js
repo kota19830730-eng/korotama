@@ -308,7 +308,10 @@ MQ.ui = MQ.ui || {};
 
   /* ---- たまご ---- */
   MQ.ui.egg = {
-    open: function () {
+    /* v0.4（2）：すがたが かわる とき。おおきく なる まえの たまご → とんとん 3回 → ぱかっ → then（できた！） */
+    regrow: function (then) { MQ.ui.egg.open({ regrow: true, then: then }); },
+    open: function (opts) {
+      opts = opts || {};
       const kid = MQ.save.kid();
       const mon = kid && kid.mon;
       const png = mon ? mon.png : '';
@@ -329,11 +332,12 @@ MQ.ui = MQ.ui || {};
       const page = h('div', { class: 'page' }, [
         h('div', { class: 'top' }, [h('span'), h('span')]),
         scene,
-        h('div', { class: 'wrap col', style: { gap: '14px' } }, [bl, dots, MQ.ui.hintBox('「なにが でて くるかな？」と きいてみて。3回 たたくと かえります')])
+        h('div', { class: 'wrap col', style: { gap: '14px' } }, [bl, dots, MQ.ui.hintBox(opts.regrow ? 'スタンプが たまって、すがたが かわります。3回 たたくと 大きく なって 出てきます' : '「なにが でて くるかな？」と きいてみて。3回 たたくと かえります')])
       ]);
       MQ.ui.mount('screen-egg', page);
       MQ.ui.show('screen-egg');
-      setTimeout(function () { bl.say('たまごを とんとん して みて！'); }, 300);
+      setTimeout(function () { bl.say(opts.regrow ? MQ.coach.EGG.regrow : 'たまごを とんとん して みて！'); }, 300);
+      if (opts.regrow) MQ.sfx.rare();
       eggBox.onclick = function () {
         if (taps >= 3) return;
         taps++;
@@ -354,6 +358,7 @@ MQ.ui = MQ.ui || {};
             monBox.firstChild.mood('happy');
             MQ.ui.confetti(scene, 30);
             const nm = mon ? mon.name : 'たまごちゃん';
+            if (opts.regrow) { bl.say(MQ.coach.EGG.out, function () { if (MQ.ui.current === 'screen-egg' && opts.then) opts.then(); }); return; }
             bl.say('うまれた！ ' + nm + 'だよ。よろしくね！', function () {
               page.querySelector('.wrap').appendChild(h('button', { class: 'btn btn--gold btn--big btn--wide', type: 'button', text: 'おうちへ', onclick: function () { MQ.sfx.tap(); MQ.ui.home.open(); } }));
             });

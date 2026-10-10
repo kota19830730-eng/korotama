@@ -29,7 +29,7 @@ MQ.story = (function () {
   const NONE = 'きょうは ゆっくり やすんだ いちにち だったね。';
   const END = ['たくさん あそんで、ねむく なっちゃった。', 'あしたも いっしょに あそぼうね。', 'おやすみなさい。'];
   const QUIZ = 'さいしょに なにを したか おぼえてる？';
-  function stampLine(n) { return 'スタンプを ' + NUM[Math.min(6, n)] + ' もらったね。'; }
+  function stampLine(n) { return 'たまごを ' + NUM[Math.min(6, n)] + ' もらったね。'; }   // v0.4：スタンプは たまご
   function right(kind) { return 'そう！ さいしょは ' + KINDS[kind].name + 'だったね！ よく おぼえてたね。'; }
   function wrong(kind, ans) { return KINDS[kind].name + 'も したね。さいしょは ' + KINDS[ans].name + 'だったよ。'; }
 

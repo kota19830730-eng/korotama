@@ -3,7 +3,7 @@
    ファイルを 変えたら CACHE_NAME を 上げる。ファイルを ふやしたら FILES にも。
    install は cache: 'reload'（GitHub Pages の 10分 キャッシュで 古い ファイルが 入るのを ふせぐ＝まなびモンスター v12.9.1 の 教訓）
    --------------------------------------------------------- */
-const CACHE_NAME = 'manabi-tamago-v36';   // 名前は ころたま に なったが キャッシュ名の 頭は そのまま
+const CACHE_NAME = 'manabi-tamago-v37';   // 名前は ころたま に なったが キャッシュ名の 頭は そのまま
 const FONT_CACHE = 'manabi-tamago-fonts-v1';
 const VOICE_CACHE = 'manabi-tamago-voice-v1';   // 録音した 声の mp3（版を 上げても 消さない・録り直しは 新しい 名前 r<番号>.mp3 なので 古く ならない・2026-10-10）
 const FILES = [

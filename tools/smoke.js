@@ -499,6 +499,24 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(/d.kid.birthday = bv/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'はじめの 設定で 誕生日を 入れられる');
 })();
 
+/* ---- v0.4（2026-10-11）：ころたまらしさ（たまごの スタンプ・成長は たまごから・ころころ） ---- */
+(function () {
+  const C = MQ.coach, E = C.EGG;
+  const all = [E.full, E.garden, E.five, E.regrow, E.out].concat(Object.keys(E.gift).map(function (k) { return E.gift[k]; }));
+  for (let n = 1; n <= 5; n++) all.push('たまご ' + MQ.tasks.num(n) + 'め！');
+  ok(!all.some(function (s) { return KANJI.test(s); }), 'v0.4：たまごの 声の 文に かん字なし');
+  const bank = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/voice/bank.json'), 'utf8'));
+  const keys = [];
+  all.forEach(function (s) { s.replace(/([。！？])/g, '$1|').split('|').map(function (t) { return t.replace(/\s/g, ''); }).filter(Boolean).forEach(function (t) { keys.push(t); }); });
+  const miss = keys.filter(function (k) { return !bank[k]; });
+  ok(!miss.length, 'v0.4：たまごの 声が ぜんぶ 録音ずみ（' + keys.length + '文' + (miss.length ? '・ない：' + miss.join(' / ') : '') + '）');
+  MQ.save._set(null); MQ.save.newKid({ name: 'て', stage: 's' });
+  ['count', 'color', 'shape', 'compare', 'moji', 'tokei'].forEach(function (k) { MQ.save.stamp(k); });
+  ok(JSON.stringify(MQ.save.eggsToday()) === JSON.stringify(['count', 'color', 'shape', 'compare', 'moji']) && MQ.save.stampsToday() === 5, 'v0.4：その日の たまごは 5こまで・遊びの しゅるいを おぼえる');
+  const cm = fs.readFileSync(path.join(ROOT, 'js/ui/common.js'), 'utf8');
+  ok(/MQ.ui.egg.regrow/.test(cm) && /regrow: function/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'v0.4：すがたが かわる ときは たまごに もどる');
+  ok(/'roll'/.test(fs.readFileSync(path.join(ROOT, 'js/ui/home.js'), 'utf8')), 'v0.4：おうちの タップに ころころ');
+})();
 /* ---- v0.3（2026-10-11）：何が できたか・まよった ときの 手助け・遊ぶ 時間 ---- */
 (function () {
   const C = MQ.coach;

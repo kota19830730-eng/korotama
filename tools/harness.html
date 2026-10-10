@@ -211,6 +211,30 @@
       const im = new Image(); im.onload = function () { MQ.ui.draw.fromImage(im, false); finish(); }; im.src = fakeDrawing();
     },
     egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
+    // #eggs[:n]：v0.4 たまごの スタンプ（n こめを できた！で もらう・2こ ごとに たまごが われて かざり）
+    eggs: function () { withMon('s', async function () {
+      const n = Number(arg) || 2, kinds = ['count', 'color', 'shape', 'compare', 'moji'];
+      for (let i = 0; i < n - 1; i++) MQ.save.stamp(kinds[i]);
+      MQ.ui.finish(kinds[n - 1]); await wait(Q[2] === 'mid' ? 700 : 4000);
+      const on = $$('#screen-done .egg-s.is-on').length, gift = $('#screen-done .egg-s__gift'), party = $$('#screen-done .egg-s.is-party').length;
+      log('eggs n=' + n + ' on=' + on + ' gift=' + !!gift + ' party=' + party + ' text=' + $('#screen-done .balloon__tx').textContent);
+      if (on !== n) errors++;
+      if (n % 2 === 0 && n <= 4 && Q[2] !== 'mid' && !gift) { log('NG gift'); errors++; }
+      if (n === 5 && Q[2] !== 'mid' && party !== 5) { log('NG party'); errors++; }
+      finish();
+    }); },
+    // #regrow[:stay]：すがたが かわる ときは たまごに もどって とんとん → 大きく なって できた！へ
+    regrow: function () { withMon('s', async function () {
+      for (let i = 0; i < 5; i++) MQ.save.update(function (d) { d.kid.stamps['2026-01-' + (10 + i)] = 1; });
+      MQ.ui.finish('count'); await wait(800);
+      log('regrow screen=' + MQ.ui.current + ' growth=' + MQ.save.growth()); if (MQ.ui.current !== 'screen-egg') errors++;
+      if (arg === 'stay') { finish(); return; }
+      const b = $('#screen-egg .item'); click(b); click(b); click(b); await wait(4000);
+      log('regrow after=' + MQ.ui.current + ' big=' + $('#screen-done .done__big').textContent); if (MQ.ui.current !== 'screen-done') errors++;
+      finish();
+    }); },
+    // #roll：おうちで ころころ（v0.4）
+    roll: function () { withMon('s', async function () { MQ.ui.home.open({ noGuide: true }); await wait(400); const k = MQ.ui.home._t.react('roll'); await wait(500); log('roll kind=' + k + ' cls=' + MQ.ui.home._t.mon.classList.contains('is-roll')); if (!MQ.ui.home._t.mon.classList.contains('is-roll')) errors++; finish(); }); },
     // #v03：A1 何が できたか・A2 まよった ときの 手助け・C1 遊ぶ 時間（2026-10-11）
     v03: function () { withMon('s', async function () {
       MQ.ui.finish('count'); await wait(1500);

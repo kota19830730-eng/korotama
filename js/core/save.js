@@ -51,6 +51,7 @@ MQ.save = (function () {
     if (!k.help || typeof k.help !== 'object') k.help = {};        // D：{ 日づけ: おてつだいの id }
     if (!Array.isArray(k.chores)) k.chores = null;                 // D：おうちの人が えらんだ おてつだい（null＝はじめの 6つ）
     if (k.birthday == null) k.birthday = '';                       // G：'MM-DD'
+    if (!k.eggs || typeof k.eggs !== 'object') k.eggs = {};        // v0.4：{ 日づけ: [しゅるい…] }（たまごの スタンプの 色）
     return k;
   }
   // 入らなかった とき（端末の 保存の 空きが ない）は false。おうちの人に 1回だけ しらせる（2026-10-10：だまって 記録が きえて いた）
@@ -88,7 +89,13 @@ MQ.save = (function () {
     if (!data.kid) return 0;
     const k = today(now);
     const n = (data.kid.stamps[k] || 0);
-    if (n < 5) data.kid.stamps[k] = n + 1;
+    if (n < 5) {
+      data.kid.stamps[k] = n + 1;
+      const eg = data.kid.eggs[k] || (data.kid.eggs[k] = []);
+      eg.push(kind || '');
+      const ed = Object.keys(data.kid.eggs).sort();
+      while (ed.length > 30) delete data.kid.eggs[ed.shift()];
+    }
     if (kind && data.kid.done[kind] != null) data.kid.done[kind]++;
     if (kind) logEvent(kind, now);
     write();
@@ -106,6 +113,7 @@ MQ.save = (function () {
   function note(kind, now) { load(); logEvent(kind, now); if (data.kid && data.kid.done[kind] != null) data.kid.done[kind]++; write(); }
   function dayLog(now) { const k = kid(); return k ? (k.log[today(now)] || []) : []; }
   function helpCount() { const k = kid(); return k ? Object.keys(k.help || {}).length : 0; }
+  function eggsToday(now) { const k = kid(); return k && k.eggs ? (k.eggs[today(now)] || []) : []; }
   function stampsToday(now) { const k = kid(); return k ? (k.stamps[today(now)] || 0) : 0; }
   function stampsTotal() { const k = kid(); if (!k) return 0; return Object.keys(k.stamps).reduce(function (a, d) { return a + (k.stamps[d] || 0); }, 0); }
   // いまの すがた（1〜3）
@@ -131,6 +139,6 @@ MQ.save = (function () {
   }
 
   return { KEY: KEY, STAGES: STAGES, GROW_AT: GROW_AT, load: load, kid: kid, settings: settings, setSetting: setSetting, update: update, newKid: newKid, setMon: setMon,
-           today: today, stamp: stamp, note: note, dayLog: dayLog, helpCount: helpCount, growPoints: growPoints, markGrew: markGrew, stampsToday: stampsToday, stampsTotal: stampsTotal, growth: growth, nextGrowAt: nextGrowAt, monPng: monPng, reset: reset,
+           today: today, stamp: stamp, note: note, dayLog: dayLog, helpCount: helpCount, growPoints: growPoints, markGrew: markGrew, stampsToday: stampsToday, eggsToday: eggsToday, stampsTotal: stampsTotal, growth: growth, nextGrowAt: nextGrowAt, monPng: monPng, reset: reset,
            exportText: exportText, importText: importText, _set: function (d) { data = d; } };
 })();
