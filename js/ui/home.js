@@ -56,7 +56,8 @@ MQ.ui = MQ.ui || {};
       clearIdle();
       const kid = MQ.save.kid();
       if (!kid || !kid.mon) { MQ.ui.start.open(); return; }
-      const SH = 252;   // v0.1.16：字幕は ばめんの 下へ（雲・雨・けむりを かくして いた）。たまごの 画面と 同じ ならび
+      // 2026-10-10：たてに 長い 画面（スマホ）では あまった ぶん ばめんを 高く（下が あいて 上が 切れて いた）
+      const SH = 252 + Math.max(0, Math.min(180, ((MQ.stage && MQ.stage.size) ? MQ.stage.size().h : 700) - 700));   // v0.1.16：字幕は ばめんの 下へ（雲・雨・けむりを かくして いた）。たまごの 画面と 同じ ならび
       const bl = MQ.ui.balloon('');
       // 背景の ひとこと：読んで いる 最中は 出さない（たたくたびに 声が 切れると うるさい）
       const sayIfFree = function (t) { if (!MQ.ui.isSpeaking()) bl.say(t); };
@@ -131,7 +132,7 @@ MQ.ui = MQ.ui || {};
       const page = h('div', { class: 'page' }, [
         MQ.ui.topBar({}),
         scene,
-        h('div', { class: 'wrap col', style: { gap: '8px', paddingTop: '8px', paddingBottom: '12px' } }, [
+        h('div', { class: 'wrap col', style: { gap: '8px', paddingTop: '8px', paddingBottom: '12px', flex: '1', justifyContent: 'space-evenly' } }, [
           bl,
           h('div', { class: 'bigs' }, [
             ['big--gold', 'ごはん', 'bowl', '#4a3b32', function () { MQ.ui.care.open(); }],

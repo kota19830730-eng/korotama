@@ -366,8 +366,8 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ['sun', 'moon', 'cloud', 'tree', 'house', 'hill', 'sky'].forEach(function (k) { if (!(new RegExp('^\\s+' + k + ': function', 'm')).test(cm)) { fails++; console.log('FAIL scene react ' + k); } });
   ['sun', 'moon', 'rain', 'rainbow', 'rustle', 'bird', 'knock', 'door', 'pop', 'flutter', 'shoot', 'heart', 'tickle', 'jump', 'spin', 'yawn', 'snore', 'wake'].forEach(function (k) { if (typeof MQ.sfx[k] !== 'function') { fails++; console.log('FAIL sfx.' + k); } });
   ok(/\.rainbow/.test(css) && /\.drop/.test(css) && /\.fleaf/.test(css) && /\.bird/.test(css) && /\.smoke/.test(css) && /\.flower/.test(css) && /\.butterfly/.test(css) && /\.shoot/.test(css) && /\.scene\.is-night/.test(css), '背景の 反応の 絵（雨・にじ・葉・ことり・けむり・花・ちょうちょ・ながれぼし・夜）');
-  ok(/scene__tap/.test(cm) && /tapBtn\(186, -2, 76, 76/.test(cm) && /tapBtn\(296, H - 262, 90, 110/.test(cm) && /tapBtn\(6, H - 190, 100, 100/.test(cm), '背景の 押す 場所は 見えない ボタン（64px いじょう）');
-  ok(/const SH = 252;/.test(hm) && !/left: '14px', top: '36px', width: '200px'/.test(hm), 'おうちの 字幕は ばめんの 下（雲・雨・けむりを かくさない）');
+  ok(/scene__tap/.test(cm) && /tapBtn\(186, -2 \+ Y, 76, 76/.test(cm) && /tapBtn\(296, H - 262, 90, 110/.test(cm) && /tapBtn\(6, H - 190, 100, 100/.test(cm), '背景の 押す 場所は 見えない ボタン（64px いじょう）');
+  ok(/const SH = 252 \+ Math\.max\(0, /.test(hm) && /justifyContent: 'space-evenly'/.test(hm) && /const Y = Math\.max\(0, Math\.min\(26/.test(cm) && !/left: '14px', top: '36px', width: '200px'/.test(hm), 'おうちの 字幕は ばめんの 下（雲・雨・けむりを かくさない）');
   ok(/MQ\.ui\.isSpeaking/.test(cm) && /if \(!MQ\.ui\.isSpeaking\(\)\) bl\.say\(t\)/.test(hm), '背景の ひとことは 読んで いる 最中は 出さない');
   ok(/にじが でた/.test(cm) && !/にじだ！/.test(cm), '「にじだ」は 声が「2時だ」に なる ので 書かない');
   // C：もんだいの 画面は うなずく／首を かしげる だけ（背景は 反応しない）

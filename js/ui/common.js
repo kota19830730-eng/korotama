@@ -275,13 +275,15 @@ MQ.ui = MQ.ui || {};
   MQ.ui.sceneNode = function (height, opts) {
     opts = opts || {};
     const H = height;
+    // 2026-10-10：背景が 高い ときは そら（くも・おひさま）を 少し 下げる（上の はしで 雲が 切れて いた）
+    const Y = Math.max(0, Math.min(26, Math.round((H - 252) / 5)));
     const night = opts.night != null ? !!opts.night : isNightNow();
     const P = {};
-    P.sun = h('div', { class: 'scene__sun', style: { left: '196px', top: '8px', width: '56px', height: '56px' } },
+    P.sun = h('div', { class: 'scene__sun', style: { left: '196px', top: (8 + Y) + 'px', width: '56px', height: '56px' } },
       [h('i', { class: 's-eye s-eye--l' }), h('i', { class: 's-eye s-eye--r' }), h('i', { class: 's-mouth' })].concat([0, 45, 90, 135, 180, 225, 270, 315].map(function (r) { return h('i', { class: 's-ray', style: { '--r': r + 'deg' } }); })));
-    P.moon = h('div', { class: 'scene__moon', style: { left: '200px', top: '10px' } });
-    P.cloud1 = h('div', { class: 'scene__cloud', style: { left: '30px', top: '10px', width: '90px', height: '34px' } });
-    P.cloud2 = h('div', { class: 'scene__cloud', style: { left: '60px', top: '-4px', width: '52px', height: '34px' } });
+    P.moon = h('div', { class: 'scene__moon', style: { left: '200px', top: (10 + Y) + 'px' } });
+    P.cloud1 = h('div', { class: 'scene__cloud', style: { left: '30px', top: (10 + Y) + 'px', width: '90px', height: '34px' } });
+    P.cloud2 = h('div', { class: 'scene__cloud', style: { left: '60px', top: (Y ? Y : -4) + 'px', width: '52px', height: '34px' } });
     P.hill1 = h('div', { class: 'scene__hill', style: { left: '-80px', top: (H - 180) + 'px', width: '320px', height: '220px', background: 'var(--grass)' } });
     P.hill2 = h('div', { class: 'scene__hill', style: { left: '190px', top: (H - 160) + 'px', width: '340px', height: '240px', background: 'var(--grass2)' } });
     P.ground = h('div', { class: 'scene__ground', style: { top: (H - 76) + 'px', height: '80px' } });
@@ -324,11 +326,11 @@ MQ.ui = MQ.ui || {};
       cloud: function () {
         counts.cloud++;
         [P.cloud1, P.cloud2].forEach(function (c) { c.classList.remove('is-rain'); void c.offsetWidth; c.classList.add('is-rain'); setTimeout(function () { c.classList.remove('is-rain'); }, 1400); });
-        for (let i = 0; i < 7; i++) temp(h('i', { class: 'drop', style: { left: (40 + i * 11 + Math.random() * 6) + 'px', top: '42px', animationDelay: (Math.random() * 0.35) + 's', '--dy': (70 + Math.random() * 40) + 'px' } }), 1600);
+        for (let i = 0; i < 7; i++) temp(h('i', { class: 'drop', style: { left: (40 + i * 11 + Math.random() * 6) + 'px', top: (42 + Y) + 'px', animationDelay: (Math.random() * 0.35) + 's', '--dy': (70 + Math.random() * 40) + 'px' } }), 1600);
         MQ.sfx.rain();
         if (counts.cloud % 3 === 0) {
           setTimeout(function () {
-            const rb = h('div', { class: 'rainbow', style: { left: '100px', top: '22px' } });
+            const rb = h('div', { class: 'rainbow', style: { left: '100px', top: (22 + Y) + 'px' } });
             ['#e0493a', '#f49a2e', '#f2c94c', '#7fb069', '#4f7fd9', '#b07ad8'].forEach(function (c, i) { rb.appendChild(h('i', { style: { '--c': c, left: (i * 7) + 'px', top: (i * 7) + 'px', width: (220 - i * 14) + 'px', height: (220 - i * 14) + 'px' } })); });
             temp(rb, 3300); MQ.sfx.rainbow(); say('わあ、にじが でた！ きれい！');   // 「にじだ」は voice.clockRead が「2時だ」に する ので「にじが」
           }, 900);
@@ -378,8 +380,8 @@ MQ.ui = MQ.ui || {};
         return b;
       }
       sc.taps = {
-        sun: tapBtn(186, -2, 76, 76, night ? 'おつきさま' : 'おひさま', function () { R[night ? 'moon' : 'sun'](); }),
-        cloud: tapBtn(20, -8, 110, 60, 'くも', R.cloud),
+        sun: tapBtn(186, -2 + Y, 76, 76, night ? 'おつきさま' : 'おひさま', function () { R[night ? 'moon' : 'sun'](); }),
+        cloud: tapBtn(20, Y ? Y - 4 : -8, 110, 60, 'くも', R.cloud),
         tree: tapBtn(296, H - 262, 90, 110, 'き', R.tree),
         house: tapBtn(6, H - 190, 100, 100, 'いえ', R.house)
       };
@@ -412,7 +414,7 @@ MQ.ui = MQ.ui || {};
       sc.addEventListener('click', function () { if (told || !opts.live) return; told = true; setTimeout(function () { say(se.seasonInfo.tell); }, 1600); }, true);
       const ev = se.birthday ? 'birthday' : se.event;
       if (ev && EVENT_SVG[ev]) {
-        const b = h('button', { class: 'evsticker', type: 'button', 'aria-label': ev, html: EVENT_SVG[ev], style: { left: '256px', top: '6px' } });   // そらの 右（おひさまと 木の あいだ）
+        const b = h('button', { class: 'evsticker', type: 'button', 'aria-label': ev, html: EVENT_SVG[ev], style: { left: '256px', top: (6 + Y) + 'px' } });   // そらの 右（おひさまと 木の あいだ）
         b.onclick = function (e) { e.stopPropagation(); MQ.sfx.rainbow(); b.classList.remove('is-boing'); void b.offsetWidth; b.classList.add('is-boing'); say(se.birthday ? 'おたんじょうび おめでとう！ ろうそくを ふーって してね。' : se.eventInfo.tell); if (se.birthday) { try { MQ.bgm.play('birthday'); } catch (x) { /* なし */ } } };
         sc.appendChild(b);
         sc.eventBtn = b;
