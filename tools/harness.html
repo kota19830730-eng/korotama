@@ -12,7 +12,7 @@
 <body>
 <!--
   画面の 通しテストと スクリーンショット（headless Chrome）。ハッシュで モード：
-    #start #setup #draw #canvas #preview #egg #home #care #care:l #care:l:max #shop #play #play:l #done #done:grow #parent
+    #start #setup #draw #canvas #preview #egg #home #hold[:touch|:tap|:mouse|:shot] #care #care:l #care:l:max #shop #play #play:l #done #done:grow #parent
     #flow（ごはん・おみせ・あそぶ を 自動で 答えて できた！まで）
     #kazu:<count|color>[:<add|take|hear|see>][:wrong|:count]（ねんちょう v0.1.11・wrong＝まちがえて 2回め の 声まで／count＝おさらを タッチして かぞえる）
     #kflow（ねんちょうで ごはん・おみせ を 1回ずつ まちがえて から 正解 → できた！）
@@ -205,6 +205,19 @@
     },
     egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
     home: function () { withMon(arg || 's', function () { MQ.ui.home.open(); setTimeout(finish, 400); }); },
+    // 鍵の 長おし（v0.1.18）：touch＝touchstart→1.6秒→touchend で おうちの人の 画面／tap＝短く はなす→トースト／mouse＝pointer（マウス）／shot＝押して いる 途中を 撮る
+    hold: function () { withMon('s', function () { MQ.ui.home.open(); setTimeout(function () {
+      const b = $('#screen-home .rbtn--lock');
+      if (!b) { log('ERROR no lock button'); errors++; finish(); return; }
+      function te(type) { try { return new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : [new Touch({ identifier: 1, target: b, clientX: 10, clientY: 10 })] }); } catch (e) { return new Event(type, { bubbles: true, cancelable: true }); } }
+      if (arg === 'shot') { b.classList.add('is-hold'); b.style.setProperty('--p', '60%'); b.querySelector && (b.style.animation = 'none'); log('hold shot'); finish(); return; }
+      if (arg === 'mouse') { b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse', pointerId: 1 })); setTimeout(function () { log('hold mouse: parent=' + $('#screen-parent').classList.contains('is-active') + ' hold-class=' + b.classList.contains('is-hold')); finish(); }, 1700); return; }
+      if (arg === 'tap') { b.dispatchEvent(te('touchstart')); setTimeout(function () { b.dispatchEvent(te('touchend')); setTimeout(function () { log('hold tap: parent=' + $('#screen-parent').classList.contains('is-active') + ' toast=' + ($('#toast') && $('#toast').classList.contains('is-on') ? $('#toast').textContent : 'なし')); finish(); }, 50); }, 120); return; }
+      b.dispatchEvent(te('touchstart'));
+      // iPad の まね：とちゅうで pointercancel が 来ても 止まらない
+      setTimeout(function () { b.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerType: 'touch', pointerId: 1 })); }, 500);
+      setTimeout(function () { const holding = b.classList.contains('is-hold'); b.dispatchEvent(te('touchend')); setTimeout(function () { log('hold touch: holding-at-1.2s=' + holding + ' parent=' + $('#screen-parent').classList.contains('is-active')); finish(); }, 50); }, 1700);
+    }, 400); }); },
     /* タップの 反応（v0.1.16）：#react:<name>[:night][:<stamps>]
        name＝happy|jump|spin|shy|yawn|tickle|pat|sleep|wake|look（キャラクター）／sun|moon|cloud|rainbow|tree|bird|house|hill|butterfly|sky（背景）／decor（かざりだけ）／none
        night＝夜に する・stamps＝スタンプの 合計（かざり）。写真は 反応の とちゅうで 止めて 撮る（freeze） */

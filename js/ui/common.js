@@ -181,15 +181,38 @@ MQ.ui = MQ.ui || {};
   };
 
   /* ---- 長おし（おうちの人の かぎ） ---- */
+  /* v0.1.18：iPad では 長おしの とちゅうで Safari が 画像の メニューや スクロールに 取って pointercancel が 来て、
+     何も 起きなかった → ①さわる 端末は touch で 見る（touchstart で preventDefault＝メニュー・スクロールを 止める）
+     ②pointercancel・pointerleave では 止めない（touchend／touchcancel・pointerup で 止める）
+     ③短く はなしたら 案内の トースト（おうちの人は ここを ながおし）④押して いる あいだ 金の 輪が たまる（css の .is-hold） */
   MQ.ui.hold = function (el, ms, fn) {
-    let t = null, down = false;
-    function start(e) { if (down) return; down = true; el.classList.add('is-hold'); t = setTimeout(function () { down = false; el.classList.remove('is-hold'); fn(); }, ms); }
-    function end() { down = false; el.classList.remove('is-hold'); clearTimeout(t); }
-    el.addEventListener('pointerdown', start);
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
-    el.addEventListener('pointerleave', end);
+    let t = null, down = false, at = 0, touching = false;
+    el.style.setProperty('--hold-ms', ms + 'ms');
+    function start() {
+      if (down) return;
+      down = true; at = Date.now(); el.classList.add('is-hold');
+      t = setTimeout(function () { down = false; el.classList.remove('is-hold'); fn(); }, ms);
+    }
+    function end() {
+      if (!down) return;
+      down = false; el.classList.remove('is-hold'); clearTimeout(t);
+      const held = Date.now() - at;
+      if (held < ms) MQ.ui.toast(held < 300 ? 'おうちの人は ここを ' + (ms / 1000) + 'びょう ながおし' : 'もう すこし ながく おしてね', 2200);
+    }
+    el.addEventListener('touchstart', function (e) { e.preventDefault(); touching = true; start(); }, { passive: false });
+    el.addEventListener('touchend', function (e) { e.preventDefault(); end(); }, { passive: false });
+    el.addEventListener('touchcancel', end);
+    el.addEventListener('pointerdown', function (e) { if (touching || e.pointerType === 'touch') return; start(); });
+    el.addEventListener('pointerup', function (e) { if (touching || e.pointerType === 'touch') return; end(); });
+    el.addEventListener('mouseleave', function () { if (!touching) end(); });
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     el.addEventListener('click', function (e) { e.preventDefault(); });
+  };
+  /* かぎの ボタン（おうちの人の 画面へ）：ボタン＋下の 小さな 字「おうちの人」 */
+  MQ.ui.lockButton = function () {
+    const b = h('button', { class: 'rbtn rbtn--lock', type: 'button', 'aria-label': 'おうちの人（ながおし）', html: SVG.lock, style: { color: '#7a6652' } });
+    MQ.ui.hold(b, 1500, function () { MQ.sfx.tap(); MQ.ui.stopSpeak(); MQ.ui.parent.open(); });
+    return h('div', { class: 'lockwrap' }, [b, h('small', { class: 'lockwrap__t', text: 'おうちの人' })]);
   };
 
   /* ---- 上の 段 ---- */
@@ -207,8 +230,7 @@ MQ.ui = MQ.ui || {};
     let right;
     if (opts.replay) right = h('button', { class: 'rbtn rbtn--clay', type: 'button', 'aria-label': 'もういちど きく', html: SVG.speaker, style: { color: '#fbf4e4' }, onclick: function () { MQ.sfx.tap(); opts.replay(); } });
     else {
-      right = h('button', { class: 'rbtn', type: 'button', 'aria-label': 'おうちの人（ながおし）', html: SVG.lock, style: { color: '#7a6652' } });
-      MQ.ui.hold(right, 1500, function () { MQ.sfx.tap(); MQ.ui.parent.open(); });
+      right = MQ.ui.lockButton();
     }
     return h('div', { class: 'top' }, [left, right]);
   };

@@ -18,11 +18,7 @@ MQ.ui = MQ.ui || {};
       const has = !!(kid && kid.mon);
       const egg = eggNode(has ? MQ.save.monPng() : '');
       const page = h('div', { class: 'page' }, [
-        h('div', { class: 'top' }, [h('span'), (function () {
-          const b = h('button', { class: 'rbtn', type: 'button', 'aria-label': 'おうちの人（ながおし）', html: MQ.ui.SVG.lock, style: { color: '#7a6652' } });
-          MQ.ui.hold(b, 1500, function () { MQ.ui.parent.open(); });
-          return b;
-        })()]),
+        h('div', { class: 'top' }, [h('span'), MQ.ui.lockButton()]),
         h('div', { class: 'page__body' }, [h('div', { class: 'wrap col', style: { alignItems: 'center', gap: '26px', paddingTop: '30px' } }, [
           h('div', { class: 'title' }, [h('h1', { class: 'title__logo', text: 'ころたま' }), h('p', { class: 'title__sub', text: 'きみの えが たまごから うまれる' })]),
           h('div', { style: { position: 'relative', width: '200px', height: '230px' } }, [

@@ -39,6 +39,14 @@ input { font-family: inherit; }
 .rbtn--clay { background: var(--clay); box-shadow: 0 4px 0 var(--clay2); }
 .rbtn:active { transform: translateY(2px); }
 .rbtn.is-hold { background: var(--gold); }
+/* かぎの ボタン（v0.1.18）：長おしの あいだ 金の 輪が たまる・iPad の 長おしメニューを 出さない */
+.lockwrap { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: -6px 0; }
+.lockwrap__t { font-size: 10px; color: #7a6652; letter-spacing: .02em; line-height: 1; }
+.rbtn--lock { position: relative; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.rbtn--lock::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; background: conic-gradient(var(--gold) var(--p, 0%), transparent 0); -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%); mask: radial-gradient(circle, transparent 60%, #000 62%); opacity: 0; pointer-events: none; }
+.rbtn--lock.is-hold::after { opacity: 1; animation: holdRing var(--hold-ms, 1.5s) linear forwards; }
+@property --p { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+@keyframes holdRing { from { --p: 0%; } to { --p: 100%; } }
 
 /* ---- 絵本の ばめん ---- */
 .field2 { position: relative; height: 190px; overflow: hidden; }
