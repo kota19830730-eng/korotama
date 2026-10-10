@@ -13,6 +13,9 @@
      MQ.subject.isPaper(img, crop)  → 紙の 絵か（true なら いままでの cutout）
      MQ.subject.mask(p, W, H)       → { m: Uint8Array, box, bg: [[r,g,b],…], fg: [[r,g,b],…] }
      MQ.subject.fromImage(img, crop) → { raw: {png,png2,png3}, soft: {…}, drawn, dark, kind: 'object' }
+   v0.2.1（2026-10-10）：まなびモンスター v14.47 で 良く した ところを もどした＝2ばいの 写真から 色を 読む・のこった 影を 点ごとに 消す・
+     そのまま＝ふち 2px・絵本ふう＝色みを 重く して 色を えらぶ（うすい ピンクの 耳・ほっぺが 消えない）・体の 灰色の かげは 体の 色の こい 色に。
+     直す ときは まなびモンスターの js/core/subject.js も（ほぼ 同じ ファイル）
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
 
@@ -410,7 +413,8 @@ MQ.subject = (function () {
     }
     return a;
   }
-  function place(src, W, H, box) {
+  function place(src, W, H, box, outSize) {
+    const OUT = outSize || 256;
     const cv = document.createElement('canvas');
     cv.width = OUT; cv.height = OUT;
     const g = cv.getContext('2d');
@@ -453,19 +457,38 @@ MQ.subject = (function () {
     return place(cv, W, H, box);
   }
   /* 絵本ふう：主役の 色を 8色に まとめ、5×5 の 多数決で 平らに。目・口（暗い）と ほっぺ（色の こい）は そのまま のこす */
-  function renderSoft(q, m, W, H, box) {
+  function renderSoft(q, m, W, H, box, opt) {
+    opt = opt || {};
+    const win = opt.win || 2, OUTS = opt.out || OUT;
     const n = W * H;
     const pts = [];
     for (let k = 0; k < n; k += 2) if (m[k]) pts.push([q[k * 3], q[k * 3 + 1], q[k * 3 + 2]]);
-    // RGB の k-means（8色・明るさの 順に ならべて 出発）
-    const K = 8;
+    // RGB の k-means（8色・明るさの 順に ならべて 出発）。opt.chroma＝色みを 重く した きょり（うすい ピンクの ほっぺ・耳が クリーム色に とけない・まなびモンスター v14.47）
+    const K = opt.K || 8;
+    const cd = opt.chroma
+      ? function (a, b) { const dl = (lum(a[0], a[1], a[2]) - lum(b[0], b[1], b[2])) * 0.6, d1 = ((a[0] - a[1]) - (b[0] - b[1])) * 1.8, d2 = (((a[0] + a[1]) / 2 - a[2]) - ((b[0] + b[1]) / 2 - b[2])) * 1.8; return dl * dl + d1 * d1 + d2 * d2; }
+      : function (a, b) { return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]); };
     pts.sort(function (a, b) { return lum(a[0], a[1], a[2]) - lum(b[0], b[1], b[2]); });
     let cs = [];
     for (let i = 0; i < K; i++) cs.push(pts.length ? pts[Math.floor(pts.length * (i + 0.5) / K)].slice() : [128, 128, 128]);
+    if (opt.chroma && pts.length) {   // はじめの 種は 色みの はなれた 点から（ピンクが 種に 入る）
+      const step = Math.max(1, Math.ceil(pts.length / 1500));
+      cs = [pts[Math.floor(pts.length / 2)].slice()];
+      while (cs.length < K) { let far = null, fd = -1; for (let i = 0; i < pts.length; i += step) { let md = 1e9; for (let j = 0; j < cs.length; j++) { const d = cd(pts[i], cs[j]); if (d < md) md = d; } if (md > fd) { fd = md; far = pts[i]; } } if (!far || fd < 100) break; cs.push(far.slice()); }
+    }
+    let csN = cs.map(function () { return 0; });
     for (let it = 0; it < 6; it++) {
       const sum = cs.map(function () { return [0, 0, 0, 0]; });
-      pts.forEach(function (c) { let b = 0, bd = 1e9; for (let j = 0; j < cs.length; j++) { const d = (c[0] - cs[j][0]) * (c[0] - cs[j][0]) + (c[1] - cs[j][1]) * (c[1] - cs[j][1]) + (c[2] - cs[j][2]) * (c[2] - cs[j][2]); if (d < bd) { bd = d; b = j; } } sum[b][0] += c[0]; sum[b][1] += c[1]; sum[b][2] += c[2]; sum[b][3]++; });
+      pts.forEach(function (c) { let b = 0, bd = 1e9; for (let j = 0; j < cs.length; j++) { const d = cd(c, cs[j]); if (d < bd) { bd = d; b = j; } } sum[b][0] += c[0]; sum[b][1] += c[1]; sum[b][2] += c[2]; sum[b][3]++; });
       cs = cs.map(function (c, j) { return sum[j][3] ? [sum[j][0] / sum[j][3], sum[j][1] / sum[j][3], sum[j][2] / sum[j][3]] : c; });
+      csN = sum.map(function (x) { return x[3]; });
+    }
+    const cs0 = cs.map(function (c) { return c.slice(); });   // 点を あてる 用（ぬる 色を 変える 前）
+    if (opt.chroma) {
+      /* 灰色っぽい 中くらいの 明るさの 色（ぬいぐるみの 体の かげ）は、いちばん 多い 色みの ある 色の こい 色に（灰色の しみに 見えない） */
+      let main = -1, mn = -1;
+      cs.forEach(function (c, j) { const ch = Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]), L = lum(c[0], c[1], c[2]); if (ch >= 12 && L > 120 && csN[j] > mn) { mn = csN[j]; main = j; } });
+      if (main >= 0) cs = cs.map(function (c, j) { const ch = Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]), L = lum(c[0], c[1], c[2]); if (j === main || ch >= 20 || L < 90 || L > 215) return c; const mc = cs[main], k = Math.max(0.78, Math.min(0.92, L / lum(mc[0], mc[1], mc[2]))); return [mc[0] * k, mc[1] * k, mc[2] * k]; });
     }
     // クレヨンの 色みに 少し 寄せる（さいどを 上げ・白は 紙の 白・黒は 線の 色）
     cs = cs.map(function (c) {
@@ -479,7 +502,8 @@ MQ.subject = (function () {
     for (let k = 0; k < n; k++) {
       if (!m[k]) continue;
       let b = 0, bd = 1e9;
-      for (let j = 0; j < cs.length; j++) { const d = (q[k * 3] - cs[j][0]) * (q[k * 3] - cs[j][0]) + (q[k * 3 + 1] - cs[j][1]) * (q[k * 3 + 1] - cs[j][1]) + (q[k * 3 + 2] - cs[j][2]) * (q[k * 3 + 2] - cs[j][2]); if (d < bd) { bd = d; b = j; } }
+      const pc = [q[k * 3], q[k * 3 + 1], q[k * 3 + 2]];
+      for (let j = 0; j < cs.length; j++) { const d = cd(pc, cs0[j]); if (d < bd) { bd = d; b = j; } }
       lab[k] = b;
     }
     // こまかい ところ（目・口・ほっぺ）：暗い 色か、色の こい 色。多数決で 消さない
@@ -491,7 +515,7 @@ MQ.subject = (function () {
       if (lab[k] < 0) { out[k] = -1; continue; }
       if (dark[lab[k]]) { out[k] = lab[k]; continue; }   // 目・口は そのまま
       cnt.fill(0); let best = lab[k], bv = 0;
-      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -win; dy <= win; dy++) for (let dx = -win; dx <= win; dx++) {
         const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
         const l = lab[yy * W + xx]; if (l < 0 || dark[l]) continue;
         cnt[l]++; if (cnt[l] > bv) { bv = cnt[l]; best = l; }
@@ -502,10 +526,18 @@ MQ.subject = (function () {
     cv.width = W; cv.height = H;
     const g = cv.getContext('2d');
     const od = g.createImageData(W, H);
-    const a = softAlpha(m, W, H, 2);
+    const a = softAlpha(m, W, H, opt.edge || 2);
+    // 輪かく（opt.line）：主役の そとの ふち（line px）を こい 色に（ゲームの モンスターらしく）
+    let edgeM = null;
+    if (opt.line) {
+      const er = erode(m, W, H, opt.line);
+      edgeM = new Uint8Array(n);
+      for (let k = 0; k < n; k++) if (m[k] && !er[k]) edgeM[k] = 1;
+    }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const k = y * W + x;
       let r = 0, gg = 0, b = 0, ws = 0;
+      if (edgeM && edgeM[k]) { const lc = opt.lineColor || [74, 59, 50]; od.data[k * 4] = lc[0]; od.data[k * 4 + 1] = lc[1]; od.data[k * 4 + 2] = lc[2]; od.data[k * 4 + 3] = Math.round(a[k] * 255); continue; }
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
         const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
         const l = out[yy * W + xx]; if (l < 0) continue;
@@ -517,12 +549,43 @@ MQ.subject = (function () {
       od.data[k * 4 + 3] = Math.round(a[k] * 255);
     }
     g.putImageData(od, 0, 0);
-    return place(cv, W, H, box);
+    return place(cv, W, H, box, OUTS);
   }
 
-  let lastInfo = null, lastComps = null, lastDbg = null, lastTol = null, islandDbg = [], lastBgW = null, lastSeeds = 0, lastBgSpread = null, lastBgRatio = null, lastStages = null, lastRace = null, lastSeedMask = null;
+  let lastComps = null, lastDbg = null, lastTol = null, islandDbg = [], lastBgW = null, lastSeeds = 0, lastBgSpread = null, lastBgRatio = null, lastStages = null, lastRace = null, lastSeedMask = null;
+  /* 影を 点ごとに：床（背景の 色の 手本 bg＝明るさで わった 色み）と 同じ 色みの 向きで 床より 明るく ない 点を、
+     主役の そとから つながる ものだけ 消す（主役の 15% まで＝床と 同じ 色の ぬいぐるみは 消さない） */
+  function cutShadow(m, p, W, H, bg) {
+    const bgs = (bg || []).filter(function (c) { return c && c.length >= 3 && Math.hypot(c[1], c[2]) >= 30; });
+    if (!bgs.length) return 0;
+    const isShadow = function (r, g, b) {
+      const fe = feat(r, g, b), mag = Math.hypot(fe[1], fe[2]);
+      if (mag < 30) return false;   // 色みの ない 黒・灰色（目・まゆ）は 影に しない
+      const ang = Math.atan2(fe[2], fe[1]);
+      return bgs.some(function (bc) { let da = Math.abs(ang - Math.atan2(bc[2], bc[1])); if (da > Math.PI) da = 2 * Math.PI - da; return da < 0.35 && fe[0] < bc[0] + 15; });
+    };
+    const n = W * H, sh = new Uint8Array(n), cut = new Uint8Array(n), st = [];
+    let nm = 0;
+    for (let k = 0; k < n; k++) { if (!m[k]) continue; nm++; if (isShadow(p[k * 4], p[k * 4 + 1], p[k * 4 + 2])) sh[k] = 1; }
+    for (let k = 0; k < n; k++) {
+      if (!sh[k]) continue;
+      const x = k % W, y = (k - x) / W;
+      if (x === 0 || y === 0 || x === W - 1 || y === H - 1 || !m[k - 1] || !m[k + 1] || !m[k - W] || !m[k + W]) { cut[k] = 1; st.push(k); }
+    }
+    while (st.length) {
+      const k = st.pop(), x = k % W;
+      const nb = [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k - W, k + W];
+      for (let i = 0; i < 4; i++) { const kk = nb[i]; if (kk < 0 || kk >= n || cut[kk] || !sh[kk]) continue; cut[kk] = 1; st.push(kk); }
+    }
+    let nc = 0; for (let k = 0; k < n; k++) if (cut[k]) nc++;
+    if (!nc || nc > nm * 0.15) return 0;
+    for (let k = 0; k < n; k++) if (cut[k]) m[k] = 0;
+    return nc;
+  }
+  let lastInfo = null;
   function fromImage(img, crop) {
-    const cv = MQ.trace.parts.workCanvas(img, crop || { x: 0, y: 0, w: 1, h: 1 });
+    crop = crop || { x: 0, y: 0, w: 1, h: 1 };
+    const cv = MQ.trace.parts.workCanvas(img, crop);
     const W = cv.width, H = cv.height;
     let data;
     try { data = cv.getContext('2d').getImageData(0, 0, W, H); } catch (e) { return { drawn: 0, error: 'canvas' }; }
@@ -531,11 +594,51 @@ MQ.subject = (function () {
     if (!r) return { drawn: 0, dark: false, kind: 'object' };
     let dim = 0; for (let k = 0; k < W * H; k += 7) dim += lum(p[k * 4], p[k * 4 + 1], p[k * 4 + 2]);
     dim /= Math.ceil(W * H / 7);
-    const q = levels(p, r.m, W, H);
-    const raw = renderRaw(q, r.m, W, H, r.box);
-    const soft = renderSoft(q, r.m, W, H, r.box);
-    lastInfo = { dbg: lastDbg, comps: r.comps, drawn: r.box.n, box: r.box, W: W, H: H, dark: dim < 90, kind: 'object', bg: r.bg, fg: r.fg, mask: r.m };
+    // 2ばいの 写真で 色を 読む（マスクは 320px の まま のばす）。作れない ときは 320px の まま
+    let P = p, M = r.m, WW = W, HH = H, box = r.box, edge = 1, win = 2;
+    try {
+      const k2 = 2, W2 = W * k2, H2 = H * k2;
+      const hc = document.createElement('canvas');
+      hc.width = W2; hc.height = H2;
+      const hx = hc.getContext('2d');
+      hx.imageSmoothingEnabled = true;
+      const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+      hx.drawImage(img, iw * crop.x, ih * crop.y, Math.max(1, iw * crop.w), Math.max(1, ih * crop.h), 0, 0, W2, H2);
+      const p2 = hx.getImageData(0, 0, W2, H2).data;
+      const m2 = new Uint8Array(W2 * H2);
+      for (let y = 0; y < H2; y++) for (let x = 0; x < W2; x++) m2[y * W2 + x] = r.m[Math.floor(y / k2) * W + Math.floor(x / k2)];
+      P = p2; M = m2; WW = W2; HH = H2; edge = 2; win = 4;
+    } catch (eh) { P = p; M = r.m.slice(); WW = W; HH = H; }
+    cutShadow(M, P, WW, HH, r.bg);
+    box = MQ.trace.parts.bbox(M, WW, HH) || box;
+    const q = levels(P, M, WW, HH);
+    const raw = photo(q, M, WW, HH, box, edge, OUT);
+    const soft = renderSoft(q, M, WW, HH, box, { win: win, edge: edge, chroma: true, K: 10 });
+    lastInfo = { dbg: lastDbg, comps: r.comps, drawn: r.box.n, box: r.box, W: W, H: H, dark: dim < 90, kind: 'object', bg: r.bg, fg: r.fg, mask: r.m, hi: WW / W };
     return { raw: MQ.cutout.stages(raw), soft: MQ.cutout.stages(soft), drawn: r.box.n, dark: dim < 90, kind: 'object', box: r.box };
   }
-  return { flags: FL, isPaper: isPaper, paperness: paperness, PAPER_MIN: PAPER_MIN, mask: mask, fromImage: fromImage, info: function () { return lastInfo; } };
+  /* まなびモンスター：切りぬいた 写真（ころたまの「そのまま」と 同じ 作り方）。q＝levels の RGB・m＝マスク・r＝ふちの やわらかさ・out＝できあがりの 大きさ */
+  function photo(q, m, W, H, box, r, out) {
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const od = g.createImageData(W, H);
+    const a = softAlpha(m, W, H, r || 1);
+    for (let k = 0; k < W * H; k++) {
+      od.data[k * 4] = Math.round(q[k * 3]); od.data[k * 4 + 1] = Math.round(q[k * 3 + 1]); od.data[k * 4 + 2] = Math.round(q[k * 3 + 2]);
+      od.data[k * 4 + 3] = Math.round(a[k] * 255);
+    }
+    g.putImageData(od, 0, 0);
+    const O = out || OUT;
+    const c2 = document.createElement('canvas');
+    c2.width = O; c2.height = O;
+    const g2 = c2.getContext('2d');
+    const bw = box.x1 - box.x0 + 1, bh = box.y1 - box.y0 + 1;
+    const k = Math.min((O * 0.9) / bw, (O * 0.9) / bh);
+    const dw = bw * k, dh = bh * k;
+    g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = 'high';
+    g2.drawImage(cv, box.x0, box.y0, bw, bh, (O - dw) / 2, O * 0.95 - dh, dw, dh);
+    return c2;
+  }
+  return { flags: FL, isPaper: isPaper, paperness: paperness, PAPER_MIN: PAPER_MIN, mask: mask, fromImage: fromImage, levels: levels, feat: feat, photo: photo, soft: renderSoft, info: function () { return lastInfo; } };
 })();
