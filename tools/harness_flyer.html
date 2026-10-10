@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ころたま harness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+<style>#log { position: fixed; left: 0; bottom: 0; z-index: 999; max-width: 100px; max-height: 60px; overflow: hidden; font-size: 1px; color: transparent; background: transparent; margin: 0; pointer-events: none; }</style>
+</head>
+<body>
+<!--
+  画面の 通しテストと スクリーンショット（headless Chrome）。ハッシュで モード：
+    #start #setup #draw #canvas #preview #egg #home #care #care:l #care:l:max #shop #play #play:l #done #done:grow #parent
+    #flow（ごはん・おみせ・あそぶ を 自動で 答えて できた！まで）
+    #kazu:<count|color>[:<add|take|hear|see>][:wrong|:count]（ねんちょう v0.1.11・wrong＝まちがえて 2回め の 声まで／count＝おさらを タッチして かぞえる）
+    #kflow（ねんちょうで ごはん・おみせ を 1回ずつ まちがえて から 正解 → できた！）
+    #kurabe:<s|m|l|k>[:<size|long|more|order|bignum>][:wrong]（くらべっこ v0.1.12・wrong＝2回 まちがえて 正解が 光る ところ）
+    #kuflow:<s|m|l|k>（くらべっこを 1回ずつ まちがえて から 正解 → できた！）
+    #moji:<s|m|l|k>[:<sound|hear|first|read|build>][:wrong|:build]（もじ v0.1.13）
+    #mjflow:<s|m|l|k>（もじを まちがえて から 正解 → できた！）
+    #tokei:<s|m|l|k>[:<day|next|hour|pick|read>][:wrong]（とけい v0.1.14）
+    #tkflow:<s|m|l|k>（とけいを まちがえて から 正解 → できた！）
+    #photo:<file URL>（本物の 写真 → --allow-file-access-from-files が いる）
+  にせの 声（headless に 声は ない）・にせの 絵（かいた ように 見せた 画像）で 生きものを 作ってから 画面を 出す。
+  けっかは <pre id="log">。
+-->
+<div id="stage" class="stage">
+  <section id="screen-start" class="screen"></section>
+  <section id="screen-setup" class="screen"></section>
+  <section id="screen-draw" class="screen"></section>
+  <section id="screen-egg" class="screen"></section>
+  <section id="screen-home" class="screen"></section>
+  <section id="screen-care" class="screen"></section>
+  <section id="screen-shop" class="screen"></section>
+  <section id="screen-play" class="screen"></section>
+  <section id="screen-kurabe" class="screen"></section>
+  <section id="screen-moji" class="screen"></section>
+  <section id="screen-tokei" class="screen"></section>
+  <section id="screen-done" class="screen"></section>
+  <section id="screen-parent" class="screen"></section>
+  <div id="toast" class="toast"></div>
+</div>
+<pre id="log"></pre>
+<script>window.__MQ_NO_AUTOBOOT = true;</script>
+<script src="../js/core/util.js"></script>
+<script src="../js/core/stage.js"></script>
+<script src="../js/core/blocks.js"></script>
+<script src="../js/core/sfx.js"></script>
+<script src="../js/core/bgm.js"></script>
+<script src="../js/core/save.js"></script>
+<script src="../js/core/voice.js"></script>
+<script src="../js/content/kakusu.js"></script>
+<script src="../js/content/kotoba.js"></script>
+<script src="../js/core/text.js"></script>
+<script src="../js/core/trace.js"></script>
+<script src="../js/core/cutout.js"></script>
+<script src="../js/core/tasks.js"></script>
+<script src="../js/content/charart.js"></script>
+<script src="../js/content/presets.js"></script>
+<script src="../js/ui/common.js"></script>
+<script src="../js/ui/start.js"></script>
+<script src="../js/ui/home.js"></script>
+<script src="../js/ui/care.js"></script>
+<script src="../js/ui/shop.js"></script>
+<script src="../js/ui/play.js"></script>
+<script src="../js/ui/kazu.js"></script>
+<script src="../js/ui/kurabe.js"></script>
+<script src="../js/ui/moji.js"></script>
+<script src="../js/ui/tokei.js"></script>
+<script src="../js/ui/parent.js"></script>
+<script src="../js/ui/boot.js"></script>
+<script>
+Date.prototype.getHours = function () { return 10; };   // チラシ用：いつも 昼（あいさつ＝こんにちは）
+(function () {
+  const logEl = document.getElementById('log');
+  const lines = [];
+  let errors = 0;
+  function log(s) { lines.push(String(s)); logEl.textContent = lines.join('\n'); }
+  window.addEventListener('error', function (e) { errors++; log('ERROR ' + (e.message || e) + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno); });
+  window.addEventListener('unhandledrejection', function (e) { errors++; log('REJECT ' + (e.reason && e.reason.message || e.reason)); });
+  const Q = location.hash.slice(1).split(':');
+  const mode = Q[0] || 'home';
+  const arg = Q[1] || '';
+
+  /* にせの 声：すぐ おわる（画面の 流れを 速く 通す） */
+  const said = [];
+  const fakeVoice = {
+    getVoices: function () { return [{ name: 'Kyoko', lang: 'ja-JP', default: true }]; },
+    cancel: function () {},
+    speak: function (u) { said.push(u.text); setTimeout(function () { if (u.onend) u.onend(); }, 60); },
+    addEventListener: function () {},
+    Utterance: function (t) { this.text = t; }
+  };
+  MQ.voice.setFake(fakeVoice);
+  MQ.sfx.setEnabled(false);
+  window.saidLines = said;
+
+  /* かいた ように 見せた 絵（白い 紙に 緑の 生きもの） */
+  function fakeDrawing() {
+    const cv = document.createElement('canvas'); cv.width = 640; cv.height = 640;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 640, 640);
+    g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 16; g.strokeStyle = '#3a3330';
+    g.fillStyle = '#8fd27a'; g.beginPath(); g.ellipse(320, 340, 180, 150, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#f2c94c'; g.beginPath(); g.moveTo(200, 230); g.lineTo(190, 120); g.lineTo(260, 200); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(440, 230); g.lineTo(450, 120); g.lineTo(380, 200); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(260, 300, 34, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath(); g.arc(380, 300, 34, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#222'; g.beginPath(); g.arc(266, 306, 12, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(386, 306, 12, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.moveTo(280, 400); g.quadraticCurveTo(320, 440, 360, 400); g.stroke();
+    g.beginPath(); g.moveTo(260, 480); g.lineTo(250, 540); g.moveTo(380, 480); g.lineTo(390, 540); g.stroke();
+    return cv.toDataURL('image/png');
+  }
+  function withMon(stage, cb) {
+    localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.save.newKid({ name: 'ゆう', stage: stage || 's' });
+    const pz = MQ.presets.get('chick');
+    MQ.ui.makeMon(pz.png, pz.name, function (mon) { MQ.save.setMon(mon); log('mon: preset chick'); cb(); }, pz);
+  }
+  function click(el) { if (!el) { log('ERROR no element to click'); errors++; return; } el.click(); }
+  function $(s) { return document.querySelector(s); }
+  function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function finish() { log('=== エラー: ' + errors + ' ==='); log('said: ' + said.length); }
+
+  MQ.stage.fit();
+  const run = {
+    start: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.start.open(); finish(); },
+    setup: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.setup.open(); finish(); },
+    draw: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.open(); finish(); },
+    pmon: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.save.newKid({ name: 'ゆう', stage: 's' }); const pz = MQ.presets.get(arg || 'dragon'); MQ.ui.makeMon(pz.png, pz.name, function (mon) { MQ.save.setMon(mon); const g = Number(Q[2]); if (g === 2 || g === 3) { const need = g === 2 ? 6 : 15; for (let i = 0; i < need; i++) MQ.save.update(function (d) { d.kid.stamps['2026-01-' + (10 + i)] = 1; }); } if (Q[2] === 'egg') MQ.ui.egg.open(); else MQ.ui.home.open(); log('pmon: ' + pz.id + ' svg=' + (mon.png.indexOf('data:image/svg') === 0) + ' png2=' + !!mon.png2 + ' png3=' + !!mon.png3 + ' growth=' + MQ.save.growth() + ' shown=' + (MQ.save.monPng() === (MQ.save.growth() === 3 ? mon.png3 : MQ.save.growth() === 2 ? mon.png2 : mon.png))); setTimeout(finish, 400); }, pz); },
+    zunda: function () {   // 録音した 声：bank を 読んで 1文 鳴らす（--allow-file-access-from-files --autoplay-policy=no-user-gesture-required）
+      MQ.save.newKid({ name: 'ゆう', stage: 's' });
+      let n = 0;
+      const tick = function () {
+        if (!MQ.voice.hasBank() && n++ < 40) { setTimeout(tick, 250); return; }
+        MQ.voice.setKind('zunda'); MQ.voice.setNames(['ゆう']);
+        MQ.voice.preload('おはよう！', function (dur) {
+          log('zunda: bank=' + MQ.voice.hasBank() + ' clip=' + MQ.voice.clipFor('おはよう！') + ' decoded sec=' + dur.toFixed(2) + ' strip=' + MQ.voice.stripNames('ゆうちゃん、おはよう！'));
+          if (!(dur > 0.3)) { log('ERROR clip not decoded'); errors++; }
+          const ok = MQ.voice.say('ゆうちゃん、おはよう！ きょうは なにを する？');
+          log('zunda say=' + ok + ' kind=' + MQ.voice.kind());
+          finish();
+        });
+      };
+      tick();
+    },
+    presets: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openPresets(arg || 'cute'); const n = MQ.presets.list(arg || 'cute').filter(function (p) { return p.png; }).length; log('presets ' + (arg || 'cute') + ': png=' + n); if (Q[2] === 'pick') { click($('#screen-draw .ptile')); } finish(); },
+    canvas: function () { MQ.save.newKid({ name: 'ゆう', stage: 's' }); MQ.ui.draw.openCanvas(); finish(); },
+    preview: function () {
+      MQ.save.newKid({ name: 'ゆう', stage: 's' });
+      const im = new Image(); im.onload = function () { MQ.ui.draw.fromImage(im, false); finish(); }; im.src = fakeDrawing();
+    },
+    egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
+    home: function () { withMon(arg || 's', function () { MQ.ui.home.open(); setTimeout(finish, 400); }); },
+    /* タップの 反応（v0.1.16）：#react:<name>[:night][:<stamps>]
+       name＝happy|jump|spin|shy|yawn|tickle|pat|sleep|wake|look（キャラクター）／sun|moon|cloud|rainbow|tree|bird|house|hill|butterfly|sky（背景）／decor（かざりだけ）／none
+       night＝夜に する・stamps＝スタンプの 合計（かざり）。写真は 反応の とちゅうで 止めて 撮る（freeze） */
+    react: function () {
+      withMon('s', function () {
+        const night = Q[2] === 'night' || Q[3] === 'night';
+        const total = Number(Q[2]) || Number(Q[3]) || 0;
+        for (let i = 0; i < total; i++) MQ.save.update(function (d) { d.kid.stamps['2026-02-' + ('0' + (1 + i % 28)).slice(-2)] = (d.kid.stamps['2026-02-' + ('0' + (1 + i % 28)).slice(-2)] || 0) + 1; });
+        MQ.ui.home.open({ night: night });
+        const T = MQ.ui.home._t, sc = T.scene;
+        log('home: night=' + sc.night + ' live=' + sc.classList.contains('is-live') + ' taps=' + Object.keys(sc.taps).join(',') + ' decor=' + JSON.stringify(sc.decorCount) + ' want=' + JSON.stringify(MQ.ui.decorOf(MQ.save.stampsTotal())));
+        setTimeout(function () {
+          const name = arg || 'none';
+          // 反応の とちゅうで 止めて 撮る：ここから 先の setTimeout を おぼえて、撮る ときに ぜんぶ 消す（消す タイマーで 絵が もどる ため）
+          const ids = [], st0 = window.setTimeout; window.setTimeout = function (f, ms) { const id = st0(f, ms); ids.push(id); return id; };
+          const kinds = { happy: 1, jump: 1, spin: 1, shy: 1, yawn: 1, tickle: 1, pat: 1, wake: 1, look: 1 };
+          if (kinds[name]) { if (name === 'wake') T.sleep(); T.react(name); }
+          else if (name === 'sleep') T.sleep();
+          else if (name === 'idle') { MQ.ui.home.IDLE.look = 30; MQ.ui.home.IDLE.yawn = 60; MQ.ui.home.IDLE.sleep = 90; T.idle(); }
+          else if (name === 'tap3') { T.onTap(); T.onTap(); T.onTap(); }
+          else if (name === 'rainbow') { sc.react('cloud'); sc.react('cloud'); sc.react('cloud'); }
+          else if (name === 'bird') { sc.react('tree'); sc.react('tree'); }
+          else if (name === 'butterfly') { sc.react('hill', 150, 200); sc.react('hill', 120, 230); }
+          else if (name === 'tapbtn') { click(sc.taps.sun); click(sc.taps.cloud); click(sc.taps.tree); click(sc.taps.house); }
+          else if (name !== 'none' && name !== 'decor') sc.react(name, name === 'hill' ? 140 : undefined, name === 'hill' ? 210 : undefined);
+          const ms = Number(Q[4]) || (name === 'rainbow' ? 1400 : name === 'idle' ? 140 : 450);
+          setTimeout(function () {
+            log('react ' + name + ': mon=' + T.mon.className + ' fx=' + sc.fx.children.length + ' flowers=' + sc.querySelectorAll('.flower').length + ' butterflies=' + sc.querySelectorAll('.butterfly').length + ' flag=' + !!sc.querySelector('.scene__flag') + ' zz=' + sc.querySelectorAll('.mon__zz').length + ' hearts=' + sc.querySelectorAll('.heart').length + ' rainbow=' + !!sc.querySelector('.rainbow') + ' bird=' + !!sc.querySelector('.bird') + ' win=' + sc.parts.win.classList.contains('is-on') + ' counts=' + JSON.stringify(sc.counts) + ' said=' + said.slice(-2).join(' / '));
+            // 止めて 撮る
+            ids.forEach(function (id) { clearTimeout(id); }); window.setTimeout = st0;
+            // virtual-time では animation の 時計が 進まない（0% の 絵に なる）→ 止めたい 時間を マイナスの delay で 入れて 止める
+            const at = (ms / 1000).toFixed(2);
+            [sc, T.mon].forEach(function (root) { Array.prototype.slice.call(root.querySelectorAll('*')).concat([root]).forEach(function (el) { try { const an = getComputedStyle(el).animationName; if (an && an !== 'none') { el.style.animationDelay = '-' + at + 's'; el.style.animationPlayState = 'paused'; } } catch (e) { /* なし */ } }); });
+            finish();
+          }, ms);
+        }, 320);
+      });
+    },
+    care: function () { if (Q[2] === 'max') { const c0 = MQ.tasks.count; MQ.tasks.count = function (st) { let t; do { t = c0(st); } while (t.n !== MQ.tasks.LIMIT[st].n); return t; }; } withMon(arg || 's', function () { MQ.ui.care.open(); setTimeout(function () { const st = MQ.ui.care.state(); log('care: ' + st.task.line + ' n=' + st.task.n + ' slots=' + st.task.slots); if (Q[2] === 'half') { click($('#screen-care .basket .item')); } if (Q[3] === 'fill') { const nm = st.task.food.name; for (let i = 0; i < st.task.n; i++) click($('#screen-care .basket .item').filter(function (x) { return x.getAttribute('aria-label') === nm; })[0]); } finish(); }, 400); }); },
+    shop: function () { withMon(arg || 's', function () { MQ.ui.shop.open(); setTimeout(function () { const st = MQ.ui.shop.state(); log('shop: ' + st.task.line); if (Q[2] === 'half' && st.task.n > 1) { const want = st.task.want; const b = $$('#screen-shop .shelf .item').filter(function (x) { return x.getAttribute('aria-label').indexOf(want.say) === 0; })[0]; click(b); } finish(); }, 400); }); },
+    play: function () { withMon(arg || 's', function () { MQ.ui.play.open(); setTimeout(function () { log('play: ' + MQ.ui.play.state().task.line); finish(); }, 400); }); },
+    done: function () { withMon('s', function () { MQ.save.stamp('count'); MQ.ui.done.open({ grew: arg === 'grow' }); setTimeout(finish, 500); }); },
+    parent: function () { withMon('m', function () { MQ.save.stamp('count'); MQ.save.stamp('shape'); MQ.ui.parent.open(); finish(); }); },
+    photo: function () {
+      // 本物の 写真（file URL）。写真 → 自動わく → ブロック → えらぶ画面
+      MQ.save.newKid({ name: 'ゆう', stage: 's' });
+      const im = new Image();
+      im.onload = function () { const t0 = performance.now(); MQ.ui.draw.fromImage(im, true); log('photo ms=' + Math.round(performance.now() - t0) + ' info=' + JSON.stringify(MQ.cutout.info() && MQ.cutout.info().drawn)); finish(); };
+      im.onerror = function () { log('ERROR photo load'); errors++; finish(); };
+      im.src = Q.slice(1).join(':');
+    },
+    kazu: function () {
+      withMon('k', function () {
+        const kind = arg || 'count', m = Q[2], extra = Q[3];
+        if (m) { const S0 = MQ.tasks.sum, N0 = MQ.tasks.numeral; MQ.tasks.sum = function () { return S0(m === 'take' ? 'take' : 'add'); }; MQ.tasks.numeral = function () { return N0(m === 'see' ? 'see' : 'hear'); }; }
+        (kind === 'count' ? MQ.ui.care : MQ.ui.shop).open();
+        setTimeout(async function () {
+          const st = MQ.ui.kazu.state();
+          log('kazu: ' + st.kind + ' ' + st.task.mode + ' ans=' + st.task.ans + ' choices=' + st.task.choices.join(',') + ' line=' + st.task.line);
+          if (extra === 'wrong') {
+            const w = $$('.screen.is-active .numcard').filter(function (b) { return Number(b.dataset.v) !== st.task.ans; });
+            click(w[0]); await wait(60); click(w[1]); await wait(60);
+            log('misses=' + MQ.ui.kazu.state().misses + ' last said=' + said.slice(-3).join(' / '));
+          }
+          if (extra === 'count') {
+            const items = $$('.screen.is-active .cnt').filter(function (b) { return !b.classList.contains('is-eaten'); });
+            items.slice(0, 3).forEach(function (b) { click(b); });
+            log('counted=' + MQ.ui.kazu.state().counted + ' eaten=' + $$('.screen.is-active .cnt.is-eaten').length);
+          }
+          finish();
+        }, m === 'take' ? 1600 : 400);
+      });
+    },
+    kflow: function () {
+      withMon('k', async function () {
+        MQ.ui.home.open(); await wait(200);
+        const kinds = [['.big--gold', 'count'], ['.big--clay', 'color']];
+        for (let q = 0; q < kinds.length; q++) {
+          click($('#screen-home ' + kinds[q][0])); await wait(1600);
+          for (let r = 0; r < 3; r++) {
+            const st = MQ.ui.kazu.state();
+            if (st.task.mode === 'take') await wait(1200);
+            const btns = $$('.screen.is-active .numcard');
+            const w = btns.filter(function (b) { return Number(b.dataset.v) !== st.task.ans; })[0];
+            click(w); await wait(60);
+            click(btns.filter(function (b) { return Number(b.dataset.v) === st.task.ans; })[0]); await wait(1500);
+            log(kinds[q][1] + ' r' + r + ' ' + st.task.mode + ' ok=' + (MQ.ui.kazu.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+          }
+          await wait(200);
+          log('after ' + kinds[q][1] + ': ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday());
+          click($('#screen-done .btn--gold')); await wait(300);
+        }
+        log('done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
+    },
+    kurabe: function () {
+      withMon(arg || 's', function () {
+        const m = Q[2], extra = Q[3];
+        if (m) { const C0 = MQ.tasks.compare; MQ.tasks.compare = function (st) { return C0(st, m); }; }
+        MQ.ui.kurabe.open();
+        setTimeout(async function () {
+          const st = MQ.ui.kurabe.state();
+          log('kurabe: ' + st.task.mode + ' n=' + st.task.options.length + ' line=' + st.task.line);
+          if (extra === 'wrong') {
+            const btns = $$('#screen-kurabe button').filter(function (b) { return !b.closest('.top'); });
+            const wrong = btns.filter(function (b, i) { return !st.task.options[i].ok; });
+            click(wrong[0]); await wait(60); click(wrong[wrong.length > 1 ? 1 : 0]); await wait(60);
+            log('misses=' + MQ.ui.kurabe.state().misses + ' glow=' + $$('#screen-kurabe .is-glow').length + ' badges=' + $$('#screen-kurabe .is-on').length + ' said=' + said.slice(-2).join(' / '));
+          }
+          finish();
+        }, 400);
+      });
+    },
+    kuflow: function () {
+      withMon(arg || 's', async function () {
+        MQ.ui.home.open(); await wait(200);
+        click($('#screen-home .big--blue')); await wait(400);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.kurabe.state();
+          const btns = $$('#screen-kurabe button').filter(function (b) { return !b.closest('.top'); });
+          click(btns.filter(function (b, i) { return !st.task.options[i].ok; })[0]); await wait(60);
+          click(btns.filter(function (b, i) { return st.task.options[i].ok; })[0]); await wait(1500);
+          log('kurabe r' + r + ' ' + st.task.mode + ' ok=' + (MQ.ui.kurabe.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after kurabe: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
+    },
+    moji: function () {
+      withMon(arg || 's', function () {
+        const m = Q[2], extra = Q[3];
+        if (m) { const H0 = MQ.tasks.hira; MQ.tasks.hira = function (st) { return H0(st, m); }; }
+        MQ.ui.moji.open();
+        setTimeout(async function () {
+          const st = MQ.ui.moji.state();
+          log('moji: ' + st.task.mode + ' n=' + st.task.options.length + ' line=' + st.task.line);
+          const btns = $$('#screen-moji .toys button, #screen-moji .kanas button');
+          if (extra === 'wrong') {
+            const wrong = btns.filter(function (b, i) { return st.task.mode === 'build' ? st.task.options[i].kana !== st.task.letters[0] : !st.task.options[i].ok; });
+            click(wrong[0]); await wait(60); click(wrong[0]); await wait(60);
+            log('misses=' + MQ.ui.moji.state().misses + ' glow=' + $$('#screen-moji .is-glow').length + ' said=' + said.slice(-2).join(' / '));
+          }
+          if (extra === 'build') {
+            for (let k = 0; k < st.task.letters.length - 1; k++) { click(btns.filter(function (b, i) { return st.task.options[i].kana === st.task.letters[k] && !b.disabled; })[0]); await wait(60); }
+            log('step=' + MQ.ui.moji.state().step + ' slots=' + $$('#screen-moji .mslot.is-full').length);
+          }
+          finish();
+        }, 400);
+      });
+    },
+    mjflow: function () {
+      withMon(arg || 's', async function () {
+        MQ.ui.home.open(); await wait(200);
+        click($('#screen-home .big--pink')); await wait(400);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.moji.state();
+          const btns = $$('#screen-moji .toys button, #screen-moji .kanas button');
+          if (st.task.mode === 'build') {
+            click(btns.filter(function (b, i) { return st.task.options[i].kana !== st.task.letters[0]; })[0]); await wait(60);
+            for (let k = 0; k < st.task.letters.length; k++) { click(btns.filter(function (b, i) { return st.task.options[i].kana === st.task.letters[k] && !b.disabled; })[0]); await wait(60); }
+          } else {
+            click(btns.filter(function (b, i) { return !st.task.options[i].ok; })[0]); await wait(60);
+            click(btns.filter(function (b, i) { return st.task.options[i].ok; })[0]);
+          }
+          await wait(1500);
+          log('moji r' + r + ' ' + st.task.mode + ' ok=' + (MQ.ui.moji.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after moji: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
+    },
+    tokei: function () {
+      withMon(arg || 's', function () {
+        const m = Q[2], extra = Q[3];
+        if (m) { const C0 = MQ.tasks.clock; MQ.tasks.clock = function (st) { return C0(st, m); }; }
+        MQ.ui.tokei.open();
+        setTimeout(async function () {
+          const st = MQ.ui.tokei.state();
+          log('tokei: ' + st.task.mode + ' n=' + st.task.options.length + ' line=' + st.task.line);
+          if (extra === 'wrong') {
+            const btns = $$('#screen-tokei .toys button, #screen-tokei .ttexts button');
+            const wrong = btns.filter(function (b, i) { return !st.task.options[i].ok; });
+            click(wrong[0]); await wait(60); click(wrong[wrong.length - 1]); await wait(60);
+            log('misses=' + MQ.ui.tokei.state().misses + ' glow=' + $$('#screen-tokei .is-glow').length + ' said=' + said.slice(-2).join(' / '));
+          }
+          finish();
+        }, 400);
+      });
+    },
+    tkflow: function () {
+      withMon(arg || 's', async function () {
+        MQ.ui.home.open(); await wait(200);
+        click($('#screen-home .big--teal')); await wait(400);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.tokei.state();
+          const btns = $$('#screen-tokei .toys button, #screen-tokei .ttexts button');
+          click(btns.filter(function (b, i) { return !st.task.options[i].ok; })[0]); await wait(60);
+          click(btns.filter(function (b, i) { return st.task.options[i].ok; })[0]); await wait(1500);
+          log('tokei r' + r + ' ' + st.task.mode + ' ok=' + (MQ.ui.tokei.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after tokei: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
+        finish();
+      });
+    },
+    flow: function () {
+      withMon(arg || 's', async function () {
+        MQ.ui.home.open(); await wait(200);
+        // おうち：背景と キャラクターを たたく（v0.1.16）
+        (function () { const T = MQ.ui.home._t; click(T.scene.taps.sun); click(T.scene.taps.cloud); click(T.scene.taps.tree); click(T.scene.taps.house); T.scene.react('hill', 140, 210); T.onTap(); T.onTap(); T.onTap(); log('home taps: counts=' + JSON.stringify(T.scene.counts) + ' mon=' + T.mon.className + ' fx=' + T.scene.fx.children.length); })();
+        await wait(100);
+        // ごはん：3回 正解
+        click($('#screen-home .big--gold')); await wait(300);
+        click($('#screen-care .mon')); log('care mon tap (C): ' + $('#screen-care .mon').className);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.care.state();
+          const n = st.task.n;
+          const wrongB = $$('#screen-care .basket .item').filter(function (x) { return x.getAttribute('aria-label') !== st.task.food.name; })[0];
+          if (r === 0) { click(wrongB); await wait(30); log('care wrong tap placed=' + MQ.ui.care.state().placed); }
+          for (let i = 0; i < n; i++) { click($$('#screen-care .basket .item').filter(function (x) { return x.getAttribute('aria-label') === st.task.food.name; })[0]); await wait(30); }
+          if (!st.task.slots) click($('#screen-care .mon'));
+          await wait(300);
+          log('care r' + r + ' ok=' + (MQ.ui.care.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after care: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday());
+        click($('#screen-done .btn--gold')); await wait(200);
+        // おみせ：わざと ちがう 色を 1回 → 正しい 色を n 回
+        click($('#screen-home .big--clay')); await wait(300);
+        for (let r = 0; r < 3; r++) {
+          const st = MQ.ui.shop.state();
+          const wrong = $$('#screen-shop .shelf .item').filter(function (x) { return x.getAttribute('aria-label').indexOf(st.task.want.say) !== 0; })[0];
+          if (wrong) { click(wrong); await wait(100); }
+          for (let i = 0; i < st.task.n; i++) {
+            const ok = $$('#screen-shop .shelf .item').filter(function (x) { return x.getAttribute('aria-label').indexOf(st.task.want.say) === 0; })[0];
+            click(ok); await wait(40);
+          }
+          await wait(300);
+          log('shop r' + r + ' ok=' + (MQ.ui.shop.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after shop: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday());
+        click($('#screen-done .btn--gold')); await wait(200);
+        // あそぶ：まちがい 1回 → 正解
+        click($('#screen-home .big--green')); await wait(300);
+        for (let r = 0; r < 3; r++) {
+          const wrong = $$('#screen-play .toy').filter(function (x, i) { return !MQ.ui.play.state().task.options[i].ok; })[0];
+          if (wrong) { click(wrong); await wait(100); }
+          const ok = $$('#screen-play .toy').filter(function (x, i) { return MQ.ui.play.state().task.options[i].ok; })[0];
+          click(ok); await wait(300);
+          log('play r' + r + ' ok=' + (MQ.ui.play.state().round === r + 1 || MQ.ui.current === 'screen-done'));
+        }
+        await wait(200);
+        log('after play: ' + MQ.ui.current + ' stamps=' + MQ.save.stampsToday() + ' done=' + JSON.stringify(MQ.save.kid().done));
+        // おうちの人 → もどる
+        click($('#screen-done .btn--gold')); await wait(100);
+        MQ.ui.parent.open(); await wait(100);
+        click($('#screen-parent .btn')); await wait(100);
+        log('end: ' + MQ.ui.current);
+        finish();
+      });
+    }
+  };
+  (run[mode] || run.home)();
+})();
+</script>
+</body>
+</html>
