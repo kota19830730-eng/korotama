@@ -131,6 +131,7 @@ MQ.ui = MQ.ui || {};
 
   /* ---- 絵を とる／かく ---- */
   let lastResult = null;   // { png, cool, src }
+  let lastKind = 'paper';   // 'paper'＝紙の 絵／'object'＝ぬいぐるみ・おもちゃ（v0.1.17）
   MQ.ui.draw = {
     open: function () {
       const kid = MQ.save.kid();
@@ -150,6 +151,7 @@ MQ.ui = MQ.ui || {};
           h('button', { class: 'btn btn--gold btn--big btn--wide row', type: 'button', style: { justifyContent: 'center' }, onclick: function () { MQ.sfx.tap(); fileIn.click(); } }, [MQ.ui.icon('camera', 'ico--btn'), h('span', { text: '紙の 絵を 写真に とる' })]),
           h('button', { class: 'btn btn--green btn--big btn--wide row', type: 'button', style: { justifyContent: 'center' }, onclick: function () { MQ.sfx.tap(); openCanvas(); } }, [MQ.ui.icon('pencil', 'ico--btn'), h('span', { text: '画面に ゆびで かく' })]),
           h('p', { class: 'note', text: 'コツ：白い 紙に、太めの 線で、1まいに 1つ。明るい ところで とると きれいに なります。' }),
+          h('p', { class: 'note', text: 'ぬいぐるみや おもちゃも OK：床や 机の 上に 1つだけ おいて、まん中に 大きく うつる ように とります。うまく 切りぬけない ときは、白い 紙や 白い 布の 上に おくと きれいに なります。' }),
           h('button', { class: 'btn btn--clay btn--big btn--wide row', type: 'button', style: { justifyContent: 'center' }, onclick: function () { MQ.sfx.tap(); openPresets('cute'); } }, [MQ.ui.icon('sparkle', 'ico--btn'), h('span', { text: 'キャラクターから えらぶ' })]),
           h('p', { class: 'note', text: 'かわいい 8体・かっこいい 8体 から。絵は あとからでも 入れかえられます。' }),
           kid && kid.mon ? h('button', { class: 'btn btn--ghost btn--wide', type: 'button', text: 'いまの ままで よい（もどる）', onclick: function () { MQ.sfx.tap(); MQ.ui.parent.open(); } }) : null,
@@ -239,13 +241,20 @@ MQ.ui = MQ.ui || {};
 
   /* 写真／ゆびの 絵 → そのまま／絵本ふう（js/core/cutout.js）→ えらぶ。v0.1.4 から ブロックには しない（ユーザー決定） */
   function fromImage(im, isPhoto) {
-    const crop = isPhoto ? (MQ.trace.autoCrop(im) || MQ.trace.defaultCrop(im)) : { x: 0, y: 0, w: 1, h: 1 };
+    // 紙の 絵（白い 紙が 見つかる）は いままでの cutout、床・机の 上の ぬいぐるみ・おもちゃは subject（v0.1.17）
+    const paper = !isPhoto || !MQ.subject || MQ.subject.isPaper(im, null);
     let res = null;
-    try { res = MQ.cutout.fromImage(im, crop); } catch (e) { res = null; }
+    if (paper) {
+      const crop = isPhoto ? (MQ.trace.autoCrop(im) || MQ.trace.defaultCrop(im)) : { x: 0, y: 0, w: 1, h: 1 };
+      try { res = MQ.cutout.fromImage(im, crop); } catch (e) { res = null; }
+    } else {
+      try { res = MQ.subject.fromImage(im, { x: 0, y: 0, w: 1, h: 1 }); } catch (e) { res = null; }
+    }
     if (!res || !res.raw || res.drawn < 30) {
-      MQ.ui.toast(isPhoto ? '絵が 見つかりません。明るい ところで、絵を 大きく とってね' : 'もう すこし 大きく かいてね', 2600);
+      MQ.ui.toast(isPhoto ? (paper ? '絵が 見つかりません。明るい ところで、絵を 大きく とってね' : 'なにを とったか わかりません。白い 紙か 白い 布の 上に おいて、明るい ところで とってね') : 'もう すこし 大きく かいてね', 3200);
       return;
     }
+    lastKind = paper ? 'paper' : 'object';
     lastResult = { png: res.raw.png, sets: [{ tag: 'raw', name: 'そのまま', set: res.raw }, { tag: 'soft', name: '絵本ふう', set: res.soft }], dark: res.dark };
     openPreview(im, isPhoto);
   }
@@ -265,7 +274,7 @@ MQ.ui = MQ.ui || {};
     const page = h('div', { class: 'page pp' }, [
       h('div', { class: 'page__body' }, [h('div', { class: 'wrap col' }, [
         h('h1', { class: 'pp__title', text: 'この すがたで いい？' }),
-        h('p', { class: 'note', text: 'お子さんと いっしょに えらんでください。' + (lastResult.dark ? ' 写真が 暗めです。うまく 出て いなければ もう一度 明るい ところで。' : '') }),
+        h('p', { class: 'note', text: 'お子さんと いっしょに えらんでください。' + (lastResult.dark ? ' 写真が 暗めです。うまく 出て いなければ もう一度 明るい ところで。' : '') + (!preset && lastKind === 'object' ? ' まわりが のこって いたり 一部が 消えて いたら、白い 紙や 白い 布の 上に おいて とりなおすと きれいに なります。' : '') }),
         row,
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '生きものの 名前（声で よびます）' }), nameIn]),
         h('button', { class: 'btn btn--gold btn--big btn--wide', type: 'button', text: 'たまごに する', onclick: function () {

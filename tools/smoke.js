@@ -141,6 +141,26 @@ MQ.voice.say('x'); ok(spoken.pitch === 1.0, 'ふつうの 声＝pitch 1.0');
 ok(scripts.indexOf('js/core/cutout.js') > scripts.indexOf('js/core/trace.js') && scripts.indexOf('js/content/monstergen.js') < 0, 'cutout.js は trace.js の あと・monstergen.js は もう 読まない（v0.1.4）');
 ok(MQ.text && MQ.text.fit('きょうは なにを する？') === 'きょうは なにを する？', 'text.fit は 画面の 字を 変えない（声だけ）');
 ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 'trace.parts（cutout が 借りる 道具）');
+/* ---- 写真の 主役を 切りぬく（ぬいぐるみ・おもちゃ・v0.1.17） ---- */
+(function () {
+  ok(MQ.subject && MQ.subject.isPaper && MQ.subject.mask && MQ.subject.fromImage && MQ.subject.PAPER_MIN > 0, 'subject.js（主役の 切りぬき）が 読めた');
+  ok(scripts.indexOf('js/core/subject.js') > scripts.indexOf('js/core/cutout.js'), 'subject.js は cutout.js の あと（stages を 借りる）');
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'), hz = fs.readFileSync(path.join(ROOT, 'tools/harness.html'), 'utf8');
+  ok(sw.indexOf('./js/core/subject.js') >= 0 && hz.indexOf('js/core/subject.js') >= 0, 'subject.js は sw.js の FILES と harness にも');
+  // 紙らしさ：白い 紙（明るく 色みなし）は 1・茶色の 床は 0
+  const W = 40, H = 40, p = new Uint8ClampedArray(W * H * 4);
+  for (let k = 0; k < W * H; k++) { p[k * 4] = 245; p[k * 4 + 1] = 242; p[k * 4 + 2] = 236; p[k * 4 + 3] = 255; }
+  ok(MQ.subject.paperness(p, W, H) > 0.9, '紙らしさ：白い 紙は 0.9 いじょう');
+  for (let k = 0; k < W * H; k++) { p[k * 4] = 160; p[k * 4 + 1] = 110; p[k * 4 + 2] = 70; }
+  ok(MQ.subject.paperness(p, W, H) < 0.1, '紙らしさ：茶色の 床は 0.1 みまん');
+  // 主役の マスク：床（茶）の まん中に 白い まる → まるが 主役・床は 背景
+  const W2 = 80, H2 = 80, q = new Uint8ClampedArray(W2 * H2 * 4);
+  let inside = 0;
+  for (let y = 0; y < H2; y++) for (let x = 0; x < W2; x++) { const k = y * W2 + x; const d = Math.sqrt((x - 40) * (x - 40) + (y - 42) * (y - 42)); const on = d < 18; if (on) inside++; const line = (x % 20 === 0); q[k * 4] = on ? 240 : line ? 90 : 165 + ((x * 7 + y * 3) % 5); q[k * 4 + 1] = on ? 232 : line ? 60 : 112; q[k * 4 + 2] = on ? 215 : line ? 40 : 70; q[k * 4 + 3] = 255; }
+  const r = MQ.subject.mask(q, W2, H2);
+  let hit = 0, miss = 0; for (let y = 0; y < H2; y++) for (let x = 0; x < W2; x++) { const k = y * W2 + x; const d = Math.sqrt((x - 40) * (x - 40) + (y - 42) * (y - 42)); if (r && r.m[k]) { if (d < 20) hit++; else miss++; } }
+  ok(r && hit > inside * 0.85 && miss < inside * 0.1, '主役の マスク：床の まん中の 白い まる（' + hit + '/' + inside + '・はみ出し ' + miss + '）');
+})();
 
 /* ---- 録音した 声（ずんだもん・v0.1.7） ---- */
 (function () {

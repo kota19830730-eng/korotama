@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>subjectlab（写真の 主役を 切りぬく 検査）</title>
+<style>body{font-family:sans-serif;background:#eee;margin:12px}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}.row div{text-align:center;font-size:12px}canvas,img{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/16px 16px;border:1px solid #999}pre{background:#fff;padding:6px}</style>
+</head><body>
+<!-- 使い方：chrome --headless=new --allow-file-access-from-files --screenshot=… "file:///…/tools/subjectlab.html#file:///C:/…/x.jpg"
+     1まいめ＝写真（320）・2まいめ＝マスク（赤）・3まいめ＝そのまま・4まいめ＝絵本ふう。ログは #log -->
+<div class="row" id="row"></div><pre id="log"></pre>
+<script src="../js/core/util.js"></script>
+<script src="../js/core/blocks.js"></script>
+<script src="../js/core/trace.js"></script>
+<script src="../js/core/cutout.js"></script>
+<script src="../js/core/subject.js"></script>
+<script>
+(function () {
+  const L = [];
+  function log(s) { L.push(s); document.getElementById('log').textContent = L.join('\n'); }
+  const hs = location.hash.slice(1).split('&flags=');
+  const url = decodeURIComponent(hs[0]);
+  if (hs[1]) hs[1].split(',').forEach(function (k) { MQ.subject.flags[k] = false; });
+  const im = new Image();
+  im.onload = function () {
+    const row = document.getElementById('row');
+    const full = { x: 0, y: 0, w: 1, h: 1 };
+    const cv = MQ.trace.parts.workCanvas(im, full);
+    const W = cv.width, H = cv.height;
+    const p = cv.getContext('2d').getImageData(0, 0, W, H).data;
+    const pn = MQ.subject.paperness(p, W, H);
+    log('size ' + W + 'x' + H + ' paperness=' + pn.toFixed(2) + ' → ' + (pn >= MQ.subject.PAPER_MIN ? 'paper' : 'object'));
+    const t0 = performance.now();
+    const res = pn >= MQ.subject.PAPER_MIN ? MQ.cutout.fromImage(im, MQ.trace.autoCrop(im) || MQ.trace.defaultCrop(im)) : MQ.subject.fromImage(im, full);
+    log('ms=' + Math.round(performance.now() - t0) + ' drawn=' + res.drawn + ' dark=' + res.dark + ' kind=' + (res.kind || 'paper'));
+    const info = pn >= MQ.subject.PAPER_MIN ? MQ.cutout.info() : MQ.subject.info();
+    if (info && info.box) log('box ' + JSON.stringify(info.box));
+    if (info && info.dbg) log('dbg ' + JSON.stringify(Object.assign({}, info.dbg, { race: undefined, seedMask: undefined })));
+    if (info && info.comps) log('comps ' + JSON.stringify(info.comps));
+    if (info && info.bg) log('bg ' + JSON.stringify(info.bg.map(function (c) { return c.map(Math.round); })) + '\nfg ' + JSON.stringify(info.fg.map(function (c) { return c.map(Math.round); })));
+    function add(el, t) { const d = document.createElement('div'); d.appendChild(el); d.appendChild(document.createTextNode(t)); row.appendChild(d); }
+    add(cv, '写真 ' + W + 'x' + H);
+    if (info && info.mask) {
+      const mc = document.createElement('canvas'); mc.width = W; mc.height = H;
+      const g = mc.getContext('2d'); g.drawImage(cv, 0, 0);
+      const od = g.getImageData(0, 0, W, H);
+      for (let k = 0; k < W * H; k++) { if (!info.mask[k]) { od.data[k * 4] = od.data[k * 4] * 0.3; od.data[k * 4 + 1] *= 0.3; od.data[k * 4 + 2] = Math.min(255, od.data[k * 4 + 2] * 0.3 + 120); } }
+      g.putImageData(od, 0, 0); add(mc, 'マスク（青＝消す）');
+    }
+    if (info && info.dbg && info.dbg.race) {
+      [['race', info.dbg.race, 'かけっこの あと（青＝背景）'], ['seed', info.dbg.seedMask, '出発点（青＝背景・赤＝主役）']].forEach(function (t) {
+        const mc = document.createElement('canvas'); mc.width = W; mc.height = H;
+        const g = mc.getContext('2d'); g.drawImage(cv, 0, 0);
+        const od = g.getImageData(0, 0, W, H);
+        for (let k = 0; k < W * H; k++) { const vv = t[1][k]; if (t[0] === 'race' ? !vv : vv === 1) { od.data[k * 4] *= 0.3; od.data[k * 4 + 1] *= 0.3; od.data[k * 4 + 2] = Math.min(255, od.data[k * 4 + 2] * 0.3 + 120); } else if (t[0] === 'seed' && vv === 2) { od.data[k * 4] = Math.min(255, od.data[k * 4] * 0.3 + 140); od.data[k * 4 + 1] *= 0.3; od.data[k * 4 + 2] *= 0.3; } }
+        g.putImageData(od, 0, 0); add(mc, t[2]);
+      });
+    }
+    if (info && info.dbg) delete info.dbg.race, delete info.dbg.seedMask;
+    ['raw', 'soft'].forEach(function (k) { if (res[k]) { const i = new Image(); i.src = res[k].png; i.width = 256; add(i, k === 'raw' ? 'そのまま' : '絵本ふう'); const i3 = new Image(); i3.src = res[k].png3; i3.width = 256; add(i3, k + ' 3段階め'); } });
+    log('DONE');
+  };
+  im.onerror = function () { log('ERROR load ' + url); };
+  im.src = url;
+})();
+</script></body></html>
