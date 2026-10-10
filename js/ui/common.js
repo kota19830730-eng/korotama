@@ -462,6 +462,59 @@ MQ.ui = MQ.ui || {};
     MQ.save.stamp(kind);
     const after = MQ.save.growth();
     if (after > before) MQ.save.markGrew(after);
-    MQ.ui.done.open({ grew: after > before, full: MQ.save.stampsToday() === n0 });
+    MQ.ui.done.open({ grew: after > before, full: MQ.save.stampsToday() === n0, kind: kind });
   };
+
+  /* ---- A2 まよった ときの 手助け（v0.3・2026-10-11）----
+     もんだいの 画面が arm({ screen, say(文, 問題も 言う か), targets(), busy() }) を よぶ。
+     手が とまって 15秒（声の あいだ・答えた あとは 数えない）→「ゆっくりで いいよ。もういちど いうね」＋問題／さらに 15秒 → 正解を 光らせる。どこかを さわると 数えなおし */
+  MQ.ui.nudge = (function () {
+    let st = null, timer = null, hooked = false;
+    function stop() { st = null; clearInterval(timer); timer = null; }
+    function touch() { if (st) st.idle = 0; }
+    function arm(o) {
+      stop();
+      if (MQ.save.settings().nudge === false) return;
+      if (!hooked) { hooked = true; document.addEventListener('pointerdown', touch, true); document.addEventListener('touchstart', touch, { capture: true, passive: true }); }
+      const my = st = { screen: o.screen, say: o.say, targets: o.targets, busy: o.busy, idle: 0, step: 0, ms: o.ms || MQ.coach.NUDGE_MS };
+      timer = setInterval(function () { tick(my, 250); }, 250);
+    }
+    function tick(my, dt) {
+      if (st !== my) return;
+      if (MQ.ui.current !== my.screen) { stop(); return; }
+      if (document.hidden || MQ.ui.isSpeaking() || (my.busy && my.busy())) { my.idle = 0; return; }
+      my.idle += dt;
+      if (my.idle >= my.ms) fire(my);
+    }
+    function fire(my) {
+      my = my || st; if (!my) return;
+      my.idle = 0; my.step++;
+      if (my.step === 1) { my.say(MQ.coach.NUDGE.again, true); return; }
+      ((my.targets && my.targets()) || []).forEach(function (el) { if (el && el.classList) el.classList.add('is-glow'); });
+      my.say(MQ.coach.NUDGE.glow, false);
+      stop();
+    }
+    return { arm: arm, stop: stop, fire: function () { fire(null); }, state: function () { return st ? { screen: st.screen, step: st.step, idle: st.idle } : null; } };
+  })();
+
+  /* ---- C1 遊ぶ 時間を 数える（v0.3）：子どもの 画面が 出て いて、90秒 いないに さわって いる あいだ だけ ---- */
+  MQ.ui.playClock = (function () {
+    const SKIP = { 'screen-start': 1, 'screen-setup': 1, 'screen-parent': 1 };
+    let lastTouch = Date.now(), last = Date.now(), acc = 0;
+    function flush() { if (acc) { acc = 0; MQ.save.update(function () { /* addPlay の ぶんを 書く */ }); } }
+    function tick() {
+      const now = Date.now(), dt = Math.min(now - last, 10000); last = now;
+      if (document.hidden || !MQ.ui.current || SKIP[MQ.ui.current] || !MQ.save.kid()) return;
+      if (now - lastTouch > 90000) return;
+      MQ.coach.addPlay(dt); acc += dt;
+      if (acc >= 30000) flush();
+    }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('pointerdown', function () { lastTouch = Date.now(); }, true);
+      document.addEventListener('touchstart', function () { lastTouch = Date.now(); }, { capture: true, passive: true });
+      document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); last = Date.now(); });
+      setInterval(tick, 5000);
+    }
+    return { tick: tick, flush: flush, touch: function () { lastTouch = Date.now(); } };
+  })();
 })();

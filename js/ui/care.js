@@ -26,6 +26,8 @@ MQ.ui.care = (function () {
     placed = 0; busy = false;
     render();
     setTimeout(function () { els.bl.say(task.line, null, foodPics(task.n)); }, 250);
+    MQ.ui.nudge.arm({ screen: 'screen-care', busy: function () { return busy; }, say: function (t, q) { if (q) els.bl.say(t + ' ' + task.line, null, foodPics(task.n)); else els.bl.say(t); },
+      targets: function () { if (!task.slots && placed >= task.n) return [els.mon]; return Array.prototype.slice.call(els.basket.querySelectorAll('[data-ok]')); } });
   }
   function foodPics(n) {
     const list = [];
@@ -79,6 +81,7 @@ MQ.ui.care = (function () {
       if (id === task.food.id && left > 0) { left--; return; }
       const f = MQ.tasks.foodById(id) || task.food;
       const b = h('button', { class: 'item', type: 'button', 'aria-label': f.name }, [MQ.ui.foodNode(id)]);
+      if (id === task.food.id) b.dataset.ok = '1';
       b.onclick = function () {
         if (busy) return;
         if (id !== task.food.id) {   // ちがう 食べもの：のせない・声で 教える

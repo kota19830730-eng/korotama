@@ -27,6 +27,8 @@ MQ.ui.kazu = (function () {
     misses = 0; busy = task.mode === 'take'; counted = 0;   // わける：食べる まえに さわれない（2026-10-10）
     render();
     introT = setTimeout(intro, 250);
+    MQ.ui.nudge.arm({ screen: screenId(), busy: function () { return busy; }, say: function (t, q) { els.bl.say(q ? t + ' ' + task.line : t); },
+      targets: function () { return Array.prototype.slice.call(document.querySelectorAll('#' + screenId() + ' .numcard[data-v="' + task.ans + '"]')); } });
   }
   /* わける：まず ぜんぶ 見せて「いつつ あるよ」→ 生きものが 食べる → うすく なって「のこりは いくつ？」 */
   function intro() {

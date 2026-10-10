@@ -499,5 +499,36 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(/d.kid.birthday = bv/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'はじめの 設定で 誕生日を 入れられる');
 })();
 
+/* ---- v0.3（2026-10-11）：何が できたか・まよった ときの 手助け・遊ぶ 時間 ---- */
+(function () {
+  const C = MQ.coach;
+  const kinds = ['count', 'color', 'shape', 'compare', 'moji', 'tokei', 'find', 'mane', 'draw'];
+  ok(kinds.every(function (k) { return ['s', 'm', 'l', 'k'].every(function (s) { return C.learned(k, s) && C.parentText(k, s); }); }), 'A1：9しゅるい × 4段階 ぜんぶ ほめことばと おうちの人の 説明が ある');
+  const all = [];
+  Object.keys(C.LEARN).forEach(function (k) { Object.keys(C.LEARN[k]).forEach(function (s) { all.push(C.LEARN[k][s]); }); });
+  Object.keys(C.NUDGE).forEach(function (k) { all.push(C.NUDGE[k]); }); Object.keys(C.REST).forEach(function (k) { all.push(C.REST[k]); });
+  ok(!all.some(function (s) { return KANJI.test(s); }), 'A1・A2・C1 の 声の 文に かん字なし');
+  ok(!all.some(function (s) { return /いえたね/.test(s); }), '「いえたね」を つかわない（家たね に なる）');
+  const bank = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/voice/bank.json'), 'utf8'));
+  const keys = [];
+  all.forEach(function (s) { s.replace(/([。！？])/g, '$1|').split('|').map(function (t) { return t.replace(/\s/g, ''); }).filter(Boolean).forEach(function (t) { keys.push(t); }); });
+  const missing = keys.filter(function (k) { return !bank[k]; });
+  ok(!missing.length, 'A1・A2・C1 の 声が ぜんぶ 録音ずみ（' + keys.length + '文' + (missing.length ? '・ない：' + missing.join(' / ') : '') + '）');
+  // 遊ぶ 時間：なし → つかれない／10分 → 11分で つかれる → あと10分で もどる
+  MQ.save._set(null); MQ.save.newKid({ name: 'て', stage: 's' });
+  ok(!C.tired() && C.remainMs() === Infinity, 'C1：はじめは めやす なし');
+  MQ.save.setSetting('timeLimit', 10); C.addPlay(9 * 60000);
+  ok(!C.tired() && C.soon(), 'C1：9分＝まだ（のこり 3分 いないで「もう すこし」）');
+  C.addPlay(2 * 60000);
+  ok(C.tired(), 'C1：11分＝つかれた');
+  C.extend();
+  ok(!C.tired() && Math.round(C.remainMs() / 60000) === 10, 'C1：あと10分（こえた ぶんから 数えて 10分）');
+  ok(!C.tired(Date.now() + 86400000), 'C1：つぎの 日は また 0分から');
+  ok(/MQ.coach.tired\(\) && MQ.ui.rest/.test(fs.readFileSync(path.join(ROOT, 'js/ui/home.js'), 'utf8')), 'C1：おうちに もどると おやすみの 画面');
+  ['play', 'care', 'shop', 'kurabe', 'moji', 'tokei', 'kazu'].forEach(function (f) { ok(/MQ.ui.nudge.arm\(/.test(fs.readFileSync(path.join(ROOT, 'js/ui/' + f + '.js'), 'utf8')), 'A2：' + f + ' に 手助け'); });
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  ok(index.indexOf('js/core/coach.js') >= 0 && index.indexOf('js/ui/rest.js') >= 0 && sw.indexOf('./js/core/coach.js') >= 0 && sw.indexOf('./js/ui/rest.js') >= 0 && index.indexOf('id="screen-rest"') >= 0 && harness.indexOf('id="screen-rest"') >= 0, 'coach.js・rest.js・screen-rest が index・sw・harness に ある');
+})();
+
 console.log(fails ? '\n' + fails + ' FAIL' : '\nALL OK');
 process.exit(fails ? 1 : 0);

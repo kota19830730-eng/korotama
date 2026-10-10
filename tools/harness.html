@@ -46,6 +46,7 @@
   <section id="screen-story" class="screen"></section>
   <section id="screen-album" class="screen"></section>
   <section id="screen-print" class="screen"></section>
+  <section id="screen-rest" class="screen"></section>
   <section id="screen-parent" class="screen"></section>
   <div id="toast" class="toast"></div>
 </div>
@@ -71,6 +72,7 @@
 <script src="../js/core/season.js"></script>
 <script src="../js/core/mane.js"></script>
 <script src="../js/core/find.js"></script>
+<script src="../js/core/coach.js"></script>
 <script src="../js/content/charart.js"></script>
 <script src="../js/content/presets.js"></script>
 <script src="../js/ui/common.js"></script>
@@ -92,6 +94,7 @@
 <script src="../js/ui/install.js"></script>
 <script src="../js/ui/feedback.js"></script>
 <script src="../js/ui/guide.js"></script>
+<script src="../js/ui/rest.js"></script>
 <script src="../js/ui/parent.js"></script>
 <script src="../js/ui/boot.js"></script>
 <script>
@@ -208,6 +211,43 @@
       const im = new Image(); im.onload = function () { MQ.ui.draw.fromImage(im, false); finish(); }; im.src = fakeDrawing();
     },
     egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
+    // #v03：A1 何が できたか・A2 まよった ときの 手助け・C1 遊ぶ 時間（2026-10-11）
+    v03: function () { withMon('s', async function () {
+      MQ.ui.finish('count'); await wait(1500);
+      const t1 = $('#screen-done .balloon__tx').textContent;
+      log('A1 done: ' + t1 + (/みっつまで かぞえられたね/.test(t1) ? ' OK' : ' NG')); if (!/みっつまで/.test(t1)) errors++;
+      const hb = $('#screen-done .hint').textContent; log('A1 hint: ' + hb.slice(0, 40) + (/きょうの れんしゅう/.test(hb) ? ' OK' : ' NG')); if (!/きょうの れんしゅう/.test(hb)) errors++;
+      const scr = { play: 'screen-play', care: 'screen-care', shop: 'screen-shop', kurabe: 'screen-kurabe', moji: 'screen-moji', tokei: 'screen-tokei' };
+      for (const k of Object.keys(scr)) {
+        MQ.ui[k].open(); await wait(2500);
+        MQ.ui.nudge.fire(); await wait(2500);
+        const st1 = MQ.ui.nudge.state();
+        const again = said.some(function (s) { return /ゆっくりで/.test(s); });
+        MQ.ui.nudge.fire(); await wait(300);
+        const g = $$('#' + scr[k] + ' .is-glow');
+        log('A2 ' + k + ': step1=' + (st1 && st1.step) + ' again=' + again + ' glow=' + g.length + (g.length > 0 && st1 && st1.step === 1 ? ' OK' : ' NG')); if (!(g.length > 0) || !st1 || st1.step !== 1) errors++;
+      }
+      MQ.ui.play.open(); await wait(600); let st = MQ.ui.nudge.state(); const i0 = st ? st.idle : -1; await wait(3000); st = MQ.ui.nudge.state();
+      log('A2 idle counts: ' + i0 + ' -> ' + (st && st.idle) + (st && st.idle > i0 ? ' OK' : ' NG')); if (!st || !(st.idle > i0)) errors++;
+      MQ.ui.home.open({ noGuide: true }); await wait(300);
+      log('A2 leave: ' + (MQ.ui.nudge.state() === null ? 'stopped OK' : 'NG')); if (MQ.ui.nudge.state() !== null) errors++;
+      MQ.save.setSetting('timeLimit', 10); MQ.coach.addPlay(11 * 60000);
+      MQ.ui.home.open({ noGuide: true }); await wait(1500);
+      log('C1 tired: screen=' + MQ.ui.current + (MQ.ui.current === 'screen-rest' ? ' OK' : ' NG')); if (MQ.ui.current !== 'screen-rest') errors++;
+      MQ.coach.extend(); MQ.ui.home.open({ noGuide: true }); await wait(400);
+      log('C1 extend: remain=' + Math.round(MQ.coach.remainMs() / 60000) + 'min screen=' + MQ.ui.current + (MQ.ui.current === 'screen-home' ? ' OK' : ' NG')); if (MQ.ui.current !== 'screen-home') errors++;
+      MQ.save.setSetting('timeLimit', 0);
+      log('C1 none: tired=' + MQ.coach.tired() + (MQ.coach.tired() ? ' NG' : ' OK')); if (MQ.coach.tired()) errors++;
+      finish();
+    }); },
+    // #nudge:<play|care|shop|kurabe|moji|tokei>[:段階]：手助けの 2だんめ（光る）を 撮る
+    nudge: function () { withMon(Q[2] || 's', async function () { MQ.ui[arg || 'play'].open(); await wait(800); MQ.ui.nudge.fire(); await wait(1500); MQ.ui.nudge.fire(); await wait(600); log('nudge ' + arg + ' glow=' + $$('.is-glow').length); finish(); }); },
+    // #rest：遊ぶ 時間の めやすを こえた ときの おやすみの 画面
+    rest: function () { withMon('s', async function () { MQ.save.setSetting('timeLimit', 15); MQ.coach.addPlay(16 * 60000); MQ.ui.home.open(); await wait(1500); log('rest screen=' + MQ.ui.current); finish(); }); },
+    // #donelearn:<しゅるい>[:段階]：できた！で 何が できたかを 言う
+    donelearn: function () { withMon(Q[2] || 's', async function () { MQ.ui.finish(arg || 'count'); await wait(1200); log('done: ' + $('#screen-done .balloon__tx').textContent); finish(); }); },
+    // #ppplay：おうちの人の 画面の「遊ぶ時間と 手助け」
+    ppplay: function () { withMon('s', async function () { MQ.coach.addPlay(7 * 60000); MQ.save.update(function () {}); MQ.ui.parent.open(); await wait(300); const c = $$('#screen-parent .card__title').filter(function (x) { return /遊ぶ時間/.test(x.textContent); })[0]; log('ppplay card=' + !!c); if (!c) errors++; else c.scrollIntoView(); finish(); }); },
     // #bugfix：2026-10-10 バグ直しの たしかめ（声の cb が 読みかえで きえない・おうちへで すてる・スタンプ 2重なし・まねっこを はなれる）
     bugfix: function () { withMon('s', async function () {
       let c1 = 0, c2 = 0;

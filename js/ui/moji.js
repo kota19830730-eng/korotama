@@ -23,6 +23,8 @@ MQ.ui.moji = (function () {
     misses = 0; busy = false; step = 0;
     render();
     setTimeout(function () { els.bl.say(task.line); }, 250);
+    MQ.ui.nudge.arm({ screen: 'screen-moji', busy: function () { return busy; }, say: function (t, q) { els.bl.say(q ? t + ' ' + task.line : t); },
+      targets: function () { return (els.btns || []).filter(function (x, i) { return task.mode === 'build' ? task.options[i].kana === task.letters[step] && !x.disabled : task.options[i].ok; }); } });
   }
   function picNode(x, size) {
     // size＝見せたい 大きさ（px）。食べものは 52px・形は 90px の 絵を 拡大、キャラクターは まわりに あきが ある ので 1.5ばい

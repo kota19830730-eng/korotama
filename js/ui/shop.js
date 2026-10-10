@@ -36,6 +36,8 @@ MQ.ui.shop = (function () {
     placed = 0; busy = false;
     render();
     setTimeout(function () { els.bl.say(task.line, null, MQ.ui.colorDots(task.want, task.n, true)); }, 250);
+    MQ.ui.nudge.arm({ screen: 'screen-shop', busy: function () { return busy; }, say: function (t, q) { if (q) els.bl.say(t + ' ' + task.line, null, MQ.ui.colorDots(task.want, task.n, true)); else els.bl.say(t); },
+      targets: function () { return Array.prototype.slice.call(els.shelf.querySelectorAll('[data-ok]')); } });
   }
   function render() {
     const bl = MQ.ui.balloon('');
@@ -63,6 +65,7 @@ MQ.ui.shop = (function () {
     shelf.innerHTML = ''; box.innerHTML = '';
     task.colors.forEach(function (c) {
       const b = h('button', { class: 'item', type: 'button', 'aria-label': c.say + 'の ' + task.thing.name, style: { width: '80px', height: '90px' } }, [MQ.ui.thingNode(task.thing.id, c)]);
+      if (c.id === task.want.id) b.dataset.ok = '1';
       b.onclick = function () {
         if (busy) return;
         if (c.id !== task.want.id) {

@@ -17,6 +17,22 @@ MQ.ui.parent = (function () {
     });
     return row;
   }
+  /* v0.3（2026-10-11）：まよった ときの 手助け（A2）と 遊ぶ 時間の めやす（C1） */
+  function playCard(st) {
+    const mins = function () { return Math.floor(MQ.coach.playedMs() / 60000); };
+    const played = h('b', { text: mins() + '分' });
+    const ext = h('button', { class: 'btn btn--wide', type: 'button', text: '今日だけ あと' + MQ.coach.EXTEND_MIN + '分', onclick: function () { MQ.sfx.tap(); MQ.coach.extend(); MQ.ui.toast('今日は あと ' + Math.max(0, Math.round(MQ.coach.remainMs() / 60000)) + '分 遊べます', 2600); } });
+    ext.style.display = st.timeLimit ? '' : 'none';
+    return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: '遊ぶ時間と 手助け' }),
+      h('div', { class: 'kv', style: { marginBottom: '6px' } }, [h('span', { text: '1日に 遊ぶ時間の めやす' })]),
+      seg(MQ.coach.LIMITS.map(function (m) { return { id: String(m), name: m ? m + '分' : 'なし' }; }), String(st.timeLimit || 0), function (v) { MQ.save.setSetting('timeLimit', Number(v)); ext.style.display = Number(v) ? '' : 'none'; }),
+      h('p', { class: 'note', text: '時間になっても 遊びの 途中では 止めません。つぎに おうちの 画面に もどった ときに 生きものが ねむり、「また あしたね」と 声を かけます（おやすみの おはなしは 聞けます）。続ける ときは、ここで「あと' + MQ.coach.EXTEND_MIN + '分」を 押して ください。' }),
+      h('div', { class: 'kv', style: { margin: '6px 0' } }, [h('span', { text: '今日 遊んだ 時間（めやす）' }), played]),
+      ext,
+      h('div', { class: 'kv', style: { margin: '14px 0 6px' } }, [h('span', { text: '迷った ときの 手助け' })]),
+      seg([{ id: 'on', name: 'あり', sub: 'おすすめ' }, { id: 'off', name: 'なし' }], st.nudge === false ? 'off' : 'on', function (v) { MQ.save.setSetting('nudge', v === 'on'); }, true),
+      h('p', { class: 'note', text: '答えを 選ばずに 15秒ほど 手が 止まると、もう一度 問題を 言います。さらに 15秒 止まると、正解が そっと 光ります。' })]);
+  }
   function fileName() {
     const d = new Date();
     return 'korotama-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
@@ -201,6 +217,7 @@ MQ.ui.parent = (function () {
           seg([{ id: 'on', name: '読む' }, { id: 'off', name: '読まない' }], st.voice ? 'on' : 'off', function (v) { MQ.save.setSetting('voice', v === 'on'); }, true),
           h('div', { class: 'row', style: { marginTop: '12px' } }, [h('button', { class: 'btn btn--wide', type: 'button', text: 'この端末で 声が 出るか ためす', onclick: function () { MQ.sfx.tap(); MQ.voice.setPitch(MQ.save.settings().pitch || 'normal'); MQ.voice.setRate(MQ.save.settings().rate || 'slow'); MQ.voice.setKind(MQ.save.settings().voiceKind || 'zunda'); const ok = MQ.voice.say('こんにちは！ わたしの こえ、きこえる？ いっしょに あそぼうね。'); if (!ok) MQ.ui.toast('日本語の 声が 見つかりません', 2600); } })]),
           h('p', { class: 'note', style: { marginTop: '8px' }, text: MQ.voice.ready() ? '日本語の 声：' + ((MQ.voice.voiceFor() || {}).name || 'あり') : '日本語の 声が 見つかりません。声が 出ない あいだは 字幕を かならず 出します。' })]),
+        kid ? playCard(st) : null,
         kid ? h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの 名前（声で よびます）' }), nameIn]) : null,
         kid ? h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'きろく' }),
           h('div', { class: 'col', style: { gap: '4px' } }, [

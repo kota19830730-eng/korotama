@@ -15,7 +15,7 @@ MQ.save = (function () {
   let data = null;
 
   function fresh() {
-    return { v: 1, kid: null, settings: { voice: true, pitch: 'normal', rate: 'slow', voiceKind: 'zunda', hint: true, sound: true, music: true } };
+    return { v: 1, kid: null, settings: { voice: true, pitch: 'normal', rate: 'slow', voiceKind: 'zunda', hint: true, sound: true, music: true, nudge: true, timeLimit: 0 } };   // v0.3：nudge＝まよった ときの 手助け／timeLimit＝遊ぶ 時間の めやす（分・0＝なし）
   }
   function load() {
     if (data) return data;

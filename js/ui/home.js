@@ -72,6 +72,7 @@ MQ.ui = MQ.ui || {};
       clearIdle();
       const kid = MQ.save.kid();
       if (!kid || !kid.mon) { MQ.ui.start.open(); return; }
+      if (!opts.force && MQ.coach.tired() && MQ.ui.rest) { MQ.ui.rest.open(); return; }   // C1（v0.3）：遊ぶ 時間の めやすを こえたら おやすみの 画面
       // 2026-10-10：たてに 長い 画面（スマホ）では あまった ぶん ばめんを 高く（下が あいて 上が 切れて いた）
       const SH = 252 + Math.max(0, Math.min(180, ((MQ.stage && MQ.stage.size) ? MQ.stage.size().h : 700) - 700));   // v0.1.16：字幕は ばめんの 下へ（雲・雨・けむりを かくして いた）。たまごの 画面と 同じ ならび
       const bl = MQ.ui.balloon('');
@@ -206,6 +207,10 @@ MQ.ui = MQ.ui || {};
       clearIdle();
       const kid = MQ.save.kid();
       const nm = kid && kid.mon ? kid.mon.name : '';
+      const stg = kid ? kid.stage : 's';
+      const learn = opts.kind ? MQ.coach.learned(opts.kind, stg) : '';      // A1（v0.3）：何が できたかを 言って ほめる
+      const learnP = opts.kind ? MQ.coach.parentText(opts.kind, stg) : '';
+      const after = MQ.coach.tired() ? ' ' + MQ.coach.REST.tired : MQ.coach.soon() ? ' ' + MQ.coach.REST.soon : '';   // C1
       const mon = MQ.ui.monNode(180);
       const stamps = MQ.ui.stampRow();
       const bl = MQ.ui.balloon('');
@@ -215,7 +220,7 @@ MQ.ui = MQ.ui || {};
         stamps,
         bl,
         h('button', { class: 'btn btn--gold btn--big btn--wide', type: 'button', text: 'おうちへ', onclick: function () { MQ.sfx.tap(); MQ.ui.home.open(); } }),
-        MQ.ui.hintBox('スタンプは 1日 5こまで。' + (MQ.save.nextGrowAt() ? 'ぜんぶで ' + MQ.save.nextGrowAt() + 'こ で すがたが かわります（いま ' + MQ.save.stampsTotal() + 'こ）' : 'いちばん 大きな すがたに なりました') + '。スタンプが ふえると おうちの にわに はなや ちょうちょが ふえます')
+        MQ.ui.hintBox((learnP ? 'きょうの れんしゅう：' + learnP + '。' : '') + 'スタンプは 1日 5こまで。' + (MQ.save.nextGrowAt() ? 'ぜんぶで ' + MQ.save.nextGrowAt() + 'こ で すがたが かわります（いま ' + MQ.save.stampsTotal() + 'こ）' : 'いちばん 大きな すがたに なりました') + '。スタンプが ふえると おうちの にわに はなや ちょうちょが ふえます')
       ]);
       const page = h('div', { class: 'page' }, [box]);
       MQ.ui.mount('screen-done', page);
@@ -227,7 +232,8 @@ MQ.ui = MQ.ui || {};
       setTimeout(function () {
         if (!here('screen-done', mon)) return;
         // 名前は 声には 入れない（録音した 声（ずんだもん）に 名前は 無い ので、voice.js が 名前を 外して 読む）
-        bl.say(opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！ ありがとう！') : opts.full ? ('できた！ きょうの スタンプは もう いっぱい！ ' + nm + 'も うれしいよ！') : ('できた！ スタンプ ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！'));   // full＝1日 5こを こえた（同じ「いつつめ」を くりかえさない）
+        const L = learn ? ' ' + learn : '';
+        bl.say((opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！' + L + ' ありがとう！') : opts.full ? ('できた！' + L + ' きょうの スタンプは もう いっぱい！ ' + nm + 'も うれしいよ！') : ('できた！' + L + ' スタンプ ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！')) + after);   // full＝1日 5こを こえた（同じ「いつつめ」を くりかえさない）
       }, 300);
     }
   };

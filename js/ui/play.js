@@ -17,6 +17,8 @@ MQ.ui.play = (function () {
     busy = false;
     render();
     setTimeout(function () { els.bl.say(task.line); }, 250);
+    MQ.ui.nudge.arm({ screen: 'screen-play', busy: function () { return busy; }, say: function (t, q) { els.bl.say(q ? t + ' ' + task.line : t); },
+      targets: function () { return Array.prototype.slice.call(document.querySelectorAll('#screen-play .toy[data-ok]')); } });
   }
   function render() {
     const mon = MQ.ui.monNode(130);
@@ -26,6 +28,7 @@ MQ.ui.play = (function () {
     const toys = h('div', { class: 'toys' + (task.options.length >= 5 ? ' toys--many' : '') });
     task.options.forEach(function (o) {
       const b = h('button', { class: 'toy', type: 'button', 'aria-label': (o.color ? o.color.say + 'の ' : '') + o.shape.name }, [MQ.ui.shapeNode(o.shape.id, o.color)]);
+      if (o.ok) b.dataset.ok = '1';
       b.onclick = function () {
         if (busy) return;
         if (!o.ok) {

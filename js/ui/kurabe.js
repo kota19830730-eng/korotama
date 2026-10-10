@@ -24,6 +24,8 @@ MQ.ui.kurabe = (function () {
     kids = MQ.util.sample(MQ.charart.list(), task.n || 1);
     render();
     setTimeout(function () { els.bl.say(task.line); }, 250);
+    MQ.ui.nudge.arm({ screen: 'screen-kurabe', busy: function () { return busy; }, say: function (t, q) { els.bl.say(q ? t + ' ' + task.line : t); },
+      targets: function () { return (els.btns || []).filter(function (b, i) { return task.options[i] && task.options[i].ok; }); } });
   }
   function badge(el, n) {
     let b = el.querySelector('.cnt__n');

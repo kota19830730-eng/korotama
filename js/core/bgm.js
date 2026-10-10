@@ -185,7 +185,7 @@ MQ.bgm = (function () {
   function stop() { desired = null; playing = null; fadeOutSeq(); stopAmb(); }
   const SCREEN = { 'screen-home': 'home', 'screen-egg': 'home', 'screen-start': 'home', 'screen-setup': null, 'screen-draw': null, 'screen-parent': null, 'screen-done': 'done',
                    'screen-care': 'field', 'screen-shop': 'field', 'screen-play': 'field', 'screen-kurabe': 'field', 'screen-moji': 'field', 'screen-tokei': 'field',
-                   'screen-kaku': 'home', 'screen-sagasu': 'field', 'screen-maneko': null, 'screen-help': 'home', 'screen-story': 'night', 'screen-album': null, 'screen-print': null };
+                   'screen-kaku': 'home', 'screen-sagasu': 'field', 'screen-maneko': null, 'screen-help': 'home', 'screen-story': 'night', 'screen-rest': 'night', 'screen-album': null, 'screen-print': null };
   function forScreen(id) { if (id in SCREEN) { if (SCREEN[id]) play(SCREEN[id]); else stop(); } }
   function duck(on) {
     ducked = !!on;
