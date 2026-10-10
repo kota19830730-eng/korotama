@@ -45,6 +45,30 @@ MQ.ui.parent = (function () {
     }
   }
 
+  /* ホーム画面に入れる（まなびモンスターの installSection と 同じ 中身） */
+  function installCard() {
+    const ua = navigator.userAgent || '';
+    const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+    let standalone = !!navigator.standalone;
+    try { standalone = standalone || window.matchMedia('(display-mode: standalone)').matches; } catch (e) { /* なにもしない */ }
+    const line = function (t, muted) { return h('p', { class: 'note', style: { margin: '4px 0', opacity: muted ? '.8' : '' }, text: t }); };
+    const sub = function (t) { return h('div', { class: 'kv', style: { margin: '10px 0 2px' } }, [h('span', { text: t })]); };
+    return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'ホーム画面に入れる（アプリのように使う）' }),
+      line(standalone ? 'いまはホーム画面のアイコンから開いています。このまま使えます。'
+        : 'App Store からのインストールは不要です。ブラウザの機能で、ホーム画面にアイコンを置いてアプリのように使えます（画面が広くなり、オフラインでも遊べます）。'),
+      sub('iPhone・iPad' + (ios && !standalone ? '（この端末）' : '')),
+      line('1. このページを Safari で開く（LINE などアプリの中のブラウザではできません）'),
+      line('2. 共有ボタン（四角から上向きの矢印）を押す。iPhone は画面の下、iPad は右上にあります'),
+      line('3. 「ホーム画面に追加」→「追加」を押す'),
+      line('4. これからはホーム画面の「ころたま」のアイコンから開く'),
+      line('注意：Safari のタブとアイコンでは記録が別々です。Safari で遊んだ記録を移すときは、Safari で下の「きろくを ファイルに 保存」→ アイコンから開いて「ファイルから もどす」を押してください。', true),
+      line('声や音楽が出ないときは、本体の消音（マナーモード）を切ってください。', true),
+      sub('Android（Chrome）' + (/Android/.test(ua) && !standalone ? '（この端末）' : '')),
+      line('右上の「︙」→「アプリをインストール」または「ホーム画面に追加」を押す'),
+      line('新しい版を出したときは自動で切り替わります。入れ直す必要はありません。', true)
+    ]);
+  }
+
   function open() {
     MQ.ui.stopSpeak();
     const kid = MQ.save.kid();
@@ -100,6 +124,7 @@ MQ.ui.parent = (function () {
             h('div', { class: 'kv' }, [h('span', { text: 'もじ（ひらがな）' }), h('b', { text: (done.moji || 0) + ' 回' })]),
             h('div', { class: 'kv' }, [h('span', { text: 'とけい（あさ・ひる・よる／時計）' }), h('b', { text: (done.tokei || 0) + ' 回' })])
           ])]) : null,
+        installCard(),
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'そのほか' }),
           h('div', { class: 'col', style: { gap: '8px' } }, [
             hasMon ? null : h('button', { class: 'btn btn--wide', type: 'button', text: '絵を とる', onclick: function () { MQ.sfx.tap(); if (!kid) MQ.save.newKid({}); MQ.ui.draw.open(); } }),
