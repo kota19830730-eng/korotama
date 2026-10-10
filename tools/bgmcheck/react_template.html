@@ -1,0 +1,65 @@
+<title>ころたま タップの音</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* 絵本の 紙の 上に カリンバの 木の 札を ならべる。ころたま本体と 同じ 色と 書体 */
+:root {
+  --paper: #fbf4e4; --card: #fffdf7; --line: #e2d5b8; --ink: #4a3b32; --ink2: #7a6652;
+  --wood: #e3b98a; --wood2: #c9955a; --clay: #d2765c; --green: #7fb069;
+  --f: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper: #2b241f; --card: #3a312a; --line: #54473c; --ink: #f3e8d6; --ink2: #c9b9a2; --wood: #8a6a4a; --wood2: #6b5038; color-scheme: dark; } }
+:root[data-theme="dark"] { --paper: #2b241f; --card: #3a312a; --line: #54473c; --ink: #f3e8d6; --ink2: #c9b9a2; --wood: #8a6a4a; --wood2: #6b5038; color-scheme: dark; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f); font-weight: 500; padding-inline: 16px; padding-block: 24px 40px; }
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-size: 26px; font-weight: 900; margin: 0; text-wrap: balance; }
+p { margin: 0; line-height: 1.7; color: var(--ink2); }
+h2 { font-size: 16px; font-weight: 700; margin: 8px 0 0; letter-spacing: .04em; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.snd { min-width: 0; border: 0; border-radius: 18px; background: var(--card); box-shadow: 0 3px 0 var(--line); padding: 14px 12px; text-align: left; font-family: var(--f); color: var(--ink); cursor: pointer; display: flex; gap: 10px; align-items: center; }
+.snd:focus-visible { outline: 3px solid var(--clay); outline-offset: 2px; }
+.snd:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.dot { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--wood); box-shadow: inset 0 -4px 0 var(--wood2); display: grid; place-items: center; }
+.dot::after { content: ''; border-left: 11px solid var(--card); border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 3px; }
+.snd.is-on .dot { background: var(--green); animation: pulse .6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.12); } }
+.snd b { display: block; font-size: 16px; font-weight: 700; }
+.snd small { display: block; font-size: 12px; color: var(--ink2); }
+.all { align-self: flex-start; border: 0; border-radius: 14px; background: var(--clay); color: #fffdf7; font-family: var(--f); font-weight: 700; font-size: 16px; padding: 12px 20px; box-shadow: 0 4px 0 #a4533e; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .snd.is-on .dot { animation: none; } }
+</style>
+<div class="wrap">
+  <h1>タップした ときの 音</h1>
+  <p>おうちの 背景と キャラクターを さわった ときに 鳴る 18の 音です。どれも いまの カリンバの 音色で、声より 小さく、1秒くらいで おわります。気に なる 音が あれば 名前で 教えて ください。</p>
+  <button class="all" id="all" type="button">ぜんぶ じゅんに 聞く</button>
+  <h2>背景</h2>
+  <div class="grid" id="g1"></div>
+  <h2>キャラクター</h2>
+  <div class="grid" id="g2"></div>
+</div>
+<script>
+const ITEMS = /*ITEMS*/[];
+const CHAR = ['heart', 'tickle', 'jump', 'spin', 'yawn', 'snore', 'wake'];
+let cur = null, chain = null;
+function play(it, btn, done) {
+  if (cur) { cur.a.pause(); cur.b.classList.remove('is-on'); }
+  const a = new Audio(it.src);
+  cur = { a: a, b: btn };
+  btn.classList.add('is-on');
+  a.onended = function () { btn.classList.remove('is-on'); if (done) done(); };
+  a.play().catch(function () { btn.classList.remove('is-on'); });
+}
+const btns = ITEMS.map(function (it) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'snd'; b.id = 'snd-' + it.id;
+  b.innerHTML = '<span class="dot"></span><span><b></b><small></small></span>';
+  b.querySelector('b').textContent = it.name;
+  b.querySelector('small').textContent = it.when;
+  b.onclick = function () { chain = null; play(it, b); };
+  document.getElementById(CHAR.indexOf(it.id) >= 0 ? 'g2' : 'g1').appendChild(b);
+  return b;
+});
+document.getElementById('all').onclick = function () {
+  let i = 0; const token = chain = {};
+  (function next() { if (chain !== token || i >= ITEMS.length) return; const k = i++; play(ITEMS[k], btns[k], function () { setTimeout(next, 300); }); })();
+};
+</script>
