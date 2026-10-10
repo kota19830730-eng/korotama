@@ -3,41 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <title>ころたま アイコン</title>
-<!-- ホーム画面の アイコン。headless Chrome で 192×192／512×512 に 撮る：
+<!-- ホーム画面の アイコン（2026-10-10 案F「いまの 絵を はっきり」＝黄色の 地・大きな たまご・もよう 3つ）。
+     見くらべた 6案は https://claude.ai/artifact/Y1Mo6p1eNsrm4ssimhJcvh
+     headless Chrome で 192×192／512×512 に 撮る：
      chrome --headless=new --window-size=512,512 --screenshot=icon-512.png "file:///.../tools/icon.html"
      （#size=192 で 192） -->
 <style>
-  html, body { margin: 0; background: #fbf4e4; }
-  .ic { position: relative; width: 512px; height: 512px; background: #fbf4e4; overflow: hidden; transform-origin: 0 0; }
-  .hill1 { position: absolute; left: -120px; top: 380px; width: 420px; height: 260px; border-radius: 50%; background: #a9cf8b; }
-  .hill2 { position: absolute; left: 230px; top: 400px; width: 440px; height: 280px; border-radius: 50%; background: #8fbf74; }
-  .nest1 { position: absolute; left: 116px; top: 372px; width: 280px; height: 96px; border-radius: 50%; background: #c9a06b; }
-  .nest2 { position: absolute; left: 136px; top: 356px; width: 240px; height: 70px; border-radius: 50%; background: #e3b98a; }
-  .egg { position: absolute; left: 156px; top: 96px; width: 200px; height: 258px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #fffdf7; box-shadow: inset -20px -14px 0 #efe3c8; overflow: hidden; }
-  .egg i { position: absolute; border-radius: 50%; display: block; }
-  .sun { position: absolute; left: 392px; top: 44px; width: 80px; height: 80px; border-radius: 50%; background: #f2b544; }
-  .sp { position: absolute; width: 44px; height: 44px; }
+  html, body { margin: 0; background: #f6c94f; overflow: hidden; }
+  svg { display: block; }
 </style>
 </head>
 <body>
-<div class="ic" id="ic">
-  <div class="sun"></div>
-  <div class="hill1"></div><div class="hill2"></div>
-  <div class="nest1"></div><div class="nest2"></div>
-  <div class="egg">
-    <i style="left:30px;top:56px;width:38px;height:38px;background:#8fd27a"></i>
-    <i style="left:122px;top:98px;width:28px;height:28px;background:#f2c94c"></i>
-    <i style="left:70px;top:156px;width:44px;height:44px;background:#6f8fd6"></i>
-    <i style="left:138px;top:182px;width:22px;height:22px;background:#f0a3a0"></i>
-    <i style="left:36px;top:214px;width:26px;height:26px;background:#f2c94c"></i>
-    <svg style="position:absolute;left:0;top:0" width="200" height="258" viewBox="0 0 200 258" fill="none" stroke="#4a3b32" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M56 86 L80 106 L68 128 L94 142"/></svg>
-  </div>
-  <svg class="sp" style="left:90px;top:70px" viewBox="0 0 24 24" fill="#f2b544"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg>
-  <svg class="sp" style="left:376px;top:150px;width:32px;height:32px" viewBox="0 0 24 24" fill="#f2b544"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg>
-</div>
+<svg id="ic" width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#f6c94f"/>
+  <ellipse cx="256" cy="540" rx="340" ry="120" fill="#8fc975"/>
+  <ellipse cx="256" cy="452" rx="150" ry="40" fill="#c9a06b"/>
+  <ellipse cx="256" cy="438" rx="128" ry="28" fill="#e3b98a"/>
+  <g transform="translate(0 -18)">
+    <path d="M256 92 C352 92 404 228 404 312 C404 404 338 462 256 462 C174 462 108 404 108 312 C108 228 160 92 256 92 Z" fill="#fffdf7"/>
+    <path d="M330 120 C380 170 404 250 404 312 C404 404 338 462 256 462 C330 430 368 370 368 300 C368 230 356 170 330 120 Z" fill="#efe1c3"/>
+    <circle cx="196" cy="200" r="36" fill="#7fc46a"/>
+    <circle cx="300" cy="300" r="42" fill="#6f8fd6"/>
+    <circle cx="196" cy="380" r="28" fill="#e8735a"/>
+    <path d="M236 150 L264 176 L246 204 L280 222" fill="none" stroke="#4a3b32" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
 <script>
   const m = location.hash.match(/size=(\d+)/);
-  if (m) { const k = parseInt(m[1], 10) / 512; document.getElementById('ic').style.transform = 'scale(' + k + ')'; document.body.style.width = m[1] + 'px'; document.body.style.height = m[1] + 'px'; }
+  if (m) { const s = document.getElementById('ic'); s.setAttribute('width', m[1]); s.setAttribute('height', m[1]); }
 </script>
 </body>
 </html>
