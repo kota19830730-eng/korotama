@@ -423,6 +423,13 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   // B まねっこ
   ['s', 'm', 'l', 'k'].forEach(function (s) { const w = MQ.mane.word(s); ok(w.say && w.line.indexOf(w.say) > 0, 'まねっこ ' + s + '：' + w.say); });
   voiced(MQ.mane.lines(), 'まねっこ');
+  // まねっこ v0.2.1：何も 言わなければ ほめない（はかれた ときだけ）
+  const J = MQ.mane.judge;
+  ok(J({ measured: true, voicedMs: 0, peak: 0.01 }, 'いちご') === 'none' && J({ measured: true, voicedMs: 120, peak: 0.2 }, 'いちご') === 'none', 'まねっこ：だまって いたら none（ほめない）');
+  ok(J({ measured: true, voicedMs: 600, peak: 0.2 }, 'いちご') === 'good' && J({ measured: true, voicedMs: 600, peak: 0.03 }, 'いちご') === 'quiet', 'まねっこ：言えた good／小さい quiet');
+  ok(J({ measured: true, voicedMs: 180, peak: 0.2 }, 'おやすみなさい') === 'short' && J({ measured: true, voicedMs: 180, peak: 0.2 }, 'ほし') === 'good', 'まねっこ：長い ことばで みじかいと short');
+  ok(J(null, 'いちご') === 'unknown' && J({ measured: false }, 'いちご') === 'unknown', 'まねっこ：はかれない 端末は unknown（いままで どおり）');
+  ok(MQ.mane.mora('おにぎりを つくる') === 8 && MQ.mane.mora('ちゃ') === 1, 'まねっこ：おんの 数');
   ok(MQ.family.PHRASES.length === 6 && !MQ.family.has('great'), 'おうちの人の 声：6つ・はじめは 空');
   // C さがす：色を 読む
   function img(hex, bg) {

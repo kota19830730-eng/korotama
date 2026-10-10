@@ -23,10 +23,26 @@ MQ.mane = (function () {
     do { w = list[Math.floor(Math.random() * list.length)]; } while (avoid && avoid.indexOf(w[0]) >= 0 && n++ < 20);
     return { say: w[0], pic: { type: w[1], id: w[2], color: w[3] || null }, line: line(w[0]) };
   }
+  /* 声の しらべ（v0.2.1）：何も 言わなかったら ほめない。言えたら かならず まねっこ して ほめる（ばつなし）。
+       judge(vad, ことば) → 'none'（きこえない＝もう一度）／'quiet'（小さい）／'short'（みじかい）／'good'／'unknown'（はかれない 端末＝いままで どおり） */
+  const MSG = {
+    none1: 'あれ？ きこえなかったよ。もういちど いってみて！',
+    none2: 'おおきな こえで、いっしょに いってみよう。せーの！',
+    quiet: 'こえ、きこえたよ！ こんどは もっと おおきな こえで いってみよう！',
+    short: 'こえ、きこえたよ！ こんどは さいごまで いってみよう！'
+  };
+  function mora(t) { return String(t).replace(/[ 　、。！？]/g, '').replace(/[ゃゅょぁぃぅぇぉャュョァィゥェォ]/g, '').length; }
+  function judge(vad, sayWord) {
+    if (!vad || !vad.measured) return 'unknown';
+    if (vad.voicedMs < 150) return 'none';
+    if (vad.peak < 0.04) return 'quiet';
+    if (vad.voicedMs < Math.max(200, mora(sayWord) * 80) * 0.5) return 'short';
+    return 'good';
+  }
   function lines() {
-    const out = ['マイクを おして、いってみてね。', 'きいてるよ！', 'まねっこ するよ！', 'もういちど いってみる？', 'マイクが つかえないみたい。いっしょに いってみよう！', 'もっと おおきな こえで いってみて！'].concat(PRAISE);
+    const out = ['マイクを おして、いってみてね。', MSG.none1, MSG.none2, MSG.quiet, MSG.short, 'きいてるよ！', 'まねっこ するよ！', 'もういちど いってみる？', 'マイクが つかえないみたい。いっしょに いってみよう！', 'もっと おおきな こえで いってみて！'].concat(PRAISE);
     Object.keys(W).forEach(function (k) { W[k].forEach(function (w) { out.push(line(w[0])); out.push(w[0] + '！'); }); });
     return out;
   }
-  return { W: W, word: word, PRAISE: PRAISE, line: line, lines: lines };
+  return { W: W, word: word, judge: judge, mora: mora, MSG: MSG, PRAISE: PRAISE, line: line, lines: lines };
 })();

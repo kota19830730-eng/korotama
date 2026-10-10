@@ -58,6 +58,29 @@ MQ.family = (function () {
     opts = opts || {};
     const max = opts.max || MAX_MS;
     let stream = null, rec = null, chunks = [], t0 = Date.now(), stopped = false, timer = null, an = null, buf = null, fakeT = 0;
+    /* 声が 本当に 出たかを 見る（まねっこ v0.2.1）：はじめの 0.25秒で まわりの 音（floor）を はかり、
+       それより 3ばい（さいてい 0.02）大きい ところを「声」と 数える。opts.autoStop なら 言いおわって 0.8秒 しずかで 止める・
+       何も 言わずに opts.waitMs（4秒）たったら 止める。onDone の r.vad＝{ measured, voicedMs, start, end, peak, floor } */
+    const TICK = 30;
+    const vad = { measured: false, voicedMs: 0, start: -1, end: -1, peak: 0, floor: 0 };
+    let calib = [], vadTimer = null;
+    function vadTick() {
+      if (!an || stopped) return;
+      an.getByteTimeDomainData(buf);
+      let s = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; s += v * v; }
+      const rms = Math.sqrt(s / buf.length), t = Date.now() - t0;
+      if (an.context && an.context.state === 'running') vad.measured = true;   // とまって いる AudioContext は 0 しか かえさない＝はかれて いない
+      if (t < 250) { calib.push(rms); return; }
+      if (!vad.floor) { calib.sort(function (a, b) { return a - b; }); vad.floor = Math.min(0.03, Math.max(0.002, calib[Math.floor(calib.length * 0.3)] || 0.002)); }
+      const th = Math.max(0.02, vad.floor * 3);
+      if (rms > vad.peak) vad.peak = rms;
+      if (rms > th) { if (vad.start < 0) vad.start = t; vad.end = t; vad.voicedMs += TICK; }
+      if (opts.autoStop) {
+        if (vad.start >= 0 && vad.voicedMs >= 150 && t - vad.end > (opts.silenceMs || 800)) api.stop();
+        else if (vad.start < 0 && t > (opts.waitMs || 4000)) api.stop();
+      }
+    }
+    function vadOut() { clearInterval(vadTimer); return { measured: vad.measured, voicedMs: vad.voicedMs, start: vad.start, end: vad.end, peak: +vad.peak.toFixed(3), floor: +vad.floor.toFixed(4) }; }
     const api = {
       level: function () {
         if (fakeMic) { fakeT++; return 0.3 + 0.3 * Math.abs(Math.sin(fakeT / 3)); }
@@ -68,7 +91,7 @@ MQ.family = (function () {
       },
       stop: function () {
         if (stopped) return; stopped = true; clearTimeout(timer);
-        if (fakeMic) { const b = fakeMic.blob(); setTimeout(function () { if (opts.onDone) opts.onDone({ blob: b, url: URL.createObjectURL(b), ms: Date.now() - t0 }); }, 30); return; }
+        if (fakeMic) { const b = fakeMic.blob(); const fv = fakeMic.vad ? fakeMic.vad() : { measured: true, voicedMs: 900, start: 300, end: 1200, peak: 0.2, floor: 0.005 }; setTimeout(function () { if (opts.onDone) opts.onDone({ blob: b, url: URL.createObjectURL(b), ms: Date.now() - t0, vad: fv }); }, 30); return; }
         try { if (rec && rec.state !== 'inactive') rec.stop(); else finish(); } catch (e) { finish(); }
       },
       ms: function () { return Date.now() - t0; }
@@ -78,7 +101,7 @@ MQ.family = (function () {
       const type = (rec && rec.mimeType) || (chunks[0] && chunks[0].type) || 'audio/webm';
       const blob = new Blob(chunks, { type: type });
       if (!blob.size) { if (opts.onError) opts.onError(new Error('empty')); return; }
-      if (opts.onDone) opts.onDone({ blob: blob, url: URL.createObjectURL(blob), ms: Date.now() - t0 });
+      if (opts.onDone) opts.onDone({ blob: blob, url: URL.createObjectURL(blob), ms: Date.now() - t0, vad: vadOut() });
     }
     if (fakeMic) { timer = setTimeout(api.stop, max); if (opts.onStart) setTimeout(opts.onStart, 0); return api; }
     if (!micOk()) { setTimeout(function () { if (opts.onError) opts.onError(new Error('nomic')); }, 0); return api; }
@@ -88,10 +111,11 @@ MQ.family = (function () {
       try { rec = new MediaRecorder(s); } catch (e) { if (opts.onError) opts.onError(e); return; }
       rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
       rec.onstop = finish;
-      try { const c = ctx(); if (c) { const src = c.createMediaStreamSource(s); an = c.createAnalyser(); an.fftSize = 512; buf = new Uint8Array(an.fftSize); src.connect(an); } } catch (e) { an = null; }
+      try { const c = ctx(); if (c) { const src = c.createMediaStreamSource(s); if (c.state !== 'running') { try { c.resume(); } catch (e) { /* なし */ } } an = c.createAnalyser(); an.fftSize = 512; buf = new Uint8Array(an.fftSize); src.connect(an); } } catch (e) { an = null; }
       t0 = Date.now();
       rec.start();
       timer = setTimeout(api.stop, max);
+      if (an) vadTimer = setInterval(vadTick, TICK);
       if (opts.onStart) opts.onStart();
     }).catch(function (e) { stopped = true; if (opts.onError) opts.onError(e); });
     return api;
@@ -131,8 +155,10 @@ MQ.family = (function () {
     getBuf.then(function (ab) { return new Promise(function (res, rej) { const p = c.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(function () { /* rej で うける */ }); }); }).then(function (b) {
       const s = c.createBufferSource(); s.buffer = b; s.playbackRate.value = opts.rate || 1;
       const g = c.createGain(); g.gain.value = opts.vol || 1.2; s.connect(g); g.connect(c.destination);
-      s.onended = end; playing = s; s.start();
-      setTimeout(end, (b.duration / (opts.rate || 1)) * 1000 + 600);   // 保険
+      s.onended = end; playing = s;
+      const from = Math.max(0, Math.min(b.duration - 0.05, opts.from || 0)), len = opts.to ? Math.max(0.1, Math.min(b.duration, opts.to) - from) : b.duration - from;   // opts.from/to（秒）＝声の ところだけ 鳴らす
+      s.start(0, from, len);
+      setTimeout(end, (len / (opts.rate || 1)) * 1000 + 600);   // 保険
     }).catch(function () { if (typeof arrayBufOrUrl === 'string') viaTag(); else end(); });
   }
   function play(id, opts) {

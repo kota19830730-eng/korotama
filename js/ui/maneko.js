@@ -10,7 +10,7 @@ MQ.ui = MQ.ui || {};
 
 (function () {
   const h = MQ.util.h;
-  let round = 0, w = null, used = [], els = {}, rec = null, busy = false, raf = 0;
+  let round = 0, w = null, used = [], els = {}, rec = null, busy = false, raf = 0, miss = 0, last = '';
 
   function picOf(p) {
     if (p.type === 'food') return MQ.ui.foodNode(p.id);
@@ -31,7 +31,7 @@ MQ.ui = MQ.ui || {};
   function next() {
     w = MQ.mane.word(MQ.save.kid().stage, used);
     used.push(w.say);
-    busy = false;
+    busy = false; miss = 0;
     render();
     setTimeout(function () { els.bl.say(w.line + ' マイクを おして、いってみてね。'); }, 250);
   }
@@ -44,7 +44,7 @@ MQ.ui = MQ.ui || {};
     mic.insertBefore(ring, mic.firstChild);
     mic.onclick = function () { if (busy) return; if (rec) stopRec(); else startRec(); };
     const say = h('button', { class: 'btn btn--wide mn__ok', type: 'button', text: 'マイクなしで：言えた！（おうちの人）' });
-    MQ.ui.hold(say, 700, function () { if (busy) return; praise(null); });
+    MQ.ui.hold(say, 700, function () { if (busy || rec) return; praise('parent'); });
     els = { mon: mon, bl: bl, mic: mic, ring: ring };
     const page = h('div', { class: 'page' }, [
       MQ.ui.topBar({ home: true, replay: function () { bl.say(w.line); } }),
@@ -59,7 +59,7 @@ MQ.ui = MQ.ui || {};
         mic,
         h('div', { class: 'dots3' }, [0, 1, 2].map(function (i) { return h('i', { class: i < round ? 'is-on' : '' }); })),
         say,
-        MQ.ui.hintBox('マイクを おして 言うと、生きものが 高い 声で まねっこ します（声は 保存しません）。うまく 言えなくても ほめて あげてください')
+        MQ.ui.hintBox('マイクを押して言うと、言い終わったところで自動で止まり、生きものが高い声でまねします（声は保存しません）。声が聞こえなかったときはほめずに、もう一度さそいます。マイクが使えないときは、言えたら下のボタンを長押ししてください')
       ])
     ]);
     MQ.ui.mount('screen-maneko', page);
@@ -70,10 +70,17 @@ MQ.ui = MQ.ui || {};
     if (!MQ.family.micOk()) { els.bl.say('マイクが つかえないみたい。いっしょに いってみよう！ ' + w.say + '！'); return; }
     els.mic.classList.add('is-rec');
     els.mon.mood('tilt', 3000);
+    MQ.sfx.pop();   // 「どうぞ」の あいず
     rec = MQ.family.record({
-      max: 3500,
+      max: 6000, autoStop: true, waitMs: 4500, silenceMs: 800,   // 言いおわったら 自動で 止まる（もう一度 おさなくて いい）
       onStart: function () { loop(); },
-      onDone: function (r) { endLoop(); rec = null; els.mic.classList.remove('is-rec'); if (r.ms < 400) { els.bl.say('もっと おおきな こえで いってみて！'); return; } echo(r.blob); },
+      onDone: function (r) {
+        endLoop(); rec = null; els.mic.classList.remove('is-rec');
+        const j = MQ.mane.judge(r.vad, w.say);
+        last = j;
+        if (j === 'none') { heard(); return; }
+        echo(r.blob, r.vad, j);
+      },
       onError: function () { endLoop(); rec = null; els.mic.classList.remove('is-rec'); els.bl.say('マイクが つかえないみたい。いっしょに いってみよう！ ' + w.say + '！'); }
     });
   }
@@ -85,22 +92,33 @@ MQ.ui = MQ.ui || {};
     raf = requestAnimationFrame(loop);
   }
   function endLoop() { cancelAnimationFrame(raf); els.ring.style.transform = ''; }
-  function echo(blob) {
+  // 何も きこえなかった：ほめない・まねっこ しない。もう一度（2回めからは いっしょに 言う お手本つき）
+  function heard() {
+    miss++;
+    els.mon.mood('tilt', 1200);
+    els.bl.say(miss === 1 ? MQ.mane.MSG.none1 : MQ.mane.MSG.none2 + ' ' + w.say + '！');
+  }
+  function echo(blob, vad, j) {
     busy = true;
+    // 声の ところだけ 鳴らす（前後の しずかな ところを 切る＝すぐ まねっこが はじまる）
+    const cut = vad && vad.measured && vad.start >= 0 ? { from: Math.max(0, vad.start - 120) / 1000, to: (vad.end + 260) / 1000 } : {};
     els.bl.say('まねっこ するよ！', function () {
       els.mon.mood('jump', 1400);
-      MQ.family.playBlob(blob, { rate: 1.35, onend: function () { praise(blob); } });
+      MQ.family.playBlob(blob, { rate: 1.35, from: cut.from, to: cut.to, onend: function () { praise(j); } });
     });
   }
-  function praise() {
+  // j：good・parent＝しっかり ほめる／quiet・short＝「いえたね」＋つぎの めあて／unknown（はかれない 端末）＝まねっこ できたよ
+  function praise(j) {
     busy = true;
+    const strong = j === 'good' || j === 'parent';
     MQ.sfx.correct();
-    els.mon.mood('happy');
-    els.bl.say(MQ.util.pick(MQ.mane.PRAISE), function () {
+    els.mon.mood(strong ? 'happy' : 'nod');
+    const msg = strong ? MQ.util.pick(MQ.mane.PRAISE) : j === 'quiet' ? MQ.mane.MSG.quiet : j === 'short' ? MQ.mane.MSG.short : 'まねっこ できたよ！';
+    els.bl.say(msg, function () {
       round++;
       if (round >= MQ.tasks.ROUNDS) MQ.ui.finish('mane');
       else next();
     });
   }
-  MQ.ui.maneko = { open: open, state: function () { return { round: round, word: w, rec: !!rec }; }, _start: startRec, _stop: stopRec };
+  MQ.ui.maneko = { open: open, state: function () { return { round: round, word: w, rec: !!rec, miss: miss, last: last, busy: busy }; }, _start: startRec, _stop: stopRec };
 })();

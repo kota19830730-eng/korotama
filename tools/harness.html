@@ -431,7 +431,7 @@
     },
     /* ---- v0.2 ワクワクの しかけ ----
        #wk[:<日づけ YYYY-MM-DD>][:night|:bday]（おうち：かいた もの・季節・おてがみ ぜんぶ）／#kaku／#kakupad:<food|hat|friend|garden>／#kakuplace:<kind>[:<止める ms>|:go]
-       #sagasu:<s|m|l|k>[:ok|:<色>]／#maneko:<s|m|l|k>[:rec]／#help[:done]／#story[:quiz|:end|:none]／#print:<nurie|craft|award|album>／#album／#parentv2[:top|:paper]
+       #sagasu:<s|m|l|k>[:ok|:<色>]／#maneko:<s|m|l|k>[:rec|:silent|:quiet|:good]／#help[:done]／#story[:quiz|:end|:none]／#print:<nurie|craft|award|album>／#album／#parentv2[:top|:paper]
        #wkflow（さがす・まねっこ・おえかき・おてつだい・おはなし を 通す） */
     wk: function () {
       withMon('s', function () {
@@ -485,7 +485,19 @@
         MQ.ui.maneko.open();
         setTimeout(function () {
           log('maneko: ' + MQ.ui.maneko.state().word.line);
-          if (Q[2] === 'rec') { MQ.ui.maneko._start(); setTimeout(function () { log('rec=' + MQ.ui.maneko.state().rec + ' class=' + $('#screen-maneko .mn__mic').className); finish(); }, 300); } else finish();
+          if (Q[2] === 'silent' || Q[2] === 'quiet' || Q[2] === 'good') {
+            // #maneko:<段階>:silent|quiet|good … 声の しらべを にせの マイクで（silent は 2回 だまって ほめないか 見る）
+            const V = { silent: { measured: true, voicedMs: 0, start: -1, end: -1, peak: 0.004, floor: 0.003 }, quiet: { measured: true, voicedMs: 700, start: 300, end: 1100, peak: 0.03, floor: 0.003 }, good: { measured: true, voicedMs: 800, start: 300, end: 1200, peak: 0.2, floor: 0.003 } }[Q[2]];
+            MQ.family.setFakeMic({ blob: function () { return new Blob([new Uint8Array(100)], { type: 'audio/webm' }); }, vad: function () { return V; } });
+            const tries = Q[2] === 'silent' ? 2 : 1;
+            (async function () {
+              for (let i = 0; i < tries; i++) { MQ.ui.maneko._start(); await wait(200); MQ.ui.maneko._stop(); await wait(600); }
+              for (let k = 0; k < 30 && MQ.ui.maneko.state().busy && MQ.ui.maneko.state().round === 0; k++) await wait(250);
+              const st = MQ.ui.maneko.state();
+              log('mane ' + Q[2] + ': last=' + st.last + ' miss=' + st.miss + ' round=' + st.round + ' balloon=' + $('#screen-maneko .balloon__tx').textContent);
+              finish();
+            })();
+          } else if (Q[2] === 'rec') { MQ.ui.maneko._start(); setTimeout(function () { log('rec=' + MQ.ui.maneko.state().rec + ' class=' + $('#screen-maneko .mn__mic').className); finish(); }, 300); } else finish();
         }, 400);
       });
     },
