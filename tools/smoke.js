@@ -483,6 +483,10 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(!/ずんだもん|VOICEVOX/.test(g), '案内は おうちの人むけ：ずんだもんの 名前を 出さない');
   ok((g.match(/title: '/g) || []).length === 5, '案内は 5ページ');
   ok(/guideSeen/.test(fs.readFileSync(path.join(ROOT, 'js/ui/guide.js'), 'utf8')) && /MQ.ui.guide.shouldShow()/.test(fs.readFileSync(path.join(ROOT, 'js/ui/home.js'), 'utf8')), 'はじめて おうちに 来た とき 1回だけ 出す');
+  const fb = fs.readFileSync(path.join(ROOT, 'js/ui/feedback.js'), 'utf8');
+  ok(index.indexOf('js/ui/feedback.js') >= 0 && index.indexOf('js/ui/feedback.js') < index.indexOf('js/ui/guide.js') && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').indexOf('./js/ui/feedback.js') >= 0 && harness.indexOf('js/ui/feedback.js') >= 0, '感想フォーム：feedback.js が guide.js より 前・sw・harness に ある');
+  ok(!/ずんだもん|VOICEVOX/.test(fb) && /fbDone/.test(fb) && /fbAskDay/.test(fb) && /length >= 2/.test(fb) && /if \(!FORM.url\) return false/.test(fb), '感想フォーム：1日1回・2日 遊んで から・送りましたで 止まる・url が ない ときは 出さない');
+  ok(/MQ.ui.feedback.due\(\)/.test(fs.readFileSync(path.join(ROOT, 'js/ui/home.js'), 'utf8')) && /MQ.ui.feedback.card\(\)/.test(fs.readFileSync(path.join(ROOT, 'js/ui/parent.js'), 'utf8')), '感想フォーム：おうちの 画面で お願い・おうちの人の 画面に カード');
   ok(/d.kid.birthday = bv/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'はじめの 設定で 誕生日を 入れられる');
 })();
 

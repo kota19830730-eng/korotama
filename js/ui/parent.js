@@ -219,6 +219,7 @@ MQ.ui.parent = (function () {
         kid && kid.mon ? choreCard(kid) : null,
         kid && kid.mon ? birthdayCard(kid) : null,
         kid && kid.mon ? paperCard() : null,
+        MQ.ui.feedback ? MQ.ui.feedback.card() : null,
         installCard(),
         h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'そのほか' }),
           h('div', { class: 'col', style: { gap: '8px' } }, [

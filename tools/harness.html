@@ -89,6 +89,7 @@
 <script src="../js/ui/otetsudai.js"></script>
 <script src="../js/ui/ohanashi.js"></script>
 <script src="../js/ui/print.js"></script>
+<script src="../js/ui/feedback.js"></script>
 <script src="../js/ui/guide.js"></script>
 <script src="../js/ui/parent.js"></script>
 <script src="../js/ui/boot.js"></script>
@@ -572,7 +573,27 @@
     },
     /* #guide[:<ページ 0〜4>]（はじめての 案内・2026-10-10）／#guideflow（さいごまで つぎへ → とじると あいさつ・ゆび）／#setupbd（はじめの 設定の 誕生日） */
     guide: function () { withMon('s', function () { MQ.ui.home.open(); setTimeout(function () { const n = Number(arg) || 0; if (n) { MQ.ui.guide.close(true); MQ.ui.guide.open({ page: n }); } log('guide: open=' + MQ.ui.guide.isOpen() + ' page=' + MQ.ui.guide._i + ' pages=' + MQ.ui.guide.PAGES.length); finish(); }, 600); }); },
-    guideflow: function () { withMon('s', async function () { MQ.ui.home.open(); await wait(600); log('open=' + MQ.ui.guide.isOpen()); for (let k = 0; k < 4; k++) { click($$('.gd__nav .btn--gold')[0]); await wait(100); } log('page=' + MQ.ui.guide._i); click($$('.gd__end .btn--gold')[0]); await wait(800); log('closed=' + !MQ.ui.guide.isOpen() + ' seen=' + MQ.save.settings().guideSeen + ' finger=' + !!$('#screen-home .finger--home')); MQ.ui.home.open(); await wait(600); log('again open=' + MQ.ui.guide.isOpen()); finish(); }); },
+    guideflow: function () { withMon('s', async function () { MQ.ui.home.open(); await wait(600); log('open=' + MQ.ui.guide.isOpen()); for (let k = 0; k < MQ.ui.guide.pages().length - 1; k++) { click($$('.gd__nav .btn--gold')[0]); await wait(100); } log('page=' + MQ.ui.guide._i); click($$('.gd__end .btn--gold')[0]); await wait(800); log('closed=' + !MQ.ui.guide.isOpen() + ' seen=' + MQ.save.settings().guideSeen + ' finger=' + !!$('#screen-home .finger--home')); MQ.ui.home.open(); await wait(600); log('again open=' + MQ.ui.guide.isOpen()); finish(); }); },
+    /* #fbask[:sent|:shot]（感想フォームの お願い）／#fbguide（案内の 6ページめ）／#fbparent（おうちの人の 画面の カード）。url は テスト用の にせ */
+    fbask: function () { withMon('s', async function () {
+      MQ.ui.feedback.FORM.url = 'https://docs.google.com/forms/d/e/TEST/viewform';
+      const day = function (n) { const d = new Date(); d.setDate(d.getDate() - n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+      MQ.save.update(function (d) { d.kid.stamps = {}; d.kid.stamps[day(0)] = 1; });
+      MQ.ui.home.open(); await wait(700);
+      log('1日だけ: ' + (MQ.ui.feedback.isOpen() ? '出た NG' : '出ない OK'));
+      MQ.save.update(function (d) { d.kid.stamps[day(1)] = 2; });
+      MQ.ui.home.open(); await wait(700);
+      log('2日め: ' + (MQ.ui.feedback.isOpen() ? '出た OK' : 'NG'));
+      if (arg === 'shot') { finish(); return; }
+      if (arg === 'sent') { click($$('.fb .gd__end .btn')[1]); await wait(300); log('送りました fbDone=' + MQ.save.settings().fbDone); MQ.save.setSetting('fbAskDay', ''); MQ.ui.home.open(); await wait(700); log('送った あと: ' + (MQ.ui.feedback.isOpen() ? '出た NG' : '出ない OK')); finish(); return; }
+      click($('.fb__later')); await wait(400);
+      MQ.ui.home.open(); await wait(700);
+      log('同じ日: ' + (MQ.ui.feedback.isOpen() ? '出た NG' : '出ない OK'));
+      MQ.save.setSetting('fbAskDay', '2000-1-1'); MQ.ui.home.open(); await wait(700);
+      log('つぎの日: ' + (MQ.ui.feedback.isOpen() ? '出た OK' : 'NG'));
+      finish(); }); },
+    fbguide: function () { withMon('s', function () { MQ.ui.feedback.FORM.url = 'https://docs.google.com/forms/d/e/TEST/viewform'; MQ.save.setSetting('guideSeen', false); MQ.ui.home.open(); setTimeout(function () { MQ.ui.guide.close(true); MQ.ui.guide.open({ page: 5 }); log('pages=' + MQ.ui.guide.pages().length + ' (6 が 正) title=' + ($('.gd__title') || {}).textContent); finish(); }, 600); }); },
+    fbparent: function () { withMon('s', function () { MQ.ui.feedback.FORM.url = 'https://docs.google.com/forms/d/e/TEST/viewform'; MQ.ui.parent.open(); setTimeout(function () { const c = $$('#screen-parent .card__title').filter(function (e) { return e.textContent.indexOf('感想') >= 0; })[0]; log('parent card=' + !!c); if (c) c.scrollIntoView(); finish(); }, 300); }); },
     setupbd: function () { localStorage.removeItem(MQ.save.KEY); MQ.save._set(null); MQ.ui.setup.open(); const s = $$('#screen-setup select'); s[0].value = '05'; s[1].value = '03'; click($$('#screen-setup .btn--gold')[0]); log('birthday=' + MQ.save.kid().birthday + ' screen=' + MQ.ui.current); const b = $('#screen-setup .page__body'); if (b) b.scrollTop = 9999; finish(); },
     flow: function () {
       withMon(arg || 's', async function () {

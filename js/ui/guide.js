@@ -51,26 +51,29 @@ MQ.ui = MQ.ui || {};
     } }
   ];
 
+  if (MQ.ui.feedback) PAGES.push(MQ.ui.feedback.guidePage());   // 感想フォームの お願い（url の ある ときだけ 出る）
+  function pages() { return PAGES.filter(function (p) { return !p.need || p.need(); }); }
   let cur = null;
   function open(opts) {
+    const L = pages();
     opts = opts || {};
     close(true);
     const stage = document.getElementById('stage');
     if (!stage) return;
-    let i = Math.max(0, Math.min(PAGES.length - 1, opts.page || 0));
+    let i = Math.max(0, Math.min(L.length - 1, opts.page || 0));
     const card = h('div', { class: 'gd__card' });
     const ov = h('div', { class: 'gd', role: 'dialog', 'aria-label': '使い方の案内' }, [card]);
     cur = { ov: ov, onClose: opts.onClose };
     function paint() {
-      const P = PAGES[i], last = i === PAGES.length - 1;
+      const P = L[i], last = i === L.length - 1;
       card.innerHTML = '';
       card.appendChild(h('div', { class: 'gd__top' }, [
-        h('span', { class: 'gd__step', text: (i + 1) + ' / ' + PAGES.length }),
+        h('span', { class: 'gd__step', text: (i + 1) + ' / ' + L.length }),
         h('button', { class: 'gd__skip', type: 'button', text: last ? '' : 'とばす', onclick: function () { MQ.sfx.tap(); close(); } })
       ]));
       card.appendChild(h('h2', { class: 'gd__title', text: P.title }));
       card.appendChild(h('div', { class: 'gd__body' }, P.body()));
-      card.appendChild(h('div', { class: 'gd__dots' }, PAGES.map(function (x, k) { return h('i', { class: k === i ? 'is-on' : '' }); })));
+      card.appendChild(h('div', { class: 'gd__dots' }, L.map(function (x, k) { return h('i', { class: k === i ? 'is-on' : '' }); })));
       card.appendChild(h('div', { class: 'gd__nav' }, [
         i > 0 ? h('button', { class: 'btn', type: 'button', text: 'もどる', onclick: function () { MQ.sfx.tap(); i--; paint(); } }) : h('span'),
         last
@@ -93,5 +96,5 @@ MQ.ui = MQ.ui || {};
   }
   function isOpen() { return !!cur; }
   function shouldShow() { return MQ.save.settings().guideSeen !== true; }
-  MQ.ui.guide = { open: open, close: close, isOpen: isOpen, shouldShow: shouldShow, PAGES: PAGES };
+  MQ.ui.guide = { open: open, close: close, isOpen: isOpen, shouldShow: shouldShow, PAGES: PAGES, pages: pages };
 })();

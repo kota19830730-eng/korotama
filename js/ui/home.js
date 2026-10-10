@@ -173,6 +173,7 @@ MQ.ui = MQ.ui || {};
       };
       // はじめての 案内（おうちの人むけ・1回だけ）。とじてから あいさつ
       if (MQ.ui.guide && MQ.ui.guide.shouldShow() && !opts.noGuide) setTimeout(function () { MQ.ui.guide.open({ onClose: function () { setTimeout(greet, 200); } }); }, 300);
+      else if (MQ.ui.feedback && MQ.ui.feedback.due() && !opts.noGuide) setTimeout(function () { if (!MQ.ui.feedback.ask(function () { setTimeout(greet, 200); })) greet(); }, 300);   // 感想フォームの お願い（1日1回）
       else setTimeout(greet, 250);
       // テスト用（harness）：反応を 外から 起こす
       MQ.ui.home._t = { mon: mon, scene: scene, bl: bl, react: react, onTap: onTap, sleep: function () { mon.sleep(); }, idle: armIdle, letter: letter, friend: friend, season: se };

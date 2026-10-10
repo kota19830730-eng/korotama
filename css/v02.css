@@ -215,4 +215,7 @@
 .gd__nav > .btn--big { min-width: 150px; }
 .gd__end { display: flex; flex-direction: column; gap: 8px; flex: 1; align-items: stretch; }
 .gd__end .btn { width: 100%; }
+/* 感想フォームの お願い（feedback.js）：リンクの ボタン */
+a.btn { text-decoration: none; text-align: center; box-sizing: border-box; justify-content: center; }
+.fb__later { align-self: center; }
 .finger--home { left: 20px; top: 14px; }
