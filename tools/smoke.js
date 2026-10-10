@@ -434,6 +434,16 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   const want = { red: '#e0493a', blue: '#3c6fd0', yellow: '#f2c94c', green: '#5cb23a', pink: '#f08cb0', purple: '#8a5ac8' };
   Object.keys(want).forEach(function (k) { const c = img(want[k]); ok(c.id === k, 'さがす：' + k + ' を 読む（' + c.id + '）'); });
   ok(MQ.find.match({ type: 'color', color: 'red' }, img(want.red)) && !MQ.find.match({ type: 'color', color: 'blue' }, img(want.red)), 'さがす：あってる／ちがう');
+  // v0.2.1 ゆかの 色が 大きくても、おだいの 色が あれば OK
+  (function () {
+    const W = 60, H = 60, floor = [196, 128, 70], px = new Uint8ClampedArray(W * H * 4);
+    function pic(hex, r) { const c = hex ? [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)] : floor; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4, v = Math.hypot(x - 30, y - 34) < r ? c : floor; px[i] = v[0]; px[i + 1] = v[1]; px[i + 2] = v[2]; px[i + 3] = 255; } return MQ.find.classify(px, W, H); }
+    const pu = pic('#7a4fa8', 8);
+    ok(pu.id === 'orange' && MQ.find.match({ type: 'color', color: 'purple' }, pu), 'さがす：ゆか（オレンジ）の 上の 小さな むらさき → OK');
+    ok(MQ.find.match({ type: 'color', color: 'blue' }, pic('#3c6fd0', 7)) && MQ.find.match({ type: 'color', color: 'green' }, pic('#5cb23a', 7)), 'さがす：ゆかの 上の あお・みどり → OK');
+    const fl = pic(null, 0);
+    ok(['red', 'yellow', 'purple', 'pink', 'blue', 'green'].every(function (k) { return !MQ.find.match({ type: 'color', color: k }, fl); }), 'さがす：ゆかだけ → どの おだいも OK に しない');
+  })();
   ['s', 'm', 'l', 'k'].forEach(function (s) { for (let i = 0; i < 30; i++) { const m = MQ.find.mission(s); if (!m || !m.line) { ok(false, 'さがす mission ' + s); return; } } });
   voiced(MQ.find.lines(), 'さがす');
   // A かいた たべもの：かずの もんだいに まざる
