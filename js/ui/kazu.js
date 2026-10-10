@@ -24,7 +24,7 @@ MQ.ui.kazu = (function () {
   function next() {
     clearTimeout(introT);
     task = kind === 'count' ? MQ.tasks.sum() : MQ.tasks.numeral();
-    misses = 0; busy = false; counted = 0;
+    misses = 0; busy = task.mode === 'take'; counted = 0;   // わける：食べる まえに さわれない（2026-10-10）
     render();
     introT = setTimeout(intro, 250);
   }

@@ -46,7 +46,10 @@ MQ.ui = MQ.ui || {};
     fileIn.addEventListener('change', function () {
       const f = fileIn.files && fileIn.files[0]; if (!f) return;
       const r = new FileReader();
-      r.onload = function () { const im = new Image(); im.onload = function () { judgeImage(im); }; im.src = String(r.result); };
+      // 読めない 写真（HEIC など）は だまって 止まらず「いろが よく みえないね」（2026-10-10）
+      const bad = function () { if (MQ.ui.current === 'screen-sagasu') bl.say('いろが よく みえないね。 ちかくで とってみてね。'); };
+      r.onerror = bad;
+      r.onload = function () { const im = new Image(); im.onerror = bad; im.onload = function () { judgeImage(im); }; im.src = String(r.result); };
       r.readAsDataURL(f);
       fileIn.value = '';
     });

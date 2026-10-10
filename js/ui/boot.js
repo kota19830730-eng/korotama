@@ -3,8 +3,9 @@
    --------------------------------------------------------- */
 (function () {
   // 声（ずんだもん）の AudioContext も ここで 起こす（iPad は タップの 中でしか ひらかない・タイマーから 出る さいしょの 声が 出なかった）
-  function unlock() { try { MQ.sfx.unlock(); MQ.bgm.wake(); if (MQ.voice.unlock) MQ.voice.unlock(); } catch (e) { /* なし */ } }
+  function unlock() { try { MQ.sfx.unlock(); MQ.bgm.wake(); if (MQ.voice.unlock) MQ.voice.unlock(); if (MQ.family && MQ.family.unlock) MQ.family.unlock(); } catch (e) { /* なし */ } }
   ['touchend', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
+  document.addEventListener('visibilitychange', function () { try { if (document.hidden) MQ.bgm.pause(); else MQ.bgm.wake(); } catch (e) { /* なし */ } });
 
   function start() {
     MQ.stage.fit();

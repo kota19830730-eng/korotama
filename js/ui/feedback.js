@@ -22,12 +22,20 @@ MQ.ui = MQ.ui || {};
   };
   const AGE = { s: '3〜4歳', m: '4〜5歳', l: '5〜6歳', k: '6歳（年長）' };
 
+  // 版（Service Worker に きく・2026-10-10：index に meta が なく いつも 空だった）
+  let swVer = '';
+  try {
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.version) swVer = String(e.data.version).replace('manabi-tamago-', ''); });
+      navigator.serviceWorker.ready.then(function (r) { if (r.active) r.active.postMessage('version'); }).catch(function () { /* なし */ });
+    }
+  } catch (e) { /* なし */ }
   function dayKey(t) { const d = new Date(t || Date.now()); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function infoText() {
     const k = MQ.save.kid();
     const lines = [];
     let ver = '';
-    try { ver = (document.querySelector('meta[name="app-version"]') || {}).content || ''; } catch (e) { /* なし */ }
+    ver = swVer;
     if (k) {
       const days = Object.keys(k.stamps || {}).length;
       lines.push('段階 ' + (AGE[k.stage] || k.stage || '－') + '・スタンプ ' + MQ.save.stampsTotal() + 'こ・遊んだ日 ' + days + '日' + (ver ? '・版 ' + ver : ''));

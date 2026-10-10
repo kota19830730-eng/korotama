@@ -198,6 +198,8 @@ MQ.bgm = (function () {
     if (!enabled) { const d = desired; stop(); desired = d; }
     else if (desired) play(desired);
   }
+  // アプリが かくれた（ほかの アプリ・画面を けした）ときは 止めて、もどったら wake() で つづきを（2026-10-10：うらで 鳴りつづけて いた）
+  function pause() { const d = desired; stop(); desired = d; }
   function wake() {
     if (!enabled || !ctx) return;
     if (ctx.state !== 'running') { try { ctx.resume(); } catch (e) { /* なし */ } }
@@ -217,7 +219,7 @@ MQ.bgm = (function () {
     return bad;
   }
   function setTimbre(k) { timbre = k || null; }
-  return { setTimbre: setTimbre, play: play, stop: stop, forScreen: forScreen, duck: duck, setEnabled: setEnabled, isEnabled: function () { return enabled; }, wake: wake, validate: validate, SONGS: SONGS, SCREEN: SCREEN, freq: freq, parse: parse,
+  return { setTimbre: setTimbre, play: play, stop: stop, forScreen: forScreen, duck: duck, setEnabled: setEnabled, isEnabled: function () { return enabled; }, wake: wake, pause: pause, validate: validate, SONGS: SONGS, SCREEN: SCREEN, freq: freq, parse: parse,
            current: function () { return playing; }, desired: function () { return desired; }, isDucked: function () { return ducked; },
            setIntensity: function () { /* ころたまには ない（まなびモンスターの 道具と 形を そろえる） */ }, setEnrage: function () { /* 同上 */ } };
 })();

@@ -83,7 +83,7 @@ MQ.ui.shop = (function () {
             if (round >= MQ.tasks.ROUNDS) MQ.ui.finish('color');
             else next();
           });
-        } else els.bl.say(task.more, null, MQ.ui.colorDots(task.want, task.n - placed, true));
+        } else els.bl.say(task.moreFor ? task.moreFor(task.n - placed) : task.more, null, MQ.ui.colorDots(task.want, task.n - placed, true));
       };
       shelf.appendChild(b);
     });

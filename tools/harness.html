@@ -207,6 +207,25 @@
       const im = new Image(); im.onload = function () { MQ.ui.draw.fromImage(im, false); finish(); }; im.src = fakeDrawing();
     },
     egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
+    // #bugfix：2026-10-10 バグ直しの たしかめ（声の cb が 読みかえで きえない・おうちへで すてる・スタンプ 2重なし・まねっこを はなれる）
+    bugfix: function () { withMon('s', async function () {
+      let c1 = 0, c2 = 0;
+      MQ.ui.speak('いち', function () { c1++; }); MQ.ui.speak('に');
+      await wait(4000);
+      log('bug speak-interrupt cb=' + c1 + (c1 === 1 ? ' OK' : ' NG')); if (c1 !== 1) errors++;
+      MQ.ui.speak('さん', function () { c2++; }); MQ.ui.stopSpeak();
+      await wait(4000);
+      log('bug stopSpeak cb=' + c2 + (c2 === 0 ? ' OK' : ' NG')); if (c2 !== 0) errors++;
+      const s0 = MQ.save.stampsToday(); MQ.ui.finish('count'); MQ.ui.finish('count');
+      log('bug finish twice stamps +' + (MQ.save.stampsToday() - s0) + (MQ.save.stampsToday() - s0 === 1 ? ' OK' : ' NG')); if (MQ.save.stampsToday() - s0 !== 1) errors++;
+      await wait(3000);
+      MQ.family.setFakeMic({ blob: function () { return new Blob([new Uint8Array(100)], { type: 'audio/webm' }); } });
+      MQ.ui.maneko.open(); await wait(400);
+      const r0 = MQ.ui.maneko.state().round; MQ.ui.maneko._start(); await wait(100);
+      MQ.ui.home.open(); await wait(6000);
+      log('bug maneko leave: screen=' + MQ.ui.current + ' round=' + MQ.ui.maneko.state().round + (MQ.ui.current === 'screen-home' && MQ.ui.maneko.state().round === r0 ? ' OK' : ' NG')); if (MQ.ui.current !== 'screen-home') errors++;
+      finish();
+    }); },
     home: function () { withMon(arg || 's', function () { if (Q[2] === 'helped') MQ.save.update(function (d) { d.kid.help[MQ.save.today()] = 'shoes'; }); MQ.ui.home.open(); setTimeout(function () { const L = MQ.ui.home._t.letter, r = L.getBoundingClientRect(); log('letter: ' + L.getAttribute('aria-label') + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); finish(); }, 400); }); },   // #home[:段階[:helped]]（helped＝きょうの おてつだい ずみ＝ポストに はなまる）
     // 鍵の 長おし（v0.1.18）：touch＝touchstart→1.6秒→touchend で おうちの人の 画面／tap＝短く はなす→トースト／mouse＝pointer（マウス）／shot＝押して いる 途中を 撮る
     hold: function () { withMon('s', function () { MQ.ui.home.open(); setTimeout(function () {

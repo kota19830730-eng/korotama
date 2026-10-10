@@ -21,7 +21,9 @@ for (let n = 1; n <= 10; n++) {
   add('ぴったり ' + num(n) + '！ ありがとう！');
   T.THINGS.forEach(function (th) { T.COLORS.forEach(function (c) { if (n <= 4) add(c.name + ' ' + th.name + 'を ' + num(n) + ' ください'); }); });
 }
-add('まだ たりないよ。あと ' + num(1)); add('ちょっと おおいね。ひとつ もどそう'); add('あと ' + num(1) + ' ほしいな');
+for (let k = 1; k <= 10; k++) { add('まだ たりないよ。あと ' + num(k)); add('あと ' + num(k) + ' ほしいな'); }   // のこりの 数（2026-10-10）
+add('ちょっと おおいね。ひとつ もどそう');
+add('できた！ きょうの スタンプは もう いっぱい！');
 T.THINGS.forEach(function (th) { T.COLORS.forEach(function (c) { add('わあ、' + c.name + ' ' + th.name + 'だ！ ありがとう！'); }); });
 T.COLORS.forEach(function (c) { add('それは ' + c.say + 'だね。'); add(c.say + 'は どれかな？'); });
 T.FOODS.forEach(function (f) { add('それは ' + f.name + 'だね。'); });   // ごはん：ちがう 食べものを おした とき（v0.1.10）

@@ -28,14 +28,16 @@ MQ.season = (function () {
   const BIRTHDAY = { greet: 'おたんじょうび おめでとう！ きょうは とくべつな ひ！', tell: 'おたんじょうび おめでとう！ ろうそくを ふーって してね。' };
   const MON_BIRTHDAY = { greet: 'きょうは わたしが うまれた ひ！ いっしょに いてくれて ありがとう！' };
   function md(d) { return ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  // 2月29日 うまれは うるう年で ない 年は 2月28日に おいわい（2026-10-10）
+  function sameDay(b, d) { if (b === md(d)) return true; const y = d.getFullYear(); const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; return b === '02-29' && !leap && md(d) === '02-28'; }
   function seasonOf(d) { const m = d.getMonth() + 1; return m >= 3 && m <= 5 ? 'spring' : m >= 6 && m <= 8 ? 'summer' : m >= 9 && m <= 11 ? 'autumn' : 'winter'; }
   function eventOf(d) { const k = md(d); return EVENTS.filter(function (e) { return k >= e.from && k <= e.to; })[0] || null; }
   function of(date, kid) {
     const d = date instanceof Date ? date : new Date(date || Date.now());
     const s = seasonOf(d), ev = eventOf(d);
-    const bday = !!(kid && kid.birthday && kid.birthday === md(d));
+    const bday = !!(kid && kid.birthday && sameDay(kid.birthday, d));
     let monB = false;
-    if (kid && kid.created) { const c = new Date(kid.created); monB = md(c) === md(d) && c.getFullYear() < d.getFullYear(); }
+    if (kid && kid.created) { const c = new Date(kid.created); monB = sameDay(md(c), d) && c.getFullYear() < d.getFullYear(); }
     const greet = bday ? BIRTHDAY.greet : monB ? MON_BIRTHDAY.greet : ev ? ev.greet : null;
     return { season: s, seasonInfo: SEASONS[s], event: ev ? ev.id : null, eventInfo: ev, birthday: bday, monBirthday: monB, greet: greet };
   }

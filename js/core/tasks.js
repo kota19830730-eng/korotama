@@ -64,6 +64,7 @@ MQ.tasks = (function () {
       wrong: function (f) { return 'それは ' + f.name + 'だね。' + food.name + 'を ' + num(n) + ' ちょうだい'; },
       ok: 'ぴったり ' + num(n) + '！ ありがとう！',
       more: 'まだ たりないよ。あと ' + num(1),
+      moreFor: function (left) { return 'まだ たりないよ。あと ' + num(Math.max(1, left)); },   // 2026-10-10：のこりの 数を 正しく（5こ たりないのに「あと ひとつ」と 言って いた）
       over: 'ちょっと おおいね。ひとつ もどそう'
     };
   }
@@ -80,7 +81,8 @@ MQ.tasks = (function () {
       line: want.name + ' ' + thing.name + 'を ' + num(n) + ' ください',
       ok: 'わあ、' + want.name + ' ' + thing.name + 'だ！ ありがとう！',
       wrongColor: function (c) { return 'それは ' + c.say + 'だね。' + want.say + 'は どれかな？'; },
-      more: 'あと ' + num(1) + ' ほしいな'
+      more: 'あと ' + num(1) + ' ほしいな',
+      moreFor: function (left) { return 'あと ' + num(Math.max(1, left)) + ' ほしいな'; }
     };
   }
   /* あそぶ：かたち。おおきいは いろも つく（「あかい まる」） */

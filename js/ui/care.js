@@ -111,7 +111,7 @@ MQ.ui.care = (function () {
       return;
     }
     els.mon.mood('sad');
-    if (placed < task.n) els.bl.say(placed === 0 ? task.line : task.more, null, foodPics(task.n));
+    if (placed < task.n) els.bl.say(placed === 0 ? task.line : (task.moreFor ? task.moreFor(task.n - placed) : task.more), null, foodPics(task.n));
     else els.bl.say(task.over, null, foodPics(task.n));
   }
   return { open: open, next: next, state: function () { return { round: round, task: task, placed: placed }; } };

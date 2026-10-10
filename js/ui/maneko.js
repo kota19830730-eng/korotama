@@ -27,7 +27,11 @@ MQ.ui = MQ.ui || {};
     oyasumi: '<svg viewBox="0 0 64 64"><path d="M40 8a24 24 0 1 0 16 36A20 20 0 0 1 40 8z" fill="#f2c94c"/><path d="M48 14l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" fill="#f2b544"/></svg>'
   };
 
-  function open() { round = 0; used = []; next(); }
+  function open() { close(); round = 0; used = []; next(); }
+  // 画面を はなれる（おうちへ）：録音を 止めて、あとから とどく 録音の おわりは すてる（2026-10-10 バグ直し：おうちで 声が 流れて まねっこに 引きもどされて いた）
+  let session = 0;
+  function close() { session++; endLoop(); if (rec) { const r = rec; rec = null; try { r.stop(); } catch (e) { /* なし */ } } busy = false; }
+  function here() { return MQ.ui.current === 'screen-maneko'; }
   function next() {
     w = MQ.mane.word(MQ.save.kid().stage, used);
     used.push(w.say);
@@ -71,17 +75,19 @@ MQ.ui = MQ.ui || {};
     els.mic.classList.add('is-rec');
     els.mon.mood('tilt', 3000);
     MQ.sfx.pop();   // 「どうぞ」の あいず
+    const my = session;
     rec = MQ.family.record({
       max: 6000, autoStop: true, waitMs: 4500, silenceMs: 800,   // 言いおわったら 自動で 止まる（もう一度 おさなくて いい）
       onStart: function () { loop(); },
       onDone: function (r) {
+        if (my !== session || !here()) return;
         endLoop(); rec = null; els.mic.classList.remove('is-rec');
         const j = MQ.mane.judge(r.vad, w.say);
         last = j;
         if (j === 'none') { heard(); return; }
         echo(r.blob, r.vad, j);
       },
-      onError: function () { endLoop(); rec = null; els.mic.classList.remove('is-rec'); els.bl.say('マイクが つかえないみたい。いっしょに いってみよう！ ' + w.say + '！'); }
+      onError: function () { if (my !== session) return; endLoop(); rec = null; els.mic.classList.remove('is-rec'); els.bl.say('マイクが つかえないみたい。いっしょに いってみよう！ ' + w.say + '！'); }
     });
   }
   function stopRec() { if (rec) rec.stop(); }
@@ -91,7 +97,7 @@ MQ.ui = MQ.ui || {};
     els.ring.style.transform = 'scale(' + (1 + lv * 0.8).toFixed(2) + ')';
     raf = requestAnimationFrame(loop);
   }
-  function endLoop() { cancelAnimationFrame(raf); els.ring.style.transform = ''; }
+  function endLoop() { cancelAnimationFrame(raf); if (els.ring) els.ring.style.transform = ''; }
   // 何も きこえなかった：ほめない・まねっこ しない。もう一度（2回めからは いっしょに 言う お手本つき）
   function heard() {
     miss++;
@@ -104,7 +110,7 @@ MQ.ui = MQ.ui || {};
     const cut = vad && vad.measured && vad.start >= 0 ? { from: Math.max(0, vad.start - 120) / 1000, to: (vad.end + 260) / 1000 } : {};
     els.bl.say('まねっこ するよ！', function () {
       els.mon.mood('jump', 1400);
-      MQ.family.playBlob(blob, { rate: 1.35, from: cut.from, to: cut.to, onend: function () { praise(j); } });
+      MQ.family.playBlob(blob, { rate: 1.35, from: cut.from, to: cut.to, onend: function () { if (here()) praise(j); } });
     });
   }
   // j：good・parent＝しっかり ほめる／quiet・short＝「いえたね」＋つぎの めあて／unknown（はかれない 端末）＝まねっこ できたよ
@@ -120,5 +126,5 @@ MQ.ui = MQ.ui || {};
       else next();
     });
   }
-  MQ.ui.maneko = { open: open, state: function () { return { round: round, word: w, rec: !!rec, miss: miss, last: last, busy: busy }; }, _start: startRec, _stop: stopRec };
+  MQ.ui.maneko = { open: open, close: close, state: function () { return { round: round, word: w, rec: !!rec, miss: miss, last: last, busy: busy }; }, _start: startRec, _stop: stopRec };
 })();

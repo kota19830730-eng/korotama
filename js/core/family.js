@@ -96,37 +96,42 @@ MQ.family = (function () {
       },
       ms: function () { return Date.now() - t0; }
     };
+    let settled = false;   // onDone／onError は 1回だけ（マイクが 自分で 止まった あとに 時間切れで もう1回 よばれて いた）
+    function release() { stopped = true; clearTimeout(timer); clearInterval(vadTimer); if (stream) stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) { /* なし */ } }); }
+    function fail(e) { if (settled) return; settled = true; release(); if (opts.onError) opts.onError(e); }
     function finish() {
+      if (settled) return; settled = true;
+      clearTimeout(timer); clearInterval(vadTimer); stopped = true;
       if (stream) stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) { /* なし */ } });
       const type = (rec && rec.mimeType) || (chunks[0] && chunks[0].type) || 'audio/webm';
       const blob = new Blob(chunks, { type: type });
-      if (!blob.size) { if (opts.onError) opts.onError(new Error('empty')); return; }
+      if (!blob.size) { settled = false; fail(new Error('empty')); return; }
       if (opts.onDone) opts.onDone({ blob: blob, url: URL.createObjectURL(blob), ms: Date.now() - t0, vad: vadOut() });
     }
     if (fakeMic) { timer = setTimeout(api.stop, max); if (opts.onStart) setTimeout(opts.onStart, 0); return api; }
-    if (!micOk()) { setTimeout(function () { if (opts.onError) opts.onError(new Error('nomic')); }, 0); return api; }
+    if (!micOk()) { setTimeout(function () { fail(new Error('nomic')); }, 0); return api; }
     navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then(function (s) {
       stream = s;
-      if (stopped) { finish(); return; }
-      try { rec = new MediaRecorder(s); } catch (e) { if (opts.onError) opts.onError(e); return; }
+      if (stopped) { if (settled) release(); else finish(); return; }   // 止めた あとで マイクが 開いた ときも かならず 閉じる
+      try { rec = new MediaRecorder(s); } catch (e) { fail(e); return; }   // マイクを 開いた まま に しない
       rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
       rec.onstop = finish;
       try { const c = ctx(); if (c) { const src = c.createMediaStreamSource(s); if (c.state !== 'running') { try { c.resume(); } catch (e) { /* なし */ } } an = c.createAnalyser(); an.fftSize = 512; buf = new Uint8Array(an.fftSize); src.connect(an); } } catch (e) { an = null; }
       t0 = Date.now();
-      rec.start();
+      try { rec.start(); } catch (e) { fail(e); return; }
       timer = setTimeout(api.stop, max);
       if (an) vadTimer = setInterval(vadTick, TICK);
       if (opts.onStart) opts.onStart();
-    }).catch(function (e) { stopped = true; if (opts.onError) opts.onError(e); });
+    }).catch(function (e) { fail(e); });
     return api;
   }
   function blobToData(blob, cb) { const r = new FileReader(); r.onload = function () { cb(String(r.result)); }; r.onerror = function () { cb(''); }; r.readAsDataURL(blob); }
   function save(id, blob, cb, ms) {
     blobToData(blob, function (data) {
       if (!data) { if (cb) cb(false); return; }
-      load(); store[id] = { data: data, at: Date.now(), ms: ms || 0 };
+      load(); const prev = store[id]; store[id] = { data: data, at: Date.now(), ms: ms || 0 };
       const ok = write();
-      if (!ok) delete store[id];
+      if (!ok) { if (prev) store[id] = prev; else delete store[id]; }   // 入らなかった ときは 前の 録音を のこす
       if (cb) cb(ok);
     });
   }
@@ -175,8 +180,9 @@ MQ.family = (function () {
     let seen = {};
     try { seen = JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { seen = {}; }
     if (seen[id] === day) return false;
+    const c = ctx(); if (c && c.state !== 'running') return false;   // iPad など まだ 音が 出せない ときは きょうの 1回を つかわない
     seen[id] = day; try { localStorage.setItem(k, JSON.stringify(seen)); } catch (e) { /* なし */ }
     return play(id, opts);
   }
-  return { KEY: KEY, PHRASES: PHRASES, MAX_MS: MAX_MS, has: has, list: list, remove: remove, clear: clear, record: record, save: save, play: play, playBlob: playBlob, stop: stop, once: once, micOk: micOk, setFakeMic: setFakeMic, _setRaw: setRaw, _reset: function () { store = null; } };
+  return { unlock: function () { const c = ctx(); if (c && c.state !== 'running') { try { c.resume(); } catch (e) { /* なし */ } } }, KEY: KEY, PHRASES: PHRASES, MAX_MS: MAX_MS, has: has, list: list, remove: remove, clear: clear, record: record, save: save, play: play, playBlob: playBlob, stop: stop, once: once, micOk: micOk, setFakeMic: setFakeMic, _setRaw: setRaw, _reset: function () { store = null; } };
 })();

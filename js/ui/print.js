@@ -132,7 +132,10 @@ MQ.ui = MQ.ui || {};
     document.body.classList.add('is-printing');
     const done = function () { document.body.classList.remove('is-printing'); if (printRoot && printRoot.parentNode) printRoot.parentNode.removeChild(printRoot); printRoot = null; window.removeEventListener('afterprint', done); };
     window.addEventListener('afterprint', done);
-    setTimeout(function () { try { window.print(); } catch (e) { /* なし */ } setTimeout(done, 1500); }, 300);
+    // Android の Chrome は print() が すぐ もどる → 1.5秒で 消すと 白い 紙に なった（2026-10-10）。おわりは afterprint で。
+    // afterprint が 来ない 端末の 保険：アプリに もどって きた（画面が また 見えた・さわった）とき
+    const back = function () { if (document.visibilityState === 'visible') setTimeout(done, 800); };
+    setTimeout(function () { try { window.print(); } catch (e) { /* なし */ } setTimeout(function () { document.addEventListener('visibilitychange', back, { once: true }); document.addEventListener('pointerdown', function () { setTimeout(done, 300); }, { once: true }); }, 1000); }, 300);
   }
 
   function open(kind) {

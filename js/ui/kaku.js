@@ -107,6 +107,7 @@ MQ.ui = MQ.ui || {};
     const k = KINDS.filter(function (x) { return x.id === kind; })[0] || KINDS[0];
     const P = MQ.ui.pad();
     const bl = MQ.ui.balloon('', { cls: 'balloon--slim' });
+    let submitting = false;
     const page = h('div', { class: 'page' }, [
       MQ.ui.topBar({ home: true, replay: function () { bl.say(k.ask); } }),
       h('div', { class: 'page__body' }, [h('div', { class: 'wrap draw' }, [
@@ -114,13 +115,16 @@ MQ.ui = MQ.ui || {};
         h('div', { class: 'row', style: { width: '380px' } }, [
           h('button', { class: 'btn', type: 'button', text: 'ぜんぶ けす', onclick: function () { MQ.sfx.tap(); P.clear(); } }),
           h('button', { class: 'btn btn--gold btn--big', type: 'button', text: 'できた！', style: { flex: '1' }, onclick: function () {
+            if (submitting) return;   // 2回 タップで 2つ ほぞん・スタンプ 2つに ならない ように（2026-10-10）
             MQ.sfx.tap();
             if (!P.strokes()) { bl.say('なにか かいてね'); return; }
+            submitting = true;
             const im = new Image();
+            im.onerror = function () { submitting = false; };
             im.onload = function () {
               let res = null;
               try { res = MQ.cutout.fromImage(im, { x: 0, y: 0, w: 1, h: 1 }); } catch (e) { res = null; }
-              if (!res || !res.raw || res.drawn < 30) { bl.say('もう すこし おおきく かいてね'); return; }
+              if (!res || !res.raw || res.drawn < 30) { submitting = false; bl.say('もう すこし おおきく かいてね'); return; }
               shrink(res.raw.png, 200, function (png) { place(kind, png); });
             };
             im.src = P.canvas.toDataURL('image/png');

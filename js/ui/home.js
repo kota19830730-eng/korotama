@@ -60,12 +60,15 @@ MQ.ui = MQ.ui || {};
 
   let idleT = [];
   function clearIdle() { idleT.forEach(clearTimeout); idleT = []; }
+  // 2026-10-10：あとから 動く タイマーは、その 画面に まだ いる ときだけ（すぐ ほかの 遊びに 行くと、あいさつや 案内が つぎの 画面に かさなって いた）
+  function here(id, el) { return MQ.ui.current === id && document.body.contains(el); }
 
   MQ.ui.home = {
     LINES: LINES, IDLE: IDLE, TAPS: TAPS,
     open: function (opts) {
       opts = opts || {};
       MQ.ui.stopSpeak();
+      try { if (MQ.ui.maneko) MQ.ui.maneko.close(); MQ.family.stop(); } catch (e) { /* なし */ }   // まねっこの 録音・まねっこの 声を 止める
       clearIdle();
       const kid = MQ.save.kid();
       if (!kid || !kid.mon) { MQ.ui.start.open(); return; }
@@ -108,7 +111,7 @@ MQ.ui = MQ.ui || {};
         if (mon.isAsleep()) { kind = 'wake'; }
         mon.mood(kind);
         if (kind === 'shy') mon.blush();
-        if (kind === 'pat') { mon.hearts(5); if (MQ.family.has('love') && Math.random() < 0.5) { bl.say(MQ.util.pick(LINES.pat)); setTimeout(function () { MQ.family.play('love'); }, 1200); return kind; } }
+        if (kind === 'pat') { mon.hearts(5); if (MQ.family.has('love') && Math.random() < 0.5) { bl.say(MQ.util.pick(LINES.pat)); setTimeout(function () { if (here('screen-home', mon)) MQ.family.play('love'); }, 1200); return kind; } }
         const sf = { jump: 'jump', spin: 'spin', tickle: 'tickle', pat: 'heart', yawn: 'yawn', wake: 'wake' }[kind];
         if (sf && MQ.sfx[sf]) MQ.sfx[sf](); else MQ.sfx.tap();
         bl.say(line || MQ.util.pick(LINES[kind] || LINES.happy));
@@ -172,6 +175,7 @@ MQ.ui = MQ.ui || {};
       MQ.ui.mount('screen-home', page);
       MQ.ui.show('screen-home');
       const greet = function () {
+        if (!here('screen-home', mon)) return;
         bl.say(greeting(), function () {
           // B（v0.2）：おうちの人の 声（1日 1回）。誕生日 → おはよう の じゅん
           const day = MQ.save.today();
@@ -186,8 +190,8 @@ MQ.ui = MQ.ui || {};
         }
       };
       // はじめての 案内（おうちの人むけ・1回だけ）。とじてから あいさつ
-      if (MQ.ui.guide && MQ.ui.guide.shouldShow() && !opts.noGuide) setTimeout(function () { MQ.ui.guide.open({ onClose: function () { setTimeout(greet, 200); } }); }, 300);
-      else if (MQ.ui.feedback && MQ.ui.feedback.due() && !opts.noGuide) setTimeout(function () { if (!MQ.ui.feedback.ask(function () { setTimeout(greet, 200); })) greet(); }, 300);   // 感想フォームの お願い（1日1回）
+      if (MQ.ui.guide && MQ.ui.guide.shouldShow() && !opts.noGuide) setTimeout(function () { if (!here('screen-home', mon)) return; MQ.ui.guide.open({ onClose: function () { setTimeout(greet, 200); } }); }, 300);
+      else if (MQ.ui.feedback && MQ.ui.feedback.due() && !opts.noGuide) setTimeout(function () { if (!here('screen-home', mon)) return; if (!MQ.ui.feedback.ask(function () { setTimeout(greet, 200); })) greet(); }, 300);   // 感想フォームの お願い（1日1回）
       else setTimeout(greet, 250);
       // テスト用（harness）：反応を 外から 起こす
       MQ.ui.home._t = { mon: mon, scene: scene, bl: bl, react: react, onTap: onTap, sleep: function () { mon.sleep(); }, idle: armIdle, letter: letter, friend: friend, season: se };
@@ -220,8 +224,9 @@ MQ.ui = MQ.ui || {};
       MQ.ui.confetti(box, 26);
       const n = MQ.save.stampsToday();
       setTimeout(function () {
+        if (!here('screen-done', mon)) return;
         // 名前は 声には 入れない（録音した 声（ずんだもん）に 名前は 無い ので、voice.js が 名前を 外して 読む）
-        bl.say(opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！ ありがとう！') : ('できた！ スタンプ ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！'));
+        bl.say(opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！ ありがとう！') : opts.full ? ('できた！ きょうの スタンプは もう いっぱい！ ' + nm + 'も うれしいよ！') : ('できた！ スタンプ ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！'));   // full＝1日 5こを こえた（同じ「いつつめ」を くりかえさない）
       }, 300);
     }
   };

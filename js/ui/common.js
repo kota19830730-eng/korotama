@@ -73,10 +73,18 @@ MQ.ui = MQ.ui || {};
   // 読む。おわったら cb。声が ない／切って ある ときは 字の 長さぶん（1字 110ms・さいてい 900ms）待ってから cb
   let speaking = false;
   MQ.ui.isSpeaking = function () { return speaking; };   // 読んで いる 最中か（背景の タップで 声を かさねない ために 見る・v0.1.16）
+  /* 2026-10-10 バグ直し：
+     ・べつの 声で 読みかえられた（もういちど きく・タップの 声）ときは 前の cb を すてずに とって おき、いちばん 新しい 声が おわったら つづけて よぶ（すてると 遊びが 先へ 進まず 固まった）
+     ・stopSpeak（おうちへ・おうちの人へ）は とって おいた cb を ぜんぶ すてる（古い cb で 遊びの 画面に 引きもどされたり スタンプが ついたり して いた）
+     ・古い 声の おわりの 合図は tok が ちがうので 何も しない */
+  let pending = [], tok = 0;
+  function flush() { const list = pending; pending = []; list.forEach(function (f) { f(); }); }
   MQ.ui.speak = function (text, cb, opts) {
     clearTimeout(speakT);
     speaking = true;
-    const done = function () { clearTimeout(speakT); speaking = false; try { MQ.bgm.duck(false); } catch (e) { /* なし */ } if (cb) { const f = cb; cb = null; f(); } };
+    const my = ++tok;
+    if (cb) pending.push(cb);
+    const done = function () { if (my !== tok) return; tok++; clearTimeout(speakT); speaking = false; try { MQ.bgm.duck(false); } catch (e) { /* なし */ } flush(); };
     if (voiceOn()) {
       try { MQ.bgm.duck(true); } catch (e) { /* なし */ }   // 声の あいだ 音楽を 小さく（v0.1.15）
       MQ.voice.setPitch(MQ.save.settings().pitch || 'normal');
@@ -88,7 +96,7 @@ MQ.ui = MQ.ui || {};
     }
     speakT = setTimeout(done, (opts && opts.quick) ? 300 : Math.max(900, String(text).length * 110));
   };
-  MQ.ui.stopSpeak = function () { clearTimeout(speakT); speaking = false; MQ.voice.stop(); try { MQ.bgm.duck(false); } catch (e) { /* なし */ } };
+  MQ.ui.stopSpeak = function () { clearTimeout(speakT); speaking = false; tok++; pending = []; MQ.voice.stop(); try { MQ.bgm.duck(false); } catch (e) { /* なし */ } };
 
   /* 字幕の ふきだし。say(text) で 字を かえて 読む */
   MQ.ui.balloon = function (text, opts) {
@@ -447,11 +455,13 @@ MQ.ui = MQ.ui || {};
   };
 
   /* ---- あそびの おわり：スタンプ → できた！ ---- */
+  // 2026-10-10：2回 よばれても スタンプは 1つ（2回 タップ・録音の おわりが 2回 などの 保険）。できた！の 画面に いる あいだの 2回めは すてる
   MQ.ui.finish = function (kind, mon) {
-    const before = MQ.save.growth();
+    if (MQ.ui.current === 'screen-done') return;
+    const before = MQ.save.growth(), n0 = MQ.save.stampsToday();
     MQ.save.stamp(kind);
     const after = MQ.save.growth();
     if (after > before) MQ.save.markGrew(after);
-    MQ.ui.done.open({ grew: after > before });
+    MQ.ui.done.open({ grew: after > before, full: MQ.save.stampsToday() === n0 });
   };
 })();

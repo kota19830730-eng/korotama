@@ -45,6 +45,9 @@ MQ.voice = (function () {
   }
   function hasBank() { return !!(bank && Object.keys(bank).length); }
   function clipFor(sentence) { if (!bank) return null; const k = String(sentence).replace(/[ 　]+/g, ''); return bank[k] || null; }
+  /* gen（2026-10-10 バグ直し）：stop() の たびに 1つ ふやす。止めた／入れかわった 古い 文の つづき・おわりの 合図は gen が ちがうので 何も しない
+     （src.stop() や speechSynthesis.cancel() でも onended／onerror が 来て、古い 文の のこりが 流れたり 古い コールバックで 画面が もどったり して いた） */
+  let gen = 0;
   function stopClips() { playing.forEach(function (s) { try { s.stop(); } catch (e) { /* なし */ } }); playing = []; }
   function loadBuf(file, cb) {
     const c = audioCtx(); if (!c) { cb(null); return; }
@@ -52,13 +55,14 @@ MQ.voice = (function () {
     fetch(BASE + 'assets/voice/' + file).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { c.decodeAudioData(ab, res, rej); }); })
       .then(function (buf) { bufCache[file] = buf; cb(buf); }).catch(function () { cb(null); });
   }
-  function playClip(file, rateK, cb) {
+  function playClip(file, rateK, cb, my) {
     const c = audioCtx(); if (!c) { cb(false); return; }
     unlock();
     loadBuf(file, function (buf) {
+      if (my !== gen) return;   // 読みこむ あいだに 止められた
       if (!buf) { cb(false); return; }
       const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rateK; src.connect(c.destination);
-      src.onended = function () { playing = playing.filter(function (x) { return x !== src; }); cb(true); };
+      src.onended = function () { playing = playing.filter(function (x) { return x !== src; }); if (my === gen) cb(true); };
       playing.push(src); try { src.start(); } catch (e) { cb(false); }
     });
   }
@@ -126,7 +130,7 @@ MQ.voice = (function () {
     return def[0] || ja[0];
   }
   function ready() { return (kind === 'zunda' && hasBank() && !!audioCtx()) || !!(api() && Utter() && voiceFor()); }
-  function stop() { stopClips(); const s = api(); try { if (s) s.cancel(); } catch (e) { /* なし */ } }
+  function stop() { gen++; stopClips(); const s = api(); try { if (s) s.cancel(); } catch (e) { /* なし */ } }
   function say(text, opts) {
     opts = opts || {};
     if (!text) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
@@ -137,12 +141,16 @@ MQ.voice = (function () {
       // 録音は そのままの 速さで 鳴らす（0.94倍に すると 声が 半音 ひくく こもって 聞こえた・2026-10-10）。ゆっくりは 録音の speedScale で
       const rateK = 1.0;
       let i = 0;
+      const my = gen;
       const next = function () {
+        if (my !== gen) return;
         if (i >= raw.length) { if (opts.onend) opts.onend(); return; }
         const sen = raw[i++];
         const file = clipFor(sen);
-        if (file) playClip(file, rateK, function () { next(); });
-        else sayDevice(sen, { pitch: opts.pitch, rate: opts.rate, onend: next });
+        const dev = function () { sayDevice(sen, { pitch: opts.pitch, rate: opts.rate, onend: next, my: my }); };
+        // mp3 が 読めない（オフラインで まだ キャッシュに ない など）ときは 端末の 声で（だまって とばさない）
+        if (file) playClip(file, rateK, function (ok) { if (ok) next(); else dev(); }, my);
+        else dev();
       };
       next();
       return true;
@@ -153,9 +161,11 @@ MQ.voice = (function () {
   function sayDevice(text, opts) {
     opts = opts || {};
     const s = api(), U = Utter();
-    if (!s || !U || !text) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
+    const my = opts.my != null ? opts.my : gen;
+    const later = function () { if (opts.onend) setTimeout(function () { if (my === gen) opts.onend(); }, 0); };
+    if (!s || !U || !text) { later(); return false; }
     const v = voiceFor();
-    if (!v) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
+    if (!v) { later(); return false; }
     // 文ごとに 区切る（。！？ の あとで 息つぎ）→ ゆっくり 悠長に 聞こえる
     const parts = spokenForm(text).replace(/([。！？!?])/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean);
     if (!parts.length) parts.push(String(text));
@@ -166,10 +176,10 @@ MQ.voice = (function () {
         u.rate = opts.rate || RATE[rate] || RATE.slow;
         u.pitch = PITCH[opts.pitch || pitch] || PITCH.normal;
         u.volume = 1;
-        if (i === parts.length - 1 && opts.onend) { u.onend = function () { opts.onend(); }; u.onerror = function () { opts.onend(); }; }
+        if (i === parts.length - 1 && opts.onend) { u.onend = function () { if (my === gen) opts.onend(); }; u.onerror = function () { if (my === gen) opts.onend(); }; }
         s.speak(u);
       });
-    } catch (e) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
+    } catch (e) { later(); return false; }
     return true;
   }
   function setPitch(p) { pitch = PITCH[p] ? p : 'normal'; }

@@ -53,8 +53,13 @@ MQ.save = (function () {
     if (k.birthday == null) k.birthday = '';                       // G：'MM-DD'
     return k;
   }
+  // 入らなかった とき（端末の 保存の 空きが ない）は false。おうちの人に 1回だけ しらせる（2026-10-10：だまって 記録が きえて いた）
+  let warned = false;
   function write() {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* 入らなければ あきらめる */ }
+    try { localStorage.setItem(KEY, JSON.stringify(data)); return true; } catch (e) {
+      if (!warned && typeof window !== 'undefined' && window.MQ && MQ.ui && MQ.ui.toast) { warned = true; try { MQ.ui.toast('保存できませんでした。端末の空き容量が足りないかもしれません。おうちの人の画面で録音した声を消すと、空きが増えます', 6000); } catch (e2) { /* なし */ } }
+      return false;
+    }
   }
   function kid() { return load().kid; }
   function settings() { return load().settings; }
