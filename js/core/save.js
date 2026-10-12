@@ -4,7 +4,7 @@
      kid       … { name, stage('s'|'m'|'l'|'k'), mon, stamps{日づけ: 数}, done{count,color,shape,compare,moji,tokei}, created }
      kid.mon   … まなびモンスターの「じぶんの モンスター」と 同じ 形
                  { id:'my-…', name, png, png2, png3, trace:true, area:'sansu' } → そのまま つれていける
-     settings  … { voice, pitch('normal'|'high'), rate('slow'|'normal'), voiceKind('zunda'|'device'), hint, sound, music }
+     settings  … { voice, pitch('normal'|'high'), rate('slow'|'normal'), voiceKind('zunda'|'tsumugi'|'zunko'|'device'), hint, sound, music }
    --------------------------------------------------------- */
 window.MQ = window.MQ || {};
 

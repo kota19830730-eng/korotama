@@ -499,6 +499,27 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(/d.kid.birthday = bv/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'はじめの 設定で 誕生日を 入れられる');
 })();
 
+/* ---- v0.5（2026-10-12）：声を 3つ（ずんだもん・春日部つむぎ・東北ずん子） ---- */
+(function () {
+  const L = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/voice/lines.json'), 'utf8'));
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  ['', 'tsumugi/', 'zunko/'].forEach(function (d) {
+    const b = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/voice/' + d + 'bank.json'), 'utf8'));
+    const miss = L.filter(function (x) { return !b[x.key]; });
+    const bad = Object.keys(b).filter(function (k) { const p = path.join(ROOT, 'assets/voice/' + d + b[k]); return !fs.existsSync(p) || fs.statSync(p).size < 500; });
+    ok(!miss.length && !bad.length, '声 ' + (d || 'zunda/') + '：文 ' + L.length + ' ぜんぶ 録音ずみ・ファイルも ある' + (miss.length ? '（ない：' + miss.slice(0, 3).map(function (x) { return x.key; }).join(' / ') + '）' : ''));
+    ok(sw.indexOf("'./assets/voice/" + d + "bank.json'") >= 0, '声 ' + (d || 'zunda/') + '：bank.json を sw で ためる');
+  });
+  ok(JSON.stringify(MQ.voice.KINDS) === JSON.stringify(['zunda', 'tsumugi', 'zunko', 'device']), '声の しゅるいは 4つ');
+  MQ.voice._setBank({ 'こんにちは！': 'x1.mp3' }, 'tsumugi'); MQ.voice.setKind('tsumugi');
+  ok(MQ.voice.kind() === 'tsumugi' && MQ.voice.clipFor('こんにちは！') === 'x1.mp3' && MQ.voice.hasBank(), 'setKind(tsumugi)：つむぎの bank を つかう');
+  MQ.voice.setKind('zunko');
+  ok(MQ.voice.kind() === 'zunko' && !MQ.voice.clipFor('こんにちは！'), 'setKind(zunko)：ほかの 声の bank は まざらない');
+  MQ.voice.setKind('へんな'); ok(MQ.voice.kind() === 'zunda', '知らない しゅるいは ずんだもん');
+  const pj = fs.readFileSync(path.join(ROOT, 'js/ui/parent.js'), 'utf8'), sj = fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8');
+  ok(/VOICEVOX:春日部つむぎ/.test(pj) && /VOICEVOX:東北ずん子/.test(pj) && /VOICEVOX:ずんだもん/.test(pj), 'クレジット 3つ（おうちの人の 画面）');
+  ok(/id: 'tsumugi'/.test(pj) && /id: 'zunko'/.test(pj) && /id: 'tsumugi'/.test(sj) && /id: 'zunko'/.test(sj), 'はじめの 設定と おうちの人の 画面で えらべる');
+})();
 /* ---- バグチェック（2026-10-12） ---- */
 ok(/'\.\/assets\/voice\/bank\.json'/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')) && /OPTIONAL\.indexOf\(u\) < 0\) throw err/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')), 'sw：声の 一覧（bank.json）も ためる・だいじな ファイルが 入らなければ 入れかえない');
 /* ---- v0.4（2026-10-11）：ころたまらしさ（たまごの スタンプ・成長は たまごから・ころころ） ---- */

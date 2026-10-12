@@ -192,8 +192,11 @@
       MQ.save.newKid({ name: 'ゆう', stage: 's' });
       let n = 0;
       const tick = function () {
+        if (n === 0) MQ.voice.setKind(arg || 'zunda');
         if (!MQ.voice.hasBank() && n++ < 40) { setTimeout(tick, 250); return; }
-        MQ.voice.setKind('zunda'); MQ.voice.setNames(['ゆう']);
+        MQ.voice.setKind(arg || 'zunda'); MQ.voice.setNames(['ゆう']);   // #zunda[:tsumugi|zunko]（v0.5）
+        log('bank: kind=' + MQ.voice.kind() + ' has=' + MQ.voice.hasBank() + ' clip=' + MQ.voice.clipFor('おはよう！'));
+        fetch('../assets/voice/' + (MQ.voice.DIRS[MQ.voice.kind()] || '') + MQ.voice.clipFor('おはよう！')).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { log('mp3 bytes=' + ab.byteLength); }).catch(function (e) { log('ERROR mp3 ' + e.message); errors++; });
         MQ.voice.preload('おはよう！', function (dur) {
           log('zunda: bank=' + MQ.voice.hasBank() + ' clip=' + MQ.voice.clipFor('おはよう！') + ' decoded sec=' + dur.toFixed(2) + ' strip=' + MQ.voice.stripNames('ゆうちゃん、おはよう！'));
           if (!(dur > 0.3)) { log('ERROR clip not decoded'); errors++; }

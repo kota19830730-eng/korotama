@@ -6,15 +6,18 @@
         → assets/voice/<番号>.mp3 ＋ assets/voice/bank.json（{ 文: ファイル名 }）
      もう ある 文（bank.json に ある）は とばす。文を 足したら lines.js → render.js を 流す。
    クレジット：VOICEVOX:ずんだもん
+   v0.5（2026-10-12）：VOICE=tsumugi（春日部つむぎ・speaker 8）／VOICE=zunko（東北ずん子・speaker 107）で assets/voice/<VOICE>/ に べつに 録る。クレジット VOICEVOX:春日部つむぎ／VOICEVOX:東北ずん子
    --------------------------------------------------------- */
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..', '..');
-const OUT = path.join(ROOT, 'assets', 'voice');
-const TMP = path.join(process.env.TEMP || process.env.TMP || '.', 'tamago-voice');
-const SPEAKER = Number(process.env.SPEAKER || 3);     // 3＝ずんだもん ノーマル・1＝あまあま・7＝ツンツン
+const VOICES = { zunda: { dir: '', speaker: 3 }, tsumugi: { dir: 'tsumugi', speaker: 8 }, zunko: { dir: 'zunko', speaker: 107 } };
+const VO = VOICES[process.env.VOICE || 'zunda'] || VOICES.zunda;
+const OUT = path.join(ROOT, 'assets', 'voice', VO.dir);
+const TMP = path.join(process.env.TEMP || process.env.TMP || '.', 'tamago-voice' + (VO.dir ? '-' + VO.dir : ''));
+const SPEAKER = Number(process.env.SPEAKER || VO.speaker);     // 3＝ずんだもん ノーマル・1＝あまあま・7＝ツンツン
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 const lines = JSON.parse(fs.readFileSync(path.join(__dirname, 'lines.json'), 'utf8'));
 fs.mkdirSync(OUT, { recursive: true }); fs.mkdirSync(TMP, { recursive: true });

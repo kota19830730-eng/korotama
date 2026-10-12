@@ -3,7 +3,7 @@
    ファイルを 変えたら CACHE_NAME を 上げる。ファイルを ふやしたら FILES にも。
    install は cache: 'reload'（GitHub Pages の 10分 キャッシュで 古い ファイルが 入るのを ふせぐ＝まなびモンスター v12.9.1 の 教訓）
    --------------------------------------------------------- */
-const CACHE_NAME = 'manabi-tamago-v38';   // 名前は ころたま に なったが キャッシュ名の 頭は そのまま
+const CACHE_NAME = 'manabi-tamago-v39';   // 名前は ころたま に なったが キャッシュ名の 頭は そのまま
 const FONT_CACHE = 'manabi-tamago-fonts-v1';
 const VOICE_CACHE = 'manabi-tamago-voice-v1';   // 録音した 声の mp3（版を 上げても 消さない・録り直しは 新しい 名前 r<番号>.mp3 なので 古く ならない・2026-10-10）
 const FILES = [
@@ -12,7 +12,7 @@ const FILES = [
   './js/content/charart.js', './js/content/presets.js',
   './js/ui/common.js', './js/ui/start.js', './js/ui/home.js', './js/ui/care.js', './js/ui/shop.js', './js/ui/play.js', './js/ui/kazu.js', './js/ui/kurabe.js', './js/ui/moji.js', './js/ui/tokei.js', './js/ui/kaku.js', './js/ui/sagasu.js', './js/ui/maneko.js', './js/ui/otetsudai.js', './js/ui/ohanashi.js', './js/ui/print.js', './js/ui/install.js', './js/ui/feedback.js', './js/ui/guide.js', './js/ui/rest.js', './js/ui/parent.js', './js/ui/boot.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png',
-  './assets/voice/bank.json'   // 2026-10-12：声の 一覧も（ないと 更新の あと はじめての オフラインで ずんだもんが 出なかった）
+  './assets/voice/bank.json', './assets/voice/tsumugi/bank.json', './assets/voice/zunko/bank.json'   // 2026-10-12：（v0.5 で 春日部つむぎ・東北ずん子も）声の 一覧も（ないと 更新の あと はじめての オフラインで ずんだもんが 出なかった）
 ];
 const OPTIONAL = ['./assets/icons/icon-192.png', './assets/icons/icon-512.png'];   // これ いがいが 1つでも 入らなければ install を やめる（前の 版が そのまま 動く）
 

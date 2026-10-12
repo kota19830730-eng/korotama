@@ -25,8 +25,12 @@ MQ.voice = (function () {
   const PITCH = { high: 1.1, normal: 1.0 };
   const RATE = { slow: 0.78, normal: 0.9 };
   let pitch = 'normal', rate = 'slow';
-  let kind = 'zunda';              // 'zunda'＝録音した 声／'device'＝端末の 声
-  let bank = null;                 // { 文: ファイル名 }
+  let kind = 'zunda';              // 'zunda'／'tsumugi'／'zunko'＝録音した 声・'device'＝端末の 声
+  // v0.5（2026-10-12 ユーザー「春日部と東北」）：録音した 声は 3つ。フォルダ（assets/voice/<dir>）と bank.json が べつ
+  const DIRS = { zunda: '', tsumugi: 'tsumugi/', zunko: 'zunko/' };
+  const KINDS = ['zunda', 'tsumugi', 'zunko', 'device'];
+  const banks = {};                // { しゅるい: { 文: ファイル名 } }
+  let bank = null;                 // いまの しゅるいの bank（banks[kind]）
   let names = [];                  // 読む 前に 外す ことば（名前）
   const BASE = (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) ? document.currentScript.src.replace(/js\/core\/voice\.js.*$/, '') : '';
   let actx = null, playing = [];
@@ -39,11 +43,16 @@ MQ.voice = (function () {
     return actx;
   }
   function unlock() { const c = audioCtx(); if (c && c.state !== 'running') { try { c.resume(); } catch (e) { /* なし */ } } }
-  function loadBank() {
-    if (bank || typeof fetch !== 'function') return;
-    fetch(BASE + 'assets/voice/bank.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { bank = j && Object.keys(j).length ? j : null; }).catch(function () { bank = null; });   // 2026-10-12：読めなければ null（あとで もう一度）
+  function recKind(k) { return DIRS[k] != null; }
+  const loading = {};
+  function loadBank(k) {
+    k = k || kind;
+    if (!recKind(k) || banks[k] || loading[k] || typeof fetch !== 'function') return;
+    loading[k] = true;
+    fetch(BASE + 'assets/voice/' + DIRS[k] + 'bank.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { loading[k] = false; banks[k] = j && Object.keys(j).length ? j : null; if (k === kind) bank = banks[k]; }).catch(function () { loading[k] = false; });   // 2026-10-12：読めなければ null（あとで もう一度）
   }
   if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('online', function () { loadBank(); });
+  function fileUrl(file) { return 'assets/voice/' + (DIRS[kind] || '') + file; }
   function hasBank() { return !!(bank && Object.keys(bank).length); }
   function clipFor(sentence) { if (!bank) return null; const k = String(sentence).replace(/[ 　]+/g, ''); return bank[k] || null; }
   /* gen（2026-10-10 バグ直し）：stop() の たびに 1つ ふやす。止めた／入れかわった 古い 文の つづき・おわりの 合図は gen が ちがうので 何も しない
@@ -52,9 +61,10 @@ MQ.voice = (function () {
   function stopClips() { playing.forEach(function (s) { try { s.stop(); } catch (e) { /* なし */ } }); playing = []; }
   function loadBuf(file, cb) {
     const c = audioCtx(); if (!c) { cb(null); return; }
-    if (bufCache[file]) { cb(bufCache[file]); return; }
-    fetch(BASE + 'assets/voice/' + file).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { c.decodeAudioData(ab, res, rej); }); })
-      .then(function (buf) { bufCache[file] = buf; cb(buf); }).catch(function () { cb(null); });
+    const url = fileUrl(file);
+    if (bufCache[url]) { cb(bufCache[url]); return; }
+    fetch(BASE + url).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { c.decodeAudioData(ab, res, rej); }); })
+      .then(function (buf) { bufCache[url] = buf; cb(buf); }).catch(function () { cb(null); });
   }
   function playClip(file, rateK, cb, my) {
     const c = audioCtx(); if (!c) { cb(false); return; }
@@ -130,7 +140,7 @@ MQ.voice = (function () {
     const def = ja.filter(function (v) { return v.default; });
     return def[0] || ja[0];
   }
-  function ready() { return (kind === 'zunda' && hasBank() && !!audioCtx()) || !!(api() && Utter() && voiceFor()); }
+  function ready() { return (recKind(kind) && hasBank() && !!audioCtx()) || !!(api() && Utter() && voiceFor()); }
   function stop() { gen++; stopClips(); const s = api(); try { if (s) s.cancel(); } catch (e) { /* なし */ } }
   function say(text, opts) {
     if (!bank) loadBank();   // 読めなかった ときは つぎの 声で もう一度
@@ -138,7 +148,7 @@ MQ.voice = (function () {
     if (!text) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
     stop();
     // 録音した 声（ずんだもん）：文ごとに bank に あれば mp3、無い 文だけ 端末の 声
-    if (kind === 'zunda' && hasBank() && audioCtx()) {
+    if (recKind(kind) && hasBank() && audioCtx()) {
       const raw = stripNames(String(text)).replace(/([。！？!?])/g, '$1|').split('|').map(function (t) { return t.trim(); }).filter(Boolean);
       // 録音は そのままの 速さで 鳴らす（0.94倍に すると 声が 半音 ひくく こもって 聞こえた・2026-10-10）。ゆっくりは 録音の speedScale で
       const rateK = 1.0;
@@ -188,11 +198,11 @@ MQ.voice = (function () {
   function setRate(r) { rate = RATE[r] ? r : 'slow'; }
   /* 文の mp3 を 先に 読んで おく（検査にも）：cb(長さ 秒 ／ 読めなければ 0） */
   function preload(sentence, cb) { const f = clipFor(sentence); if (!f) { cb(0); return; } loadBuf(f, function (buf) { cb(buf ? buf.duration : 0); }); }
-  function setKind(k) { kind = k === 'device' ? 'device' : 'zunda'; }
+  function setKind(k) { kind = KINDS.indexOf(k) >= 0 ? k : 'zunda'; bank = banks[kind] || null; loadBank(); }
   function setNames(list) { names = (list || []).filter(Boolean).map(String).sort(function (a, b) { return b.length - a.length; }); }
   function setFake(f) { fakeApi = f; list = []; }
   init();
   loadBank();
   if (typeof document !== 'undefined') ['touchend', 'click', 'keydown', 'pointerdown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
-  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, kanaRead: kanaRead, numRead: numRead, unlock: unlock, clockRead: clockRead, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b) { bank = b; }, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
+  return { say: say, stop: stop, ready: ready, setPitch: setPitch, setRate: setRate, RATE: RATE, spokenForm: spokenForm, kanaRead: kanaRead, numRead: numRead, unlock: unlock, clockRead: clockRead, setKind: setKind, setNames: setNames, preload: preload, kind: function () { return kind; }, hasBank: hasBank, clipFor: clipFor, _setBank: function (b, k) { banks[k || kind] = b; if (!k || k === kind) bank = b; }, KINDS: KINDS, DIRS: DIRS, stripNames: stripNames, voiceFor: voiceFor, voices: jaVoices, refresh: refresh, setFake: setFake, PITCH: PITCH };
 })();
