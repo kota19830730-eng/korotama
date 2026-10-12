@@ -211,6 +211,31 @@
       const im = new Image(); im.onload = function () { MQ.ui.draw.fromImage(im, false); finish(); }; im.src = fakeDrawing();
     },
     egg: function () { withMon('s', function () { MQ.ui.egg.open(); if (arg === 'hatch') { setTimeout(function () { const b = $('#screen-egg .item'); click(b); click(b); click(b); setTimeout(finish, 1800); }, 400); } else finish(); }); },
+    // #bugfix2：2026-10-12 バグチェック（生まれ直しの 2重スタンプ・おはなしを はなれる・たまごの 色・古い ファイルを もどす・消しても 済みを のこす）
+    bugfix2: function () { withMon('s', async function () {
+      for (let i = 0; i < 5; i++) MQ.save.update(function (d) { d.kid.stamps['2026-01-' + (10 + i)] = 1; });
+      const s0 = MQ.save.stampsToday(); MQ.ui.finish('count'); await wait(200); MQ.ui.finish('count');
+      const ok1 = MQ.save.stampsToday() - s0 === 1 && MQ.ui.current === 'screen-egg';
+      log('bug2 regrow twice: +' + (MQ.save.stampsToday() - s0) + ' screen=' + MQ.ui.current + (ok1 ? ' OK' : ' NG')); if (!ok1) errors++;
+      MQ.ui.ohanashi.open({ log: [{ k: 'count', t: Date.now() }, { k: 'color', t: Date.now() }] }); await wait(700);
+      MQ.ui.home.open({ noGuide: true }); await wait(2500); const n1 = said.length; await wait(8000);
+      const extra = said.slice(n1).filter(function (s) { return /もらったね|あそんだね|おやすみ|さいしょに/.test(s); });
+      log('bug2 story leave: extra=' + extra.length + ' screen=' + MQ.ui.current + (extra.length === 0 && MQ.ui.current === 'screen-home' ? ' OK' : ' NG ' + extra.join('/'))); if (extra.length || MQ.ui.current !== 'screen-home') errors++;
+      MQ.save.update(function (d) { const t = MQ.save.today(); d.kid.stamps[t] = 3; d.kid.eggs[t] = ['color']; });
+      const row = MQ.ui.stampRow(); const last = row.querySelectorAll('.egg-s.is-on')[2].innerHTML;
+      const ok3 = last.indexOf(MQ.ui.EGG_COL.color) >= 0;
+      log('bug2 egg color align: ' + (ok3 ? 'OK' : 'NG')); if (!ok3) errors++;
+      const old = JSON.parse(MQ.save.exportText()); delete old.settings.timeLimit; delete old.settings.nudge;
+      MQ.save.importText(JSON.stringify(old));
+      const ok4 = MQ.save.settings().timeLimit === 0 && MQ.save.settings().nudge === true;
+      log('bug2 import old: timeLimit=' + MQ.save.settings().timeLimit + ' nudge=' + MQ.save.settings().nudge + (ok4 ? ' OK' : ' NG')); if (!ok4) errors++;
+      let bad = false; try { MQ.save.importText(JSON.stringify({ v: 1, settings: {}, kid: 5 })); } catch (e) { bad = true; }
+      log('bug2 import bad kid rejected: ' + (bad ? 'OK' : 'NG')); if (!bad) errors++;
+      MQ.save.setSetting('installed', true); MQ.save.setSetting('fbDone', true); MQ.save.reset();
+      const ok5 = MQ.save.settings().installed === true && MQ.save.settings().fbDone === true && !MQ.save.kid();
+      log('bug2 reset keeps flags: ' + (ok5 ? 'OK' : 'NG')); if (!ok5) errors++;
+      finish();
+    }); },
     // #eggs[:n]：v0.4 たまごの スタンプ（n こめを できた！で もらう・2こ ごとに たまごが われて かざり）
     eggs: function () { withMon('s', async function () {
       const n = Number(arg) || 2, kinds = ['count', 'color', 'shape', 'compare', 'moji'];

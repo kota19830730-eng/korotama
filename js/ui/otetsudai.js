@@ -45,7 +45,7 @@ MQ.ui = MQ.ui || {};
       card.classList.add('is-done');
       MQ.sfx.clear(); mon.mood('jump', 1400); MQ.ui.confetti(card.parentNode, 24);
       bl.say('はなまる！ ありがとう！ ' + c.ok, function () {
-        const go = function () { if (after > before) MQ.ui.done.open({ grew: true }); else MQ.ui.home.open(); };
+        const go = function () { if (MQ.ui.current !== 'screen-help') return; if (after > before) MQ.ui.egg.regrow(function () { MQ.ui.done.open({ grew: true, full: true }); }); else MQ.ui.home.open(); };   // 2026-10-12：full＝たまごを 転がさない・5この お祝いを くりかえさない
         if (!MQ.family.play('help', { onend: function () { setTimeout(go, 400); } })) setTimeout(go, 600);
       });
     });
@@ -61,7 +61,7 @@ MQ.ui = MQ.ui || {};
     MQ.ui.mount('screen-help', page);
     MQ.ui.show('screen-help');
     MQ.sfx.door();
-    setTimeout(function () { bl.say(done ? 'きょうの おてつだい、ありがとう！' : 'おてがみ だよ！ きょうの おねがい。' + c.ask + ' できたら おうちの ひとに みせてね。'); }, 300);
+    setTimeout(function () { if (MQ.ui.current === 'screen-help') bl.say(done ? 'きょうの おてつだい、ありがとう！' : 'おてがみ だよ！ きょうの おねがい。' + c.ask + ' できたら おうちの ひとに みせてね。'); }, 300);
   }
   const HANA = '<svg viewBox="0 0 48 48"><g fill="none" stroke="#e0493a" stroke-width="3.2" stroke-linecap="round"><path d="M24 7c9 0 16 6 16 15s-7 16-16 16S8 32 8 23c0-8 6-14 14-14 7 0 12 5 12 12s-5 11-11 11-9-4-9-9 4-8 8-8"/></g><path d="M10 40c4 2 6 6 6 6M38 40c-4 2-6 6-6 6" stroke="#7fb069" stroke-width="3" stroke-linecap="round" fill="none"/></svg>';
   MQ.ui.otetsudai = { open: open, ICON: ICON };

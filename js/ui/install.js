@@ -25,6 +25,8 @@ MQ.ui = MQ.ui || {};
     try { if (window.matchMedia('(display-mode: standalone)').matches) return true; } catch (e) { /* なし */ }
     return !!navigator.standalone;
   }
+  // 2026-10-12：パソコンの Chrome には 出さない（「ホーム画面」の 文が 合わない）。おうちの人の 画面の ボタンは 出る
+  function mobile() { const u = ua(); return /Android|iPhone|iPad|iPod|Mobile/.test(u) || ((navigator.maxTouchPoints || 0) > 1); }
   function can() { return !!deferred && !standalone() && !MQ.save.settings().installed; }
   let fakeUA = null;   // テスト用
   function ua() { return fakeUA != null ? fakeUA : (navigator.userAgent || ''); }
@@ -33,7 +35,7 @@ MQ.ui = MQ.ui || {};
   function iosWhere() { const u = ua(); return /Line\/|FBAN|FBAV|Instagram|MicroMessenger|KAKAOTALK|YJApp|GSA\//.test(u) ? 'inapp' : /CriOS|FxiOS|EdgiOS/.test(u) ? 'chrome' : 'safari'; }
   function iosNeed() { return ios() && !standalone() && !MQ.save.settings().installed; }
   function due() {
-    if (!can() && !iosNeed()) return false;
+    if (!(can() && mobile()) && !iosNeed()) return false;
     const t = MQ.save.settings().installLater || 0;
     return Date.now() - t > LATER_DAYS * 86400000;
   }
@@ -129,6 +131,8 @@ MQ.ui = MQ.ui || {};
   function onEvent(e) {
     try { e.preventDefault(); } catch (x) { /* なし */ }   // Chrome の 小さな バーの かわりに 自分で きく
     deferred = e;
+    // 2026-10-12：この 合図は 入って いない ときだけ 来る（消した あと また 入れられる ように）
+    if (!standalone()) { try { if (MQ.save.settings().installed) MQ.save.setSetting('installed', false); } catch (x) { /* なし */ } }
     // おうちの 画面に いる あいだに とどいたら その場で（はじめの 1回は ここが 多い）
     setTimeout(function () { if (MQ.ui.current === 'screen-home' && quiet()) ask(); }, 1500);
   }

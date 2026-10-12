@@ -33,6 +33,11 @@ MQ.ui.parent = (function () {
       seg([{ id: 'on', name: 'あり', sub: 'おすすめ' }, { id: 'off', name: 'なし' }], st.nudge === false ? 'off' : 'on', function (v) { MQ.save.setSetting('nudge', v === 'on'); }, true),
       h('p', { class: 'note', text: '答えを 選ばずに 15秒ほど 手が 止まると、もう一度 問題を 言います。さらに 15秒 止まると、正解が そっと 光ります。' })]);
   }
+  /* 2026-10-12：きろくを もどした／消した あと、音と 声の 設定を その場で あてなおす */
+  function applyAudio() {
+    const s = MQ.save.settings();
+    try { MQ.sfx.setEnabled(s.sound !== false); MQ.bgm.setEnabled(s.sound !== false && s.music !== false); MQ.voice.setKind(s.voiceKind || 'zunda'); MQ.voice.setPitch(s.pitch || 'normal'); MQ.voice.setRate(s.rate || 'slow'); } catch (e) { /* なし */ }
+  }
   function fileName() {
     const d = new Date();
     return 'korotama-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
@@ -105,11 +110,13 @@ MQ.ui.parent = (function () {
           if (!MQ.family.micOk()) { MQ.ui.toast('この端末ではマイクが使えません', 2600); return; }
           MQ.ui.stopSpeak(); try { MQ.bgm.stop(); } catch (e) { /* なし */ }
           cur = { id: p.id };
+          const me = cur;
+          const watch = setInterval(function () { if (cur !== me) { clearInterval(watch); return; } if (MQ.ui.current !== 'screen-parent') { clearInterval(watch); me.drop = true; try { me.rec.stop(); } catch (e) { /* なし */ } } }, 300);   // 2026-10-12
           cur.rec = MQ.family.record({
             max: MQ.family.MAX_MS,
             onStart: function () { paint(); },
-            onDone: function (r) { const id = cur.id; cur = null; MQ.family.save(id, r.blob, function (ok) { MQ.ui.toast(ok ? '保存しました' : '保存できませんでした（端末の空きが足りません）', 2400); paint(); }, r.ms); },
-            onError: function () { cur = null; MQ.ui.toast('マイクを使えませんでした。ブラウザの設定でマイクを許可してください', 3200); paint(); }
+            onDone: function (r) { if (me.drop) { if (cur === me) cur = null; return; } const id = me.id; cur = null; MQ.family.save(id, r.blob, function (ok) { MQ.ui.toast(ok ? '保存しました' : '保存できませんでした（端末の空きが足りません）', 2400); paint(); }, r.ms); },
+            onError: function () { cur = null; if (me.drop) return; MQ.ui.toast('マイクを使えませんでした。ブラウザの設定でマイクを許可してください', 3200); paint(); }
           });
           paint();
         };
@@ -251,12 +258,13 @@ MQ.ui.parent = (function () {
               inp.addEventListener('change', function () {
                 const f = inp.files && inp.files[0]; if (!f) return;
                 const r = new FileReader();
-                r.onload = function () { try { MQ.save.importText(String(r.result)); MQ.ui.toast('もどしました'); open(); } catch (e) { MQ.ui.toast('ころたまの ファイルでは ないようです', 2600); } };
+                r.onload = function () { try { MQ.save.importText(String(r.result)); applyAudio(); MQ.ui.toast('もどしました'); open(); } catch (e) { MQ.ui.toast('ころたまの ファイルでは ないようです', 2600); } };
                 r.readAsText(f);
+                if (inp.parentNode) inp.parentNode.removeChild(inp);
               });
               document.body.appendChild(inp); inp.click();
             } }),
-            h('button', { class: 'btn btn--wide', type: 'button', style: { color: '#a4533e' }, text: 'きろくを ぜんぶ 消す', onclick: function () { MQ.sfx.tap(); if (window.confirm('生きものと スタンプを ぜんぶ 消します。よろしいですか？')) { MQ.save.reset(); MQ.ui.start.open(); } } })
+            h('button', { class: 'btn btn--wide', type: 'button', style: { color: '#a4533e' }, text: 'きろくを ぜんぶ 消す', onclick: function () { MQ.sfx.tap(); if (window.confirm('生きものと スタンプを ぜんぶ 消します。よろしいですか？')) { MQ.save.reset(); applyAudio(); MQ.ui.start.open(); } } })
           ])]),
         h('p', { class: 'note', text: 'このアプリは 何も 外に 送りません。写真も 記録も この端末の 中だけです。' })
       ])])

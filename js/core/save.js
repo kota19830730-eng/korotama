@@ -130,12 +130,16 @@ MQ.save = (function () {
     const g = growth();
     return (g === 3 && k.mon.png3) || (g >= 2 && k.mon.png2) || k.mon.png;
   }
-  function reset() { data = fresh(); write(); }
+  // 2026-10-12：ホーム画面・感想の 済みは のこす（消すと また お願いが 出て いた）
+  function reset() { const old = load().settings || {}; data = fresh(); ['installed', 'installLater', 'fbDone', 'fbOpenedAt', 'guideSeen'].forEach(function (k) { if (old[k] !== undefined) data.settings[k] = old[k]; }); write(); }
   function exportText() { return JSON.stringify(load()); }
   function importText(text) {
     const d = JSON.parse(text);
-    if (!d || d.v !== 1 || !d.settings) throw new Error('bad');
-    data = d; if (data.kid) ensureKid(data.kid); write(); return true;
+    if (!d || d.v !== 1 || !d.settings || typeof d.settings !== 'object') throw new Error('bad');
+    if (d.kid != null && (typeof d.kid !== 'object' || (d.kid.mon && typeof d.kid.mon.png !== 'string'))) throw new Error('bad');
+    data = d;
+    (function (def) { Object.keys(def).forEach(function (k) { if (data.settings[k] === undefined) data.settings[k] = def[k]; }); })(fresh().settings);   // 2026-10-12：古い ファイルに ない 設定は はじめの 値
+    if (data.kid) ensureKid(data.kid); write(); return true;
   }
 
   return { KEY: KEY, STAGES: STAGES, GROW_AT: GROW_AT, load: load, kid: kid, settings: settings, setSetting: setSetting, update: update, newKid: newKid, setMon: setMon,

@@ -124,18 +124,21 @@ MQ.ui = MQ.ui || {};
     return out;
   }
 
-  let printRoot = null;
+  let printRoot = null, printTok = 0;
   function doPrint(sheet) {
     if (printRoot && printRoot.parentNode) printRoot.parentNode.removeChild(printRoot);
+    const tok = ++printTok;   // 2026-10-12：前の 印刷の 後しまつ（のこった タッチの 合図）が つぎの 印刷を 消して いた
     printRoot = h('div', { id: 'print-root' }, [sheet.cloneNode(true)]);
     document.body.appendChild(printRoot);
     document.body.classList.add('is-printing');
-    const done = function () { document.body.classList.remove('is-printing'); if (printRoot && printRoot.parentNode) printRoot.parentNode.removeChild(printRoot); printRoot = null; window.removeEventListener('afterprint', done); };
+    let finished = false;
+    const tap = function () { setTimeout(done, 300); };
+    const done = function () { if (finished || tok !== printTok) return; finished = true; document.body.classList.remove('is-printing'); if (printRoot && printRoot.parentNode) printRoot.parentNode.removeChild(printRoot); printRoot = null; window.removeEventListener('afterprint', done); document.removeEventListener('visibilitychange', back); document.removeEventListener('pointerdown', tap); };
     window.addEventListener('afterprint', done);
     // Android の Chrome は print() が すぐ もどる → 1.5秒で 消すと 白い 紙に なった（2026-10-10）。おわりは afterprint で。
     // afterprint が 来ない 端末の 保険：アプリに もどって きた（画面が また 見えた・さわった）とき
-    const back = function () { if (document.visibilityState === 'visible') setTimeout(done, 800); };
-    setTimeout(function () { try { window.print(); } catch (e) { /* なし */ } setTimeout(function () { document.addEventListener('visibilitychange', back, { once: true }); document.addEventListener('pointerdown', function () { setTimeout(done, 300); }, { once: true }); }, 1000); }, 300);
+    function back() { if (document.visibilityState === 'visible') setTimeout(done, 800); }
+    setTimeout(function () { try { window.print(); } catch (e) { /* なし */ } setTimeout(function () { if (finished) return; document.addEventListener('visibilitychange', back); document.addEventListener('pointerdown', tap, { once: true }); }, 1000); }, 300);
   }
 
   function open(kind) {

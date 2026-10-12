@@ -99,7 +99,7 @@ MQ.ui = MQ.ui || {};
     ]);
     MQ.ui.mount('screen-kaku', page);
     MQ.ui.show('screen-kaku');
-    setTimeout(function () { bl.say(ASK); }, 250);
+    setTimeout(function () { if (MQ.ui.current === 'screen-kaku') bl.say(ASK); }, 250);
   }
   /* <lines> */ const ASK = 'なにを かこうかな？ たべもの？ ぼうし？ おともだち？ おにわの かざり？'; /* </lines> */
 
@@ -135,7 +135,7 @@ MQ.ui = MQ.ui || {};
     ]);
     MQ.ui.mount('screen-kaku', page);
     MQ.ui.show('screen-kaku');
-    setTimeout(function () { bl.say(k.ask); }, 250);
+    setTimeout(function () { if (MQ.ui.current === 'screen-kaku') bl.say(k.ask); }, 250);
     MQ.ui.kaku._pad = P;
   }
 
@@ -169,7 +169,7 @@ MQ.ui = MQ.ui || {};
       if (kind === 'friend' || kind === 'garden') setTimeout(function () { mon.mood('happy'); MQ.sfx.pop(); }, 700);
     }, 1100);
     setTimeout(function () {
-      bl.say(lines.join(' '), function () { setTimeout(function () { MQ.ui.finish('draw'); }, 600); });
+      bl.say(lines.join(' '), function () { setTimeout(function () { if (MQ.ui.current === 'screen-kaku') MQ.ui.finish('draw'); }, 600); });
     }, 1300);
   }
 

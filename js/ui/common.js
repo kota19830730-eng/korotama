@@ -246,7 +246,7 @@ MQ.ui = MQ.ui || {};
     const cells = [];
     for (let i = 0; i < 5; i++) {
       const on = i < n;
-      const c = h('div', { class: 'stamp egg-s' + (on ? ' is-on' : '') + (on && opts.roll && i === n - 1 ? ' is-roll' : ''), html: eggSvg(on ? (EGG_COL[kinds[i]] || '#f2b544') : '') });
+      const c = h('div', { class: 'stamp egg-s' + (on ? ' is-on' : '') + (on && opts.roll && i === n - 1 ? ' is-roll' : ''), html: eggSvg(on ? (EGG_COL[kinds[i - (n - kinds.length)]] || '#f2b544') : '') });
       cells.push(c); row.appendChild(c);
     }
     row.crack = function (i) { const c = cells[i]; if (!c) return null; c.classList.remove('is-roll'); c.classList.add('is-crack'); return c; };
@@ -482,14 +482,17 @@ MQ.ui = MQ.ui || {};
   /* ---- あそびの おわり：スタンプ → できた！ ---- */
   // 2026-10-10：2回 よばれても スタンプは 1つ（2回 タップ・録音の おわりが 2回 などの 保険）。できた！の 画面に いる あいだの 2回めは すてる
   MQ.ui.finish = function (kind, mon) {
-    if (MQ.ui.current === 'screen-done') return;
+    if (MQ.ui.current === 'screen-done' || MQ.ui.current === 'screen-egg') return;   // 2026-10-12：生まれ直しの たまご（v0.4）の あいだも 2回めは すてる
     const before = MQ.save.growth(), n0 = MQ.save.stampsToday(), d0 = MQ.ui.decorOf(MQ.save.stampsTotal());
     MQ.save.stamp(kind);
     const after = MQ.save.growth(), d1 = MQ.ui.decorOf(MQ.save.stampsTotal());
     if (after > before) MQ.save.markGrew(after);
     // v0.4：2こ ごとに ふえる 庭の かざりは「たまごから 出てくる」
-    const gift = d1.flag && !d0.flag ? 'flag' : d1.butterflies > d0.butterflies ? 'butterfly' : d1.flowers > d0.flowers ? 'flower' : '';
-    const o = { grew: after > before, full: MQ.save.stampsToday() === n0, kind: kind, gift: gift };
+    let gift = d1.flag && !d0.flag ? 'flag' : d1.butterflies > d0.butterflies ? 'butterfly' : d1.flowers > d0.flowers ? 'flower' : '';
+    const full = MQ.save.stampsToday() === n0;
+    const giftNew = !!gift;
+    if (!gift && !full && MQ.save.stampsTotal() % 2 === 0) gift = MQ.save.stampsTotal() % 4 === 0 ? 'butterfly' : 'flower';   // 2026-10-12：庭が いっぱいの あとも 2こ ごとに われる
+    const o = { grew: after > before, full: full, kind: kind, gift: gift, giftNew: giftNew };
     // 2：すがたが かわる ときは たまごに もどって、とんとんで 大きく なって 出てくる
     if (o.grew && MQ.ui.egg && MQ.ui.egg.regrow) { MQ.ui.egg.regrow(function () { MQ.ui.done.open(o); }); return; }
     MQ.ui.done.open(o);
@@ -537,12 +540,13 @@ MQ.ui = MQ.ui || {};
       if (document.hidden || !MQ.ui.current || SKIP[MQ.ui.current] || !MQ.save.kid()) return;
       if (now - lastTouch > 90000) return;
       MQ.coach.addPlay(dt); acc += dt;
-      if (acc >= 30000) flush();
+      if (acc >= 15000) flush();
     }
     if (typeof document !== 'undefined') {
       document.addEventListener('pointerdown', function () { lastTouch = Date.now(); }, true);
       document.addEventListener('touchstart', function () { lastTouch = Date.now(); }, { capture: true, passive: true });
       document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); last = Date.now(); });
+      window.addEventListener('pagehide', flush);
       setInterval(tick, 5000);
     }
     return { tick: tick, flush: flush, touch: function () { lastTouch = Date.now(); } };

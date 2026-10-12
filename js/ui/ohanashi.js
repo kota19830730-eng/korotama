@@ -40,27 +40,28 @@ MQ.ui = MQ.ui || {};
     ]);
     MQ.ui.mount('screen-story', page);
     MQ.ui.show('screen-story');
-    st = { story: story, i: 0, cur: '', mon: mon, bl: bl, quiz: quiz, page: page_, btn: btn };
+    const my = st = { story: story, i: 0, cur: '', mon: mon, bl: bl, quiz: quiz, page: page_, btn: btn };
     MQ.ui.ohanashi._st = st;
-    setTimeout(step, 400);
+    setTimeout(function () { step(my); }, 400);
   }
   function show(kind) {
     st.page.innerHTML = '';
     const p = kind === 'stamp' ? h('div', { class: 'st__stamp' }, [MQ.ui.stampRow()]) : pic(kind);
     if (p) { st.page.appendChild(p); st.page.classList.remove('is-in'); void st.page.offsetWidth; st.page.classList.add('is-in'); }
   }
-  function step() {
-    if (!st) return;
+  function alive(my) { return my && st === my && MQ.ui.current === 'screen-story'; }   // 2026-10-12：はなれた あとに 声が つづかない
+  function step(my) {
+    if (!alive(my)) return;
     const pages = st.story.pages;
     if (st.i < pages.length) {
       const pg = pages[st.i++];
       show(pg.kind);
       st.cur = pg.text;
-      st.bl.say(pg.text, function () { setTimeout(step, 500); });
+      st.bl.say(pg.text, function () { setTimeout(function () { step(my); }, 500); });
       return;
     }
     if (st.story.quiz && !st.asked) { st.asked = true; ask(); return; }
-    ending(0);
+    ending(0, my);
   }
   function ask() {
     const q = st.story.quiz;
@@ -76,7 +77,7 @@ MQ.ui = MQ.ui || {};
         if (k === q.answer) {
           st.answered = true;
           b.classList.add('is-ok'); MQ.sfx.correct(); st.mon.mood('happy');
-          st.bl.say(MQ.story.right(k), function () { st.quiz.innerHTML = ''; setTimeout(function () { ending(0); }, 400); });
+          const my = st; st.bl.say(MQ.story.right(k), function () { if (!alive(my)) return; st.quiz.innerHTML = ''; setTimeout(function () { ending(0, my); }, 400); });
         } else {
           st.mon.mood('tilt');
           b.classList.add('is-dim');
@@ -87,7 +88,8 @@ MQ.ui = MQ.ui || {};
       st.quiz.appendChild(b);
     });
   }
-  function ending(i) {
+  function ending(i, my) {
+    if (!alive(my)) return;
     const end = st.story.end;
     if (i >= end.length) {
       st.mon.sleep(); MQ.sfx.snore();
@@ -100,7 +102,7 @@ MQ.ui = MQ.ui || {};
     if (i === end.length - 1) st.mon.mood('yawn');
     st.page.innerHTML = '';
     st.cur = end[i].text;
-    st.bl.say(end[i].text, function () { setTimeout(function () { ending(i + 1); }, 500); });
+    st.bl.say(end[i].text, function () { setTimeout(function () { ending(i + 1, my); }, 500); });
   }
   MQ.ui.ohanashi = { open: open, state: function () { return st; } };
 })();

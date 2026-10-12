@@ -23,6 +23,9 @@ MQ.ui.moji = (function () {
     misses = 0; busy = false; step = 0;
     render();
     setTimeout(function () { els.bl.say(task.line); }, 250);
+    armNudge();
+  }
+  function armNudge() {
     MQ.ui.nudge.arm({ screen: 'screen-moji', busy: function () { return busy; }, say: function (t, q) { els.bl.say(q ? t + ' ' + task.line : t); },
       targets: function () { return (els.btns || []).filter(function (x, i) { return task.mode === 'build' ? task.options[i].kana === task.letters[step] && !x.disabled : task.options[i].ok; }); } });
   }
@@ -66,6 +69,7 @@ MQ.ui.moji = (function () {
       step++; misses = 0;
       els.btns.forEach(function (x) { x.classList.remove('is-glow'); });
       if (step >= task.letters.length) { finishOk(null); return; }
+      armNudge();   // 2026-10-12：つぎの 字にも 手助け
       MQ.sfx.tap(); MQ.ui.speak(o.kana);
       return;
     }

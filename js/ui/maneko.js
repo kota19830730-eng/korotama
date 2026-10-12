@@ -37,7 +37,7 @@ MQ.ui = MQ.ui || {};
     used.push(w.say);
     busy = false; miss = 0;
     render();
-    setTimeout(function () { els.bl.say(w.line + ' マイクを おして、いってみてね。'); }, 250);
+    setTimeout(function () { if (MQ.ui.current === 'screen-maneko') els.bl.say(w.line + ' マイクを おして、いってみてね。'); }, 250);
   }
   function render() {
     const mon = MQ.ui.monNode(130);

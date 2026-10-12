@@ -41,8 +41,9 @@ MQ.voice = (function () {
   function unlock() { const c = audioCtx(); if (c && c.state !== 'running') { try { c.resume(); } catch (e) { /* なし */ } } }
   function loadBank() {
     if (bank || typeof fetch !== 'function') return;
-    fetch(BASE + 'assets/voice/bank.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { bank = j || {}; }).catch(function () { bank = {}; });
+    fetch(BASE + 'assets/voice/bank.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { bank = j && Object.keys(j).length ? j : null; }).catch(function () { bank = null; });   // 2026-10-12：読めなければ null（あとで もう一度）
   }
+  if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('online', function () { loadBank(); });
   function hasBank() { return !!(bank && Object.keys(bank).length); }
   function clipFor(sentence) { if (!bank) return null; const k = String(sentence).replace(/[ 　]+/g, ''); return bank[k] || null; }
   /* gen（2026-10-10 バグ直し）：stop() の たびに 1つ ふやす。止めた／入れかわった 古い 文の つづき・おわりの 合図は gen が ちがうので 何も しない
@@ -132,6 +133,7 @@ MQ.voice = (function () {
   function ready() { return (kind === 'zunda' && hasBank() && !!audioCtx()) || !!(api() && Utter() && voiceFor()); }
   function stop() { gen++; stopClips(); const s = api(); try { if (s) s.cancel(); } catch (e) { /* なし */ } }
   function say(text, opts) {
+    if (!bank) loadBank();   // 読めなかった ときは つぎの 声で もう一度
     opts = opts || {};
     if (!text) { if (opts.onend) setTimeout(opts.onend, 0); return false; }
     stop();

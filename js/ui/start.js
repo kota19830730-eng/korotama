@@ -330,7 +330,7 @@ MQ.ui = MQ.ui || {};
       const monBox = h('div', { style: { position: 'absolute', left: '120px', top: '110px', display: 'none' } });
       scene.appendChild(monBox);
       const page = h('div', { class: 'page' }, [
-        h('div', { class: 'top' }, [h('span'), h('span')]),
+        opts.regrow ? MQ.ui.topBar({}) : h('div', { class: 'top' }, [h('span'), h('span')]),
         scene,
         h('div', { class: 'wrap col', style: { gap: '14px' } }, [bl, dots, MQ.ui.hintBox(opts.regrow ? 'スタンプが たまって、すがたが かわります。3回 たたくと 大きく なって 出てきます' : '「なにが でて くるかな？」と きいてみて。3回 たたくと かえります')])
       ]);

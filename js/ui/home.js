@@ -221,7 +221,7 @@ MQ.ui = MQ.ui || {};
         stamps,
         bl,
         h('button', { class: 'btn btn--gold btn--big btn--wide', type: 'button', text: 'おうちへ', onclick: function () { MQ.sfx.tap(); MQ.ui.home.open(); } }),
-        MQ.ui.hintBox((learnP ? 'きょうの れんしゅう：' + learnP + '。' : '') + 'たまご（スタンプ）は 1日 5こまで。2こ ごとに たまごから おにわの かざりが 出てきます。' + (MQ.save.nextGrowAt() ? 'ぜんぶで ' + MQ.save.nextGrowAt() + 'こ で すがたが かわります（いま ' + MQ.save.stampsTotal() + 'こ）' : 'いちばん 大きな すがたに なりました') + '')
+        MQ.ui.hintBox((learnP ? 'きょうの れんしゅう：' + learnP + '。' : '') + 'たまご（スタンプ）は 1日 5こまで。2こ ごとに たまごが われて、はじめの うちは おにわの かざりが ふえます。' + (MQ.save.nextGrowAt() ? 'ぜんぶで ' + MQ.save.nextGrowAt() + 'こ で すがたが かわります（いま ' + MQ.save.stampsTotal() + 'こ）' : 'いちばん 大きな すがたに なりました') + '')
       ]);
       const page = h('div', { class: 'page' }, [box]);
       MQ.ui.mount('screen-done', page);
@@ -249,7 +249,7 @@ MQ.ui = MQ.ui || {};
         const L = learn ? ' ' + learn : '';
         bl.say((opts.grew ? ('わあ！ ' + nm + 'が おおきく なった！' + L + ' ありがとう！') : opts.full ? ('できた！' + L + ' ' + E.full + ' ' + nm + 'も うれしいよ！') : ('できた！' + L + ' たまご ' + MQ.tasks.num(n) + 'め！ ' + nm + 'も うれしいよ！')) + after, function () {
           if (!here('screen-done', mon)) return;
-          if (opts.gift && !opts.full) bl.say(E.gift[opts.gift] + ' ' + E.garden, tail); else tail();
+          if (opts.gift && !opts.full) bl.say(E.gift[opts.gift] + (opts.giftNew === false ? '' : ' ' + E.garden), tail); else tail();
         });   // full＝1日 5こを こえた（同じ「いつつめ」を くりかえさない）
       }, 300);
     }

@@ -499,6 +499,8 @@ ok(MQ.trace.parts && MQ.trace.parts.prepare && MQ.trace.parts.foregroundMask, 't
   ok(/d.kid.birthday = bv/.test(fs.readFileSync(path.join(ROOT, 'js/ui/start.js'), 'utf8')), 'はじめの 設定で 誕生日を 入れられる');
 })();
 
+/* ---- バグチェック（2026-10-12） ---- */
+ok(/'\.\/assets\/voice\/bank\.json'/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')) && /OPTIONAL\.indexOf\(u\) < 0\) throw err/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')), 'sw：声の 一覧（bank.json）も ためる・だいじな ファイルが 入らなければ 入れかえない');
 /* ---- v0.4（2026-10-11）：ころたまらしさ（たまごの スタンプ・成長は たまごから・ころころ） ---- */
 (function () {
   const C = MQ.coach, E = C.EGG;

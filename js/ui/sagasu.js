@@ -34,7 +34,7 @@ MQ.ui = MQ.ui || {};
     used.push(mission.key);
     busy = false;
     render();
-    setTimeout(function () { ask(); }, 250);
+    setTimeout(function () { if (MQ.ui.current === 'screen-sagasu') ask(); }, 250);
   }
   function ask() { els.bl.say(mission.line + (mission.type === 'color' ? ' もってきたら、カメラで みせてね。' : ' みつけたら、おうちの ひとに みせてね。')); }
   function render() {
@@ -76,7 +76,7 @@ MQ.ui = MQ.ui || {};
   }
   /* 写真 → 小さく（96px の jpeg）＋ まんなかの 色を 読む */
   function judgeImage(im) {
-    if (busy) return;
+    if (busy || MQ.ui.current !== 'screen-sagasu') return;   // 2026-10-12：写真の 読みこみ中に はなれたら つかわない
     const W = 96, k = W / Math.max(im.width, im.height);
     const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(im.width * k)); cv.height = Math.max(1, Math.round(im.height * k));
     const g = cv.getContext('2d'); g.drawImage(im, 0, 0, cv.width, cv.height);
