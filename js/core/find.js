@@ -66,7 +66,53 @@ MQ.find = (function () {
     pink: function (h, s, v) { return (h >= 290 || h < 14) && s >= 0.15 && v >= 0.55; }
   };
   const ANY_MIN = 0.03;   // 写真の 3% いじょう あれば OK
+  /* 照明の 補正（v40・2026-11-07）。ユーザー「照明が くらかったり オレンジよりの 色だと 色を 正しく 認識しない」。
+     光の 強さ（線形）で 計算する：
+     ① 明るい 上位 2わりの うち 色が つよすぎない 点（白い かべ・紙・服）＝部屋の 光の 色 → 打ち消す（ずれが 小さい ふつうの 部屋は しない）
+     ② 白っぽい ところが ない（もの だけが 大きく うつる）ときは 色は かえない（写真 ぜんたいの 平均で 合わせると その ものの 色を 消す＝みどりの りんごが 黄色に なった）
+     ③ 暗い 写真（明るい 点が sRGB 150 未満）だけ 明るく（色あいを かえない：どれかが 255 で 止める）
+     ネットの 写真 38まいに 光を かけて はかった（未就学児アプリ/さがすテスト）：あたり ふつう 32→33・暗い 23→33・電球色 25→27・暗い＋電球色 14→30 */
+  const LIN = new Float32Array(256);
+  for (let v = 0; v < 256; v++) { const x = v / 255; LIN[v] = x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }
+  function enc(x) { x = Math.max(0, Math.min(1, x)); return 255 * (x <= 0.0031308 ? x * 12.92 : 1.055 * Math.pow(x, 1 / 2.4) - 0.055); }
+  let lastFix = null;
+  function balance(px, w, h) {
+    const n = w * h, Y = new Float32Array(n);
+    if (!n) return px;
+    for (let i = 0; i < n; i++) Y[i] = px[i * 4] * 0.3 + px[i * 4 + 1] * 0.59 + px[i * 4 + 2] * 0.11;
+    const yHi = Array.from(Y).sort(function (a, b) { return a - b; })[Math.floor(n * 0.8)];
+    let r = 0, g = 0, b = 0, c = 0;
+    for (let i = 0; i < n; i++) {
+      if (Y[i] < yHi) continue;
+      const R = px[i * 4], G = px[i * 4 + 1], B = px[i * 4 + 2], mx = Math.max(R, G, B), mn = Math.min(R, G, B);
+      if (mx < 8 || mx > 252 || (mx - mn) / mx > 0.6) continue;   // とんだ 点・色の つよい 点は つかわない
+      r += LIN[R]; g += LIN[G]; b += LIN[B]; c++;
+    }
+    let gr = 1, gg = 1, gb = 1;
+    const white = c >= n * 0.03;
+    if (white) {
+      const m = (r + g + b) / 3;
+      gr = Math.min(3, Math.max(0.5, m / Math.max(1e-6, r)));
+      gg = Math.min(3, Math.max(0.5, m / Math.max(1e-6, g)));
+      gb = Math.min(3, Math.max(0.5, m / Math.max(1e-6, b)));
+      const dev = Math.max(gr, gg, gb) / Math.min(gr, gg, gb) - 1, st = Math.min(1, Math.max(0, (dev - 0.15) / 0.3));
+      gr = Math.pow(gr, st); gg = Math.pow(gg, st); gb = Math.pow(gb, st);
+    }
+    const mxs = new Float32Array(n);
+    for (let i = 0; i < n; i++) mxs[i] = Math.max(LIN[px[i * 4]] * gr, LIN[px[i * 4 + 1]] * gg, LIN[px[i * 4 + 2]] * gb);
+    const p95 = Array.from(mxs).sort(function (a, b) { return a - b; })[Math.floor(n * 0.95)];
+    const ex = p95 >= 0.31 ? 1 : Math.min(25, Math.max(1, 0.72 / Math.max(1e-4, p95)));
+    lastFix = { gain: [gr, gg, gb].map(function (v) { return Math.round(v * 100) / 100; }), ex: Math.round(ex * 100) / 100, white: white };
+    if (gr === 1 && gg === 1 && gb === 1 && ex === 1) return px;
+    const o = new Uint8ClampedArray(px.length);
+    for (let i = 0; i < n; i++) {
+      const R = LIN[px[i * 4]] * gr, G = LIN[px[i * 4 + 1]] * gg, B = LIN[px[i * 4 + 2]] * gb, k = Math.min(ex, 1 / Math.max(1e-6, R, G, B));
+      o[i * 4] = enc(R * k); o[i * 4 + 1] = enc(G * k); o[i * 4 + 2] = enc(B * k); o[i * 4 + 3] = 255;
+    }
+    return o;
+  }
   function classify(px, w, h) {
+    px = balance(px, w, h);
     const cnt = {}; let tot = 0, white = 0, black = 0;
     const x0 = Math.floor(w * 0.25), x1 = Math.ceil(w * 0.75), y0 = Math.floor(h * 0.25), y1 = Math.ceil(h * 0.75);
     for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) {
@@ -108,5 +154,5 @@ MQ.find = (function () {
     Object.keys(JUDGE).forEach(function (k) { out.push(JUDGE[k].line, JUDGE[k].ok); });
     return out;
   }
-  return { mission: mission, classify: classify, match: match, seen: seen, CNAME: CNAME, ADJ: ADJ, PLAN: PLAN, lines: lines };
+  return { mission: mission, classify: classify, balance: balance, lastFix: function () { return lastFix; }, match: match, seen: seen, CNAME: CNAME, ADJ: ADJ, PLAN: PLAN, lines: lines };
 })();
