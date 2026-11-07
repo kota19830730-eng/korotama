@@ -49,7 +49,7 @@ MQ.ui.tokei = (function () {
     task = MQ.tasks.clock(MQ.save.kid().stage);
     misses = 0; busy = false;
     render();
-    setTimeout(function () { els.bl.say(task.line); }, 250);
+    setTimeout(function () { /* v41：はなれたら 言わない */ if (MQ.ui.current !== 'screen-tokei') return; els.bl.say(task.line); }, 250);
     MQ.ui.nudge.arm({ screen: 'screen-tokei', busy: function () { return busy; }, say: function (t, q) { els.bl.say(q ? t + ' ' + task.line : t); },
       targets: function () { return (els.btns || []).filter(function (b, i) { return task.options[i] && task.options[i].ok; }); } });
   }

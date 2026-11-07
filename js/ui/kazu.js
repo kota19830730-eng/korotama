@@ -32,6 +32,7 @@ MQ.ui.kazu = (function () {
   }
   /* わける：まず ぜんぶ 見せて「いつつ あるよ」→ 生きものが 食べる → うすく なって「のこりは いくつ？」 */
   function intro() {
+    if (MQ.ui.current !== screenId()) return;   /* v41：はなれたら 言わない */ 
     if (task.mode !== 'take') { els.bl.say(task.line); return; }
     busy = true;
     els.bl.say(task.line1, function () {

@@ -37,12 +37,10 @@ MQ.chores = (function () {
   function today(kid, date) {
     const list = enabled(kid);
     const d = date || (MQ.save ? MQ.save.today() : '');
-    let i = hash(d) % list.length;
-    if (list.length > 1) {
-      const y = new Date(new Date(d + 'T12:00:00').getTime() - 86400000);
-      const yd = y.getFullYear() + '-' + ('0' + (y.getMonth() + 1)).slice(-2) + '-' + ('0' + y.getDate()).slice(-2);
-      if ((hash(yd) % list.length) === i) i = (i + 1) % list.length;
-    }
+    // v41：日の 番号で じゅんばんに（2つでも 2日 つづけて 同じに ならない）。日づけが 読めない ときは 前の やり方
+    const t = Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
+    const day = Math.floor(t / 86400000);
+    const i = isFinite(day) ? ((day % list.length) + list.length) % list.length : hash(d) % list.length;
     return list[i];
   }
   function doneToday(kid, date) { const d = date || (MQ.save ? MQ.save.today() : ''); return !!(kid && kid.help && kid.help[d]); }

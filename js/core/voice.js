@@ -78,8 +78,14 @@ MQ.voice = (function () {
     });
   }
   /* 名前を 外す（録音に 名前は 無い） */
+  /* v41：名前は ことばの はじめ（文の はじめ・スペース・、。！？「 の あと）で、うしろに きまった 形が つく ときだけ 外す。
+     前は うしろが 何も ない 形（''）も 外して いて、名前が「あお」だと「あおい ケーキ」が「い ケーキ」に なって いた */
   function stripNames(s) {
-    names.forEach(function (n) { if (!n) return; ['ちゃん、', 'ちゃん。', 'だよ。', 'が ', 'も ', 'は ', 'の ', ''].forEach(function (t) { s = s.split(n + t).join(''); }); });
+    names.forEach(function (n) {
+      if (!n) return;
+      const e = String(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      s = s.replace(new RegExp('(^|[\\s　、。！？「])' + e + '(ちゃん、|ちゃん。|だよ。|が |も |は |の )', 'g'), '$1');
+    });
     return s;
   }
   /* 声に 出す 形：かん字に して スペースを 外す（字幕は もとの まま） */

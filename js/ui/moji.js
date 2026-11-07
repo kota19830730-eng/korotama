@@ -22,7 +22,7 @@ MQ.ui.moji = (function () {
     task = MQ.tasks.hira(MQ.save.kid().stage);
     misses = 0; busy = false; step = 0;
     render();
-    setTimeout(function () { els.bl.say(task.line); }, 250);
+    setTimeout(function () { /* v41：はなれたら 言わない */ if (MQ.ui.current !== 'screen-moji') return; els.bl.say(task.line); }, 250);
     armNudge();
   }
   function armNudge() {

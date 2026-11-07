@@ -27,6 +27,17 @@ MQ.ui = MQ.ui || {};
     sec.innerHTML = '';
     sec.appendChild(node);
   };
+  /* v41：誕生日の 月を えらぶと、その 月に ない 日（2月30日・4月31日 など）を えらべなく する（2月は 29日まで） */
+  MQ.ui.fitDays = function (mSel, dSel) {
+    function fit() {
+      const m = +mSel.value, max = m ? [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1] : 31;
+      Array.prototype.forEach.call(dSel.options, function (o) { const v = +o.value; o.disabled = !!v && v > max; o.hidden = o.disabled; });
+      if (+dSel.value > max) dSel.value = ('0' + max).slice(-2);
+    }
+    fit();
+    mSel.addEventListener('change', fit);
+    return fit;
+  };
   MQ.ui.toast = function (text, ms) {
     const t = document.getElementById('toast');
     if (!t) return;
@@ -201,7 +212,7 @@ MQ.ui = MQ.ui || {};
     function start() {
       if (down) return;
       down = true; at = Date.now(); el.classList.add('is-hold');
-      t = setTimeout(function () { down = false; el.classList.remove('is-hold'); fn(); }, ms);
+      t = setTimeout(function () { down = false; el.classList.remove('is-hold'); if (!el.isConnected) return; fn(); }, ms);   // v41：画面が かわった あとは うごかさない
     }
     function end() {
       if (!down) return;
@@ -532,7 +543,7 @@ MQ.ui = MQ.ui || {};
 
   /* ---- C1 遊ぶ 時間を 数える（v0.3）：子どもの 画面が 出て いて、90秒 いないに さわって いる あいだ だけ ---- */
   MQ.ui.playClock = (function () {
-    const SKIP = { 'screen-start': 1, 'screen-setup': 1, 'screen-parent': 1 };
+    const SKIP = { 'screen-start': 1, 'screen-setup': 1, 'screen-parent': 1, 'screen-print': 1, 'screen-album': 1, 'screen-draw': 1 };   // v41：おうちの人の 画面は 数えない
     let lastTouch = Date.now(), last = Date.now(), acc = 0;
     function flush() { if (acc) { acc = 0; MQ.save.update(function () { /* addPlay の ぶんを 書く */ }); } }
     function tick() {

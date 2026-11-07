@@ -87,6 +87,7 @@ MQ.ui = MQ.ui || {};
       const bM = h('select', { class: 'field field--s', 'aria-label': '月' }, [h('option', { value: '', text: '月' })].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return h('option', { value: ('0' + m).slice(-2), text: m + '月' }); })));
       const bD = h('select', { class: 'field field--s', 'aria-label': '日' }, [h('option', { value: '', text: '日' })].concat(Array.from({ length: 31 }, function (x, i) { return h('option', { value: ('0' + (i + 1)).slice(-2), text: (i + 1) + '日' }); })));
       bM.value = bd[0] || ''; bD.value = bd[1] || '';
+      MQ.ui.fitDays(bM, bD);   // v41：ない 日を えらばせない
       const STAGE_NOTE = { s: 'ちいさい：数は 3まで・色 3つ・形 2つ。お皿に くぼみ（数えやすくする印）あり。', m: 'なかくらい：数は 5まで・色 4つ・形 3つ。お皿に くぼみ あり。', l: 'おおきい：数は 10まで・色 5つ・形 4つ＋色。くぼみ なし（自分で「あげる」）。', k: 'ねんちょう：ごはん＝あわせる・わける（ぜんぶで いくつ？ のこりは？）・おみせ＝数字を 読む（1〜20）。小学校の たし算・ひき算の 手まえです。' };
       const stageNote = h('p', { class: 'note', style: { marginTop: '8px' }, text: STAGE_NOTE[stage] || STAGE_NOTE.s });
       function segRow(items, cur, onPick) {
@@ -148,8 +149,11 @@ MQ.ui = MQ.ui || {};
         if (!f) return;
         MQ.sfx.shutter();
         const r = new FileReader();
-        r.onload = function () { const im = new Image(); im.onload = function () { fromImage(im, true); }; im.src = String(r.result); };
+        const bad = function () { MQ.ui.toast('この 写真は 読めませんでした。べつの 写真で ためして ください'); };   // v41
+        r.onerror = bad;
+        r.onload = function () { const im = new Image(); im.onerror = bad; im.onload = function () { fromImage(im, true); }; im.src = String(r.result); };
         r.readAsDataURL(f);
+        fileIn.value = '';   // v41：同じ 写真を もう一度 えらんでも 動く
       });
       const page = h('div', { class: 'page pp' }, [
         h('div', { class: 'page__body' }, [h('div', { class: 'wrap col' }, [

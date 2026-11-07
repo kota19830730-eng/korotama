@@ -135,7 +135,8 @@ MQ.family = (function () {
       if (cb) cb(ok);
     });
   }
-  function stop() { if (playing) { try { playing.stop(); } catch (e) { try { playing.pause(); } catch (e2) { /* なし */ } } playing = null; } }
+  let playGen = 0;   // v41：読みこみ中に 止めたら あとから 鳴らさない
+  function stop() { playGen++; if (playing) { try { playing.stop(); } catch (e) { try { playing.pause(); } catch (e2) { /* なし */ } } playing = null; } }
   /* 鳴らす：Web Audio で（rate を 上げると 高い 声＝まねっこ）。だめなら <audio> */
   function playData(arrayBufOrUrl, opts) {
     opts = opts || {};
@@ -157,14 +158,16 @@ MQ.family = (function () {
     if (!c || typeof arrayBufOrUrl === 'string' && !/^data:|^blob:/.test(arrayBufOrUrl)) { viaTag(); return; }
     if (c.state !== 'running') { try { c.resume(); } catch (e) { /* なし */ } }
     const getBuf = typeof arrayBufOrUrl === 'string' ? fetch(arrayBufOrUrl).then(function (r) { return r.arrayBuffer(); }) : Promise.resolve(arrayBufOrUrl);
+    const myGen = playGen;
     getBuf.then(function (ab) { return new Promise(function (res, rej) { const p = c.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(function () { /* rej で うける */ }); }); }).then(function (b) {
+      if (myGen !== playGen) { end(); return; }
       const s = c.createBufferSource(); s.buffer = b; s.playbackRate.value = opts.rate || 1;
       const g = c.createGain(); g.gain.value = opts.vol || 1.2; s.connect(g); g.connect(c.destination);
       s.onended = end; playing = s;
       const from = Math.max(0, Math.min(b.duration - 0.05, opts.from || 0)), len = opts.to ? Math.max(0.1, Math.min(b.duration, opts.to) - from) : b.duration - from;   // opts.from/to（秒）＝声の ところだけ 鳴らす
       s.start(0, from, len);
       setTimeout(end, (len / (opts.rate || 1)) * 1000 + 600);   // 保険
-    }).catch(function () { if (typeof arrayBufOrUrl === 'string') viaTag(); else end(); });
+    }).catch(function () { if (typeof arrayBufOrUrl === 'string' && myGen === playGen) viaTag(); else end(); });
   }
   function play(id, opts) {
     const s = load();

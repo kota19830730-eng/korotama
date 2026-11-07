@@ -25,7 +25,7 @@ MQ.ui.care = (function () {
     task = MQ.tasks.count(kid.stage);
     placed = 0; busy = false;
     render();
-    setTimeout(function () { els.bl.say(task.line, null, foodPics(task.n)); }, 250);
+    setTimeout(function () { /* v41：はなれたら 言わない */ if (MQ.ui.current !== 'screen-care') return; els.bl.say(task.line, null, foodPics(task.n)); }, 250);
     MQ.ui.nudge.arm({ screen: 'screen-care', busy: function () { return busy; }, say: function (t, q) { if (q) els.bl.say(t + ' ' + task.line, null, foodPics(task.n)); else els.bl.say(t); },
       targets: function () { if (!task.slots && placed >= task.n) return [els.mon]; return Array.prototype.slice.call(els.basket.querySelectorAll('[data-ok]')); } });
   }

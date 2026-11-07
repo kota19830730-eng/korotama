@@ -48,7 +48,8 @@ MQ.find = (function () {
     return [h, mx ? d / mx : 0, mx / 255];
   }
   function hueId(h, s, v) {
-    if (h >= 345 || h < 12) return (s < 0.5 && v > 0.75) ? 'pink' : 'red';
+    // 色相 4〜12 で うすい 色＝はだ（手・顔）→ あか／ピンクに しない（v41）
+    if (h >= 345 || h < 4 || (h < 12 && s >= 0.5)) return (s < 0.5 && v > 0.75) ? 'pink' : 'red';
     if (h < 38) return (v < 0.55) ? 'brown' : 'orange';
     if (h < 70) return 'yellow';
     if (h < 165) return 'green';
@@ -56,14 +57,17 @@ MQ.find = (function () {
     if (h < 290) return 'purple';
     return 'pink';
   }
-  /* ゆるい 色の はば（写真ぜんたいで さがす 用）。ゆか（オレンジ〜ちゃいろ・h 18〜42）には かからない ように */
+  /* ゆるい 色の はば（写真ぜんたいで さがす 用）。ゆか（オレンジ〜ちゃいろ・h 18〜42）には かからない ように
+     v41（2026-11-08）：はだ（手・顔・h 0〜20・色の こさ 0.15〜0.5）を あか／ピンクに 数えない。
+     手で もった 写真 16まいで あかが まちがって 通る 6→2・ピンク 4→2（未就学児アプリ/さがすテスト/run_skin.sh）。
+     あかは こさ 0.55 いじょう・ピンクは 色相 290 いじょう（はだに ない 色相）だけ */
   const LOOSE = {
-    red: function (h, s, v) { return (h >= 335 || h < 16) && s >= 0.35 && v >= 0.25; },
+    red: function (h, s, v) { return (h >= 335 || h < 16) && s >= 0.55 && v >= 0.25; },
     yellow: function (h, s, v) { return h >= 44 && h < 72 && s >= 0.35 && v >= 0.45; },
     green: function (h, s, v) { return h >= 72 && h < 170 && s >= 0.2 && v >= 0.2; },
     blue: function (h, s, v) { return h >= 170 && h < 258 && s >= 0.2 && v >= 0.2; },
     purple: function (h, s, v) { return h >= 245 && h < 330 && s >= 0.15 && v >= 0.15; },
-    pink: function (h, s, v) { return (h >= 290 || h < 14) && s >= 0.15 && v >= 0.55; }
+    pink: function (h, s, v) { return (h >= 290 && s >= 0.15 || h >= 345 && s >= 0.12) && v >= 0.55; }
   };
   const ANY_MIN = 0.03;   // 写真の 3% いじょう あれば OK
   /* 照明の 補正（v40・2026-11-07）。ユーザー「照明が くらかったり オレンジよりの 色だと 色を 正しく 認識しない」。

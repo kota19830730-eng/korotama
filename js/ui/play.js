@@ -16,7 +16,7 @@ MQ.ui.play = (function () {
     task = MQ.tasks.shape(kid.stage);
     busy = false;
     render();
-    setTimeout(function () { els.bl.say(task.line); }, 250);
+    setTimeout(function () { /* v41：はなれたら 言わない */ if (MQ.ui.current !== 'screen-play') return; els.bl.say(task.line); }, 250);
     MQ.ui.nudge.arm({ screen: 'screen-play', busy: function () { return busy; }, say: function (t, q) { els.bl.say(q ? t + ' ' + task.line : t); },
       targets: function () { return Array.prototype.slice.call(document.querySelectorAll('#screen-play .toy[data-ok]')); } });
   }

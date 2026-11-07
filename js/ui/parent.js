@@ -162,6 +162,7 @@ MQ.ui.parent = (function () {
     const mSel = h('select', { class: 'field field--s' }, [h('option', { value: '', text: '月' })].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return h('option', { value: ('0' + m).slice(-2), text: m + '月' }); })));
     const dSel = h('select', { class: 'field field--s' }, [h('option', { value: '', text: '日' })].concat(Array.from({ length: 31 }, function (x, i) { return h('option', { value: ('0' + (i + 1)).slice(-2), text: (i + 1) + '日' }); })));
     mSel.value = cur[0] || ''; dSel.value = cur[1] || '';
+    MQ.ui.fitDays(mSel, dSel);   // v41：ない 日を えらばせない（先に つなぐ＝保存より 前に 日を なおす）
     const saveB = function () { const v = mSel.value && dSel.value ? mSel.value + '-' + dSel.value : ''; MQ.save.update(function (d) { d.kid.birthday = v; }); };
     mSel.onchange = saveB; dSel.onchange = saveB;
     return h('div', { class: 'card' }, [h('p', { class: 'card__title', text: 'お子さんの誕生日' }),

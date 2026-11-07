@@ -35,7 +35,7 @@ MQ.ui.shop = (function () {
     task = MQ.tasks.shop(kid.stage);
     placed = 0; busy = false;
     render();
-    setTimeout(function () { els.bl.say(task.line, null, MQ.ui.colorDots(task.want, task.n, true)); }, 250);
+    setTimeout(function () { /* v41：はなれたら 言わない */ if (MQ.ui.current !== 'screen-shop') return; els.bl.say(task.line, null, MQ.ui.colorDots(task.want, task.n, true)); }, 250);
     MQ.ui.nudge.arm({ screen: 'screen-shop', busy: function () { return busy; }, say: function (t, q) { if (q) els.bl.say(t + ' ' + task.line, null, MQ.ui.colorDots(task.want, task.n, true)); else els.bl.say(t); },
       targets: function () { return Array.prototype.slice.call(els.shelf.querySelectorAll('[data-ok]')); } });
   }
