@@ -16,14 +16,15 @@ MQ.season = (function () {
     winter: { name: 'ふゆ', greet: 'ふゆだね。ゆきが ふってきた！', tell: 'ふゆは さむい きせつ。ゆきが ふる ことも あるよ。' }
   };
   // 行事：月日の はんい（はじめ〜おわり）。かざりの 絵は common.js の eventNode
+  // v42：おわりの 日（＝行事の 当日）は today の 文（前は 当日も「もうすぐ」と 言って いた）。せつぶんは 年で 2日か 3日（setsubunDay）
   const EVENTS = [
     { id: 'newyear', from: '01-01', to: '01-07', greet: 'あけまして おめでとう！ ことしも よろしくね！', tell: 'おしょうがつは あたらしい いちねんの はじまり。かどまつを かざるよ。' },
-    { id: 'setsubun', from: '02-01', to: '02-03', greet: 'もうすぐ せつぶん！ おには そと！ ふくは うち！', tell: 'せつぶんは まめを まいて、おにを おいはらう ひだよ。' },
-    { id: 'hina', from: '02-25', to: '03-03', greet: 'もうすぐ ひなまつり！', tell: 'ひなまつりは おひなさまを かざって、げんきに そだつ ことを おいわいする ひだよ。' },
-    { id: 'kodomo', from: '04-25', to: '05-05', greet: 'もうすぐ こどもの ひ！ こいのぼりが およいでるよ！', tell: 'こどもの ひは こいのぼりを あげて、こどもが げんきに そだつ ことを おいわいする ひだよ。' },
-    { id: 'tanabata', from: '07-01', to: '07-07', greet: 'もうすぐ たなばた！ おねがい ごとは なにかな？', tell: 'たなばたは ささに たんざくを かざって、おねがい ごとを する ひだよ。' },
-    { id: 'halloween', from: '10-20', to: '10-31', greet: 'もうすぐ ハロウィン！ かぼちゃが にっこり！', tell: 'ハロウィンは かぼちゃを かざって、おばけの かっこうを して あそぶ ひだよ。' },
-    { id: 'xmas', from: '12-01', to: '12-25', greet: 'もうすぐ クリスマス！ ツリーが きらきら！', tell: 'クリスマスは ツリーを かざって、プレゼントを たのしみに する ひだよ。' }
+    { id: 'setsubun', from: '02-01', to: '02-03', greet: 'もうすぐ せつぶん！ おには そと！ ふくは うち！', today: 'きょうは せつぶん！ おには そと！ ふくは うち！', tell: 'せつぶんは まめを まいて、おにを おいはらう ひだよ。' },
+    { id: 'hina', from: '02-25', to: '03-03', greet: 'もうすぐ ひなまつり！', today: 'きょうは ひなまつり！', tell: 'ひなまつりは おひなさまを かざって、げんきに そだつ ことを おいわいする ひだよ。' },
+    { id: 'kodomo', from: '04-25', to: '05-05', greet: 'もうすぐ こどもの ひ！ こいのぼりが およいでるよ！', today: 'きょうは こどもの ひ！ こいのぼりが およいでるよ！', tell: 'こどもの ひは こいのぼりを あげて、こどもが げんきに そだつ ことを おいわいする ひだよ。' },
+    { id: 'tanabata', from: '07-01', to: '07-07', greet: 'もうすぐ たなばた！ おねがい ごとは なにかな？', today: 'きょうは たなばた！ おねがい ごとは なにかな？', tell: 'たなばたは ささに たんざくを かざって、おねがい ごとを する ひだよ。' },
+    { id: 'halloween', from: '10-20', to: '10-31', greet: 'もうすぐ ハロウィン！ かぼちゃが にっこり！', today: 'きょうは ハロウィン！ かぼちゃが にっこり！', tell: 'ハロウィンは かぼちゃを かざって、おばけの かっこうを して あそぶ ひだよ。' },
+    { id: 'xmas', from: '12-01', to: '12-25', greet: 'もうすぐ クリスマス！ ツリーが きらきら！', today: 'きょうは クリスマス！ ツリーが きらきら！', tell: 'クリスマスは ツリーを かざって、プレゼントを たのしみに する ひだよ。' }
   ];
   const BIRTHDAY = { greet: 'おたんじょうび おめでとう！ きょうは とくべつな ひ！', tell: 'おたんじょうび おめでとう！ ろうそくを ふーって してね。' };
   const MON_BIRTHDAY = { greet: 'きょうは わたしが うまれた ひ！ いっしょに いてくれて ありがとう！' };
@@ -31,14 +32,18 @@ MQ.season = (function () {
   // 2月29日 うまれは うるう年で ない 年は 2月28日に おいわい（2026-10-10）
   function sameDay(b, d) { if (b === md(d)) return true; const y = d.getFullYear(); const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; return b === '02-29' && !leap && md(d) === '02-28'; }
   function seasonOf(d) { const m = d.getMonth() + 1; return m >= 3 && m <= 5 ? 'spring' : m >= 6 && m <= 8 ? 'summer' : m >= 9 && m <= 11 ? 'autumn' : 'winter'; }
-  function eventOf(d) { const k = md(d); return EVENTS.filter(function (e) { return k >= e.from && k <= e.to; })[0] || null; }
+  /* せつぶん＝立春の 前の 日。2021〜2056年は 4で わって 1 あまる 年（2025・2029…）が 2月2日、ほかは 2月3日 */
+  function setsubunDay(y) { return y >= 2021 && y <= 2056 && (y - 2021) % 4 === 0 ? '02-02' : '02-03'; }
+  function rangeOf(e, y) { if (e.id !== 'setsubun') return { from: e.from, to: e.to }; const t = setsubunDay(y); return { from: '02-01', to: t }; }
+  function eventOf(d) { const k = md(d), y = d.getFullYear(); return EVENTS.filter(function (e) { const r = rangeOf(e, y); return k >= r.from && k <= r.to; })[0] || null; }
+  function eventToday(ev, d) { return !!(ev && ev.today && md(d) === rangeOf(ev, d.getFullYear()).to); }
   function of(date, kid) {
     const d = date instanceof Date ? date : new Date(date || Date.now());
     const s = seasonOf(d), ev = eventOf(d);
     const bday = !!(kid && kid.birthday && sameDay(kid.birthday, d));
     let monB = false;
     if (kid && kid.created) { const c = new Date(kid.created); monB = sameDay(md(c), d) && c.getFullYear() < d.getFullYear(); }
-    const greet = bday ? BIRTHDAY.greet : monB ? MON_BIRTHDAY.greet : ev ? ev.greet : null;
+    const greet = bday ? BIRTHDAY.greet : monB ? MON_BIRTHDAY.greet : ev ? (eventToday(ev, d) ? ev.today : ev.greet) : null;
     return { season: s, seasonInfo: SEASONS[s], event: ev ? ev.id : null, eventInfo: ev, birthday: bday, monBirthday: monB, greet: greet };
   }
   let fixed = null;   // テスト用（harness）：日づけを 決めうち
@@ -46,8 +51,8 @@ MQ.season = (function () {
   function lines() {
     const out = [BIRTHDAY.greet, BIRTHDAY.tell, MON_BIRTHDAY.greet];
     Object.keys(SEASONS).forEach(function (k) { out.push(SEASONS[k].greet, SEASONS[k].tell); });
-    EVENTS.forEach(function (e) { out.push(e.greet, e.tell); });
+    EVENTS.forEach(function (e) { out.push(e.greet, e.tell); if (e.today) out.push(e.today); });
     return out;
   }
-  return { SEASONS: SEASONS, EVENTS: EVENTS, of: of, now: now, setNow: function (d) { fixed = d || null; }, lines: lines, md: md };
+  return { SEASONS: SEASONS, EVENTS: EVENTS, setsubunDay: setsubunDay, of: of, now: now, setNow: function (d) { fixed = d || null; }, lines: lines, md: md };
 })();

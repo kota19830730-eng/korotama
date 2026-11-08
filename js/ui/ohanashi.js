@@ -23,7 +23,9 @@ MQ.ui = MQ.ui || {};
   let st = null;
   function open(opts) {
     opts = opts || {};
-    const story = MQ.story.build(opts.log || MQ.save.dayLog(), MQ.save.stampsToday());
+    // v42：夜中（0〜4時）に ひらいて きょうの きろくが まだ ない ときは、きのう（ねる 前の 日）の おはなし
+    const late = new Date().getHours() < 4 && !MQ.save.dayLog().length ? Date.now() - 5 * 3600000 : 0;
+    const story = MQ.story.build(opts.log || MQ.save.dayLog(late || undefined), MQ.save.stampsToday(late || undefined));
     const scene = MQ.ui.sceneNode(300, { night: true });
     const mon = MQ.ui.monNode(150);
     scene.appendChild(h('div', { style: { position: 'absolute', left: '210px', top: '118px' } }, [mon]));
